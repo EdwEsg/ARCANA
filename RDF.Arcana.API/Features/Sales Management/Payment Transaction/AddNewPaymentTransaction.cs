@@ -512,7 +512,7 @@ public class AddNewPaymentTransaction : BaseApiController
                                 continue;
                             }
 
-                            if (payment.PaymentMethod == PaymentMethods.Withholding && payment.WithholdingAttachment != null)
+                            if (paymentItem.PaymentMethod == PaymentMethods.Withholding && paymentItem.WithholdingAttachment != null)
                             {
                                 if (payment.WithholdingAttachment.Length > 0)
                                 {

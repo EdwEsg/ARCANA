@@ -84,6 +84,7 @@ public class GetTransactionById : ControllerBase
 
         public decimal DiscountPercentage { get; set; }
         public string Remarks { get; set; }
+        public string Tin { get; set; }
     }
     
     public class Handler : IRequestHandler<GetTransactionByIdQuery, Result>
@@ -151,7 +152,9 @@ public class GetTransactionById : ControllerBase
                 DiscountPercentage = existingTransaction.TransactionSales.Discount + 
                                      existingTransaction.TransactionSales.SpecialDiscount,
 
-                Remarks = existingTransaction.TransactionSales.Remarks
+                Remarks = existingTransaction.TransactionSales.Remarks,
+                Tin = existingTransaction.Client.TinNumber
+                
             };
             
             return Result.Success(result);
