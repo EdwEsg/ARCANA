@@ -1,5 +1,8 @@
 ﻿using System.Security.Claims;
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Data;
 using RDF.Arcana.API.Domain;
@@ -12,7 +15,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction;
 public class AddNewPaymentTransaction : BaseApiController
 {
     [HttpPost]
-    public async Task<IActionResult> AddPayment([FromBody] AddNewPaymentTransactionCommand command)
+    public async Task<IActionResult> AddPayment([FromForm] AddNewPaymentTransactionCommand command)
     {
         try
         {
@@ -34,7 +37,6 @@ public class AddNewPaymentTransaction : BaseApiController
         public List<int> TransactionId { get; set; }
         public ICollection<Payment> Payments { get; set; }
         public int AddedBy { get; set; }
-        public IFormFile WithholdingAttachment { get; set; }
         public class Payment
         {
             public string PaymentMethod { get; set; }
@@ -50,6 +52,8 @@ public class AddNewPaymentTransaction : BaseApiController
             public string AccountNo { get; set; }
             public int OnlinePlatform { get; set; }
             public string ReferenceNo { get; set; }
+            public string WithholdingNo { get; set; }
+            public IFormFile WithholdingAttachment { get; set; }
         }
     
     }
@@ -57,10 +61,18 @@ public class AddNewPaymentTransaction : BaseApiController
     public class Handler : IRequestHandler<AddNewPaymentTransactionCommand, Result>
     {
         private readonly ArcanaDbContext _context;
+        private readonly Cloudinary _cloudinary;
 
-        public Handler(ArcanaDbContext context)
+        public Handler(ArcanaDbContext context, IOptions<CloudinaryOptions> options)
         {
             _context = context;
+
+            var account = new Account(
+                options.Value.Cloudname,
+                options.Value.ApiKey,
+                options.Value.ApiSecret
+                );
+            _cloudinary = new Cloudinary(account);
         }
 
         public async Task<Result> Handle(AddNewPaymentTransactionCommand request, CancellationToken cancellationToken)
@@ -156,6 +168,14 @@ public class AddNewPaymentTransaction : BaseApiController
 
                     decimal paymentAmount = payment.PaymentAmount;
                      
+
+
+
+
+
+
+
+
 
                     if (payment.PaymentMethod == PaymentMethods.Cheque)
                     {
@@ -313,7 +333,7 @@ public class AddNewPaymentTransaction : BaseApiController
                                     ChequeAmount = payment.ChequeAmount,
                                     AccountName = payment.AccountName,
                                     AccountNo = payment.AccountNo,
-                                    Status = Status.Received,
+                                    Status = Status.ForClearing,
                                     OnlinePlatform = payment.OnlinePlatform,
                                     ReferenceNo = payment.ReferenceNo,
                                 };
@@ -423,7 +443,7 @@ public class AddNewPaymentTransaction : BaseApiController
                                     ChequeAmount = payment.ChequeAmount,
                                     AccountName = payment.AccountName,
                                     AccountNo = payment.AccountNo,
-                                    Status = Status.Received,
+                                    Status = Status.ForClearing,
                                     OnlinePlatform = payment.OnlinePlatform,
                                     ReferenceNo = payment.ReferenceNo,
                                 };
@@ -477,6 +497,8 @@ public class AddNewPaymentTransaction : BaseApiController
 
                         foreach (var paymentItem in orderedPayments)
                         {
+                            string withholdingAttachmentUrl = null;
+                            string withholdingNumber = null;                            
 
                             if (paymentItem.PaymentMethod != PaymentMethods.Cash &&
                                 paymentItem.PaymentMethod != PaymentMethods.Online &&
@@ -489,6 +511,27 @@ public class AddNewPaymentTransaction : BaseApiController
                             {
                                 continue;
                             }
+
+                            if (payment.PaymentMethod == PaymentMethods.Withholding && payment.WithholdingAttachment != null)
+                            {
+                                if (payment.WithholdingAttachment.Length > 0)
+                                {
+                                    await using var stream = payment.WithholdingAttachment.OpenReadStream(); // Open the uploaded file stream
+
+                                    var attachmentsParams = new ImageUploadParams
+                                    {
+                                        File = new FileDescription(payment.WithholdingAttachment.FileName, stream), // Create file description
+                                        PublicId = payment.WithholdingAttachment.FileName // Use the file name for Cloudinary ID
+                                    };
+
+                                    var attachmentsUploadResult = await _cloudinary.UploadAsync(attachmentsParams); // Upload file to Cloudinary
+
+                                    // Store the uploaded file URL and withholding number
+                                    withholdingAttachmentUrl = attachmentsUploadResult.SecureUrl.ToString();
+                                    withholdingNumber = payment.WithholdingNo;
+                                }
+                            }
+
 
                             currentPayment = paymentItem; 
                             decimal currentPaymentAmount = currentPayment.PaymentAmount;
@@ -513,9 +556,11 @@ public class AddNewPaymentTransaction : BaseApiController
                                 ChequeAmount = currentPayment.ChequeAmount,
                                 AccountName = currentPayment.AccountName,
                                 AccountNo = currentPayment.AccountNo,
-                                Status = Status.Received,
+                                Status = Status.ForClearing,
                                 OnlinePlatform = currentPayment.OnlinePlatform,
-                                ReferenceNo = transaction.InvoiceNo
+                                ReferenceNo = transaction.InvoiceNo,
+                                WithholdingAttachment = withholdingAttachmentUrl,
+                                WithholdingNo = withholdingNumber
                             };
 
                             await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
