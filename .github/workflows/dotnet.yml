@@ -57,7 +57,7 @@ jobs:
             git push --force --quiet origin master:deploy
           elif [ "${{ github.ref }}" = "refs/heads/development" ]; then
               # Deploy to 'deploy-dev' folder for development branch changes
-            mkdir deploy-dev
+            mkdir deploy
             cp -R ./RDF.Arcana.API/bin/Release/net7.0/publish deploy/
             cd deploy
             git init
