@@ -41,7 +41,7 @@ builder.Services.AddControllers(
         options.Filters.Add(new AuthorizeFilter(policy));
     }
 ).AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
-//
+
 // builder.Services.AddControllers().AddFluentValidation(UpdateUser
 
 //builder.Services.AddDatabaseConfiguration(builder.Configuration, builder.Environment.EnvironmentName);
