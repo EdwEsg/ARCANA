@@ -25,6 +25,7 @@ public class PaymentTransaction : BaseEntity
     public string Reason { get; set; }
     public string WithholdingAttachment { get; set; }
     public string WithholdingNo { get; set; }
+    public string InvoiceAttachment { get; set; }
 
 
 

@@ -9,6 +9,7 @@ public static class PaymentMethods
     public const string OffSet = "Offset";
     public const string Cheque = "Cheque";
     public const string Withholding = "Withholding";
+    public const string Others = "others";
 
     public const string GCash = "GCash";
     public const string PayMaya = "PayMaya";

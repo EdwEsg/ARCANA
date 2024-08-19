@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using System.Transactions;
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Mvc;
@@ -54,6 +55,8 @@ public class AddNewPaymentTransaction : BaseApiController
             public string ReferenceNo { get; set; }
             public string WithholdingNo { get; set; }
             public IFormFile WithholdingAttachment { get; set; }
+            public IFormFile  InvoiceAttachment{ get; set; }
+
         }
     
     }
@@ -167,7 +170,9 @@ public class AddNewPaymentTransaction : BaseApiController
                     }
 
                     decimal paymentAmount = payment.PaymentAmount;
-                     
+
+                    string invoiceAttachmentUrl = null;
+
 
 
 
@@ -197,6 +202,23 @@ public class AddNewPaymentTransaction : BaseApiController
                             payment.PaymentAmount = remainingBalance;
                         }
 
+
+                        if (payment.InvoiceAttachment.Length > 0)
+                        {
+                            await using var stream = payment.InvoiceAttachment.OpenReadStream(); // Open the uploaded file stream
+
+                            var attachmentsParams = new ImageUploadParams
+                            {
+                                File = new FileDescription(payment.InvoiceAttachment.FileName, stream), // Create file description
+                                PublicId = payment.InvoiceAttachment.FileName // Use the file name for Cloudinary ID
+                            };
+
+                            var attachmentsUploadResult = await _cloudinary.UploadAsync(attachmentsParams); // Upload file to Cloudinary
+
+                            // Store the uploaded file URL and withholding number
+                            invoiceAttachmentUrl = attachmentsUploadResult.SecureUrl.ToString();
+                        }
+
                         var paymentTransaction = new PaymentTransaction
                         {
                             TransactionId = transaction.Id,
@@ -216,6 +238,7 @@ public class AddNewPaymentTransaction : BaseApiController
                             Status = Status.ForClearing,
                             OnlinePlatform = payment.OnlinePlatform,
                             ReferenceNo = payment.ChequeNo,
+                            InvoiceAttachment = invoiceAttachmentUrl
                         };
 
                         await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
@@ -286,7 +309,7 @@ public class AddNewPaymentTransaction : BaseApiController
                                 x.IsActive &&
                                 x.Status == Status.Approved &&
                                 x.Total > 0)
-                            .OrderBy(x => x.CratedAt) // Assuming FIFO, order by CreatedAt or another appropriate property
+                            .OrderBy(x => x.CratedAt) 
                             .ToListAsync(cancellationToken);
 
                         // Sum the payment amount for ListingFee
@@ -316,6 +339,23 @@ public class AddNewPaymentTransaction : BaseApiController
                                 decimal paymentAmountForTransaction = Math.Min(currentTransaction.TransactionSales.RemainingBalance, amountToPayListingFee);
                                 paymentAmountForTransaction = Math.Min(paymentAmountForTransaction, listingFee.Total);
 
+
+                                if (payment.InvoiceAttachment.Length > 0)
+                                {
+                                    await using var stream = payment.InvoiceAttachment.OpenReadStream(); // Open the uploaded file stream
+
+                                    var attachmentsParams = new ImageUploadParams
+                                    {
+                                        File = new FileDescription(payment.InvoiceAttachment.FileName, stream), // Create file description
+                                        PublicId = payment.InvoiceAttachment.FileName // Use the file name for Cloudinary ID
+                                    };
+
+                                    var attachmentsUploadResult = await _cloudinary.UploadAsync(attachmentsParams); // Upload file to Cloudinary
+
+                                    // Store the uploaded file URL and withholding number
+                                    invoiceAttachmentUrl = attachmentsUploadResult.SecureUrl.ToString();
+                                }
+
                                 // Create payment transaction
                                 var paymentTransaction = new PaymentTransaction
                                 {
@@ -336,6 +376,7 @@ public class AddNewPaymentTransaction : BaseApiController
                                     Status = Status.ForClearing,
                                     OnlinePlatform = payment.OnlinePlatform,
                                     ReferenceNo = payment.ReferenceNo,
+                                    InvoiceAttachment = invoiceAttachmentUrl
                                 };
 
                                 await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
@@ -367,6 +408,135 @@ public class AddNewPaymentTransaction : BaseApiController
                         }
 
                         payment.PaymentAmount = amountToPayListingFee;
+                        await _context.SaveChangesAsync(cancellationToken);
+                    }
+
+
+
+
+
+
+
+
+
+
+
+
+                    if (payment.PaymentMethod.ToLower() == PaymentMethods.Others)
+                    {
+                        // Get client IDs for each transaction
+                        var transactionClientIds = await _context.Transactions
+                            .Where(t => request.TransactionId.Contains(t.Id))
+                            .Select(t => t.ClientId)
+                            .Distinct()
+                            .ToListAsync(cancellationToken);
+
+                        // Get other for each client
+                        var others = await _context.Expenses
+                            .Where(x =>
+                                transactionClientIds.Contains(x.ClientId) &&
+                                x.IsActive &&
+                                x.Status == Status.Approved &&
+                                x.Total > 0)
+                            .OrderBy(x => x.CreatedAt)
+                            .ToListAsync(cancellationToken);
+
+                        // Sum the payment amount for Others
+                        var amountToPayOthers = request.Payments
+                            .Where(pm => pm.PaymentMethod == PaymentMethods.Others)
+                            .Sum(pa => pa.PaymentAmount);
+
+                        foreach (var currentTransactionId in orderedTransactions)
+                        {
+                            var currentTransaction = await _context.Transactions
+                                .Include(t => t.TransactionSales)
+                                .FirstOrDefaultAsync(t => t.Id == currentTransactionId, cancellationToken);
+
+                            if (currentTransaction == null)
+                            {
+                                continue;
+                            }
+
+                            while (currentTransaction.TransactionSales.RemainingBalance > 0 && amountToPayOthers > 0)
+                            {
+                                var other = others.FirstOrDefault(x => x.ClientId == currentTransaction.ClientId && x.Total > 0);
+                                if (other == null)
+                                {
+                                    break; // No more listing fees available
+                                }
+
+                                decimal paymentAmountForTransaction = Math.Min(currentTransaction.TransactionSales.RemainingBalance, amountToPayOthers);
+                                paymentAmountForTransaction = Math.Min(paymentAmountForTransaction, other.Total);
+
+
+                                if (payment.InvoiceAttachment.Length > 0)
+                                {
+                                    await using var stream = payment.InvoiceAttachment.OpenReadStream(); // Open the uploaded file stream
+
+                                    var attachmentsParams = new ImageUploadParams
+                                    {
+                                        File = new FileDescription(payment.InvoiceAttachment.FileName, stream), // Create file description
+                                        PublicId = payment.InvoiceAttachment.FileName // Use the file name for Cloudinary ID
+                                    };
+
+                                    var attachmentsUploadResult = await _cloudinary.UploadAsync(attachmentsParams); // Upload file to Cloudinary
+
+                                    // Store the uploaded file URL and withholding number
+                                    invoiceAttachmentUrl = attachmentsUploadResult.SecureUrl.ToString();
+                                }
+
+                                // Create payment transaction
+                                var paymentTransaction = new PaymentTransaction
+                                {
+                                    TransactionId = currentTransaction.Id,
+                                    AddedBy = request.AddedBy,
+                                    PaymentRecordId = paymentRecord.Id,
+                                    PaymentMethod = payment.PaymentMethod,
+                                    PaymentAmount = paymentAmountForTransaction,
+                                    TotalAmountReceived = payment.TotalAmountReceived,
+                                    Payee = payment.Payee,
+                                    ChequeDate = payment.ChequeDate,
+                                    BankName = payment.BankName,
+                                    ChequeNo = payment.ChequeNo,
+                                    DateReceived = DateTime.Now,
+                                    ChequeAmount = payment.ChequeAmount,
+                                    AccountName = payment.AccountName,
+                                    AccountNo = payment.AccountNo,
+                                    Status = Status.ForClearing,
+                                    OnlinePlatform = payment.OnlinePlatform,
+                                    ReferenceNo = payment.ReferenceNo,
+                                    InvoiceAttachment = invoiceAttachmentUrl
+                                };
+
+                                await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
+
+                                amountToPayOthers -= paymentAmountForTransaction;
+                                currentTransaction.TransactionSales.RemainingBalance -= paymentAmountForTransaction;
+                                other.Total -= paymentAmountForTransaction;
+
+                                if (other.Total <= 0)
+                                {
+                                    other.Total = 0;
+                                    others.Remove(other);
+                                }
+
+                                currentTransaction.Status = currentTransaction.TransactionSales.RemainingBalance <= 0 ? Status.Paid : Status.Pending;
+
+                                await _context.SaveChangesAsync(cancellationToken);
+
+                                if (currentTransaction.TransactionSales.RemainingBalance <= 0)
+                                {
+                                    break;
+                                }
+                            }
+
+                            if (amountToPayOthers <= 0)
+                            {
+                                break; // No more funds available
+                            }
+                        }
+
+                        payment.PaymentAmount = amountToPayOthers;
                         await _context.SaveChangesAsync(cancellationToken);
                     }
 
@@ -426,6 +596,23 @@ public class AddNewPaymentTransaction : BaseApiController
                                 decimal paymentAmountForTransaction = Math.Min(currentTransaction.TransactionSales.RemainingBalance, amountToPayAdvancePayment);
                                 paymentAmountForTransaction = Math.Min(paymentAmountForTransaction, advancePayment.RemainingBalance);
 
+
+                                if (payment.InvoiceAttachment.Length > 0)
+                                {
+                                    await using var stream = payment.InvoiceAttachment.OpenReadStream(); // Open the uploaded file stream
+
+                                    var attachmentsParams = new ImageUploadParams
+                                    {
+                                        File = new FileDescription(payment.InvoiceAttachment.FileName, stream), // Create file description
+                                        PublicId = payment.InvoiceAttachment.FileName // Use the file name for Cloudinary ID
+                                    };
+
+                                    var attachmentsUploadResult = await _cloudinary.UploadAsync(attachmentsParams); // Upload file to Cloudinary
+
+                                    // Store the uploaded file URL and withholding number
+                                    invoiceAttachmentUrl = attachmentsUploadResult.SecureUrl.ToString();
+                                }
+
                                 // Create payment transaction
                                 var paymentTransaction = new PaymentTransaction
                                 {
@@ -446,6 +633,7 @@ public class AddNewPaymentTransaction : BaseApiController
                                     Status = Status.ForClearing,
                                     OnlinePlatform = payment.OnlinePlatform,
                                     ReferenceNo = payment.ReferenceNo,
+                                    InvoiceAttachment = invoiceAttachmentUrl
                                 };
 
                                 await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
@@ -540,6 +728,26 @@ public class AddNewPaymentTransaction : BaseApiController
                             decimal paymentToApply = currentPaymentAmount <= remainingToPay ? currentPaymentAmount : remainingToPay;
                             remainingToPay -= paymentToApply;
 
+
+
+
+                            if (payment.InvoiceAttachment.Length > 0)
+                            {
+                                await using var stream = payment.InvoiceAttachment.OpenReadStream(); // Open the uploaded file stream
+
+                                var attachmentsParams = new ImageUploadParams
+                                {
+                                    File = new FileDescription(payment.InvoiceAttachment.FileName, stream), // Create file description
+                                    PublicId = payment.InvoiceAttachment.FileName // Use the file name for Cloudinary ID
+                                };
+
+                                var attachmentsUploadResult = await _cloudinary.UploadAsync(attachmentsParams); // Upload file to Cloudinary
+
+                                // Store the uploaded file URL and withholding number
+                                invoiceAttachmentUrl = attachmentsUploadResult.SecureUrl.ToString();
+                            }
+
+
                             var paymentTransaction = new PaymentTransaction
                             {
                                 TransactionId = transaction.Id,
@@ -560,7 +768,8 @@ public class AddNewPaymentTransaction : BaseApiController
                                 OnlinePlatform = currentPayment.OnlinePlatform,
                                 ReferenceNo = transaction.InvoiceNo,
                                 WithholdingAttachment = withholdingAttachmentUrl,
-                                WithholdingNo = withholdingNumber
+                                WithholdingNo = withholdingNumber,
+                                InvoiceAttachment = invoiceAttachmentUrl
                             };
 
                             await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
@@ -574,6 +783,8 @@ public class AddNewPaymentTransaction : BaseApiController
                             excessAmount = currentPayment.PaymentAmount;
 
                             await _context.SaveChangesAsync(cancellationToken);
+
+                            invoiceAttachmentUrl = null;
 
                             if (remainingToPay <= 0)
                             {
