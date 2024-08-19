@@ -150,7 +150,7 @@ public class GetTransactionById : ControllerBase
                 ZeroRatedSales = existingTransaction.TransactionSales.ZeroRatedSales,
                 VatAmount = existingTransaction.TransactionSales.VatAmount,
                 DiscountPercentage = existingTransaction.TransactionSales.Discount + 
-                                     existingTransaction.TransactionSales.SpecialDiscount,
+                                      existingTransaction.TransactionSales.SpecialDiscount,
 
                 Remarks = existingTransaction.TransactionSales.Remarks,
                 Tin = existingTransaction.Client.TinNumber
