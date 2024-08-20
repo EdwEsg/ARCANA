@@ -48,6 +48,7 @@ public class DirectRegistrationCommand : IRequest<Result>
     public IFormFile PhotoProof { get; set; }
     public IFormFile ESignature { get; set; }
     public List<UpdateFreebie> Freebies { get; set; }
+    public string WithholdingIssuance { get; set; }
 
     public class FixedDiscounts
     {
@@ -174,9 +175,9 @@ public class Handler : IRequestHandler<DirectRegistrationCommand, Result>
             throw new TermsNotFoundException(request.TermsId);
 
         if (existingClient != null)
-            return ClientErrors.AlreadyExist(
-                    existingClient.Fullname
-                    );
+            return ClientErrors.AlreadyExist(existingClient.Fullname );
+
+
         {
             var clientFreebies = new List<DirectRegisterResult.FreebieItem>();
             var freebiesResult = new DirectRegisterResult.Freebie(); 
@@ -273,7 +274,8 @@ public class Handler : IRequestHandler<DirectRegistrationCommand, Result>
                 TermsId = request.TermsId,
                 CreditLimit = request.CreditLimit,
                 TermDaysId = request.TermDaysId,
-                AddedBy = request.AddedBy
+                AddedBy = request.AddedBy,
+                WithholdingIssuance = request.WithholdingIssuance
             };
             _context.TermOptions.Add(termsOptions);
 

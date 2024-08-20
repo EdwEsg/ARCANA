@@ -13,7 +13,8 @@ namespace RDF.Arcana.API.Domain
         public Clients Clients { get; set; }
         public User AddedByUser { get; set; }
         public TermDays TermDays { get; set; }
-        public Terms
-            Terms { get; set; }
+        public Terms Terms { get; set; }
+
+        public string WithholdingIssuance { get; set; }
     }
 }
