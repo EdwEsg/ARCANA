@@ -55,7 +55,7 @@ public class AddNewPaymentTransaction : BaseApiController
             public string ReferenceNo { get; set; }
             public string WithholdingNo { get; set; }
             public IFormFile WithholdingAttachment { get; set; }
-            public IFormFile  InvoiceAttachment{ get; set; }
+            public IFormFile  InvoiceAttachment{ get; set; } //receipt
 
         }
     
@@ -814,5 +814,3 @@ public class AddNewPaymentTransaction : BaseApiController
         }
     }
 }
-
-//try push req. 8/20/24

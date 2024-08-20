@@ -94,6 +94,8 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
                 public decimal ChequeAmount { get; set; }
                 public string AccountName { get; set; }
                 public string AccountNo { get; set; }
+                public string InvoiceAttachment { get; set; }
+                public string WithholdingAttachment { get; set; }
             }
         }
 
@@ -198,7 +200,9 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
                         DateReceived = pt.DateReceived,
                         ChequeAmount = pt.ChequeAmount,
                         AccountName = pt.AccountName,
-                        AccountNo = pt.AccountNo
+                        AccountNo = pt.AccountNo,
+                        InvoiceAttachment = pt.InvoiceAttachment,
+                        WithholdingAttachment = pt.WithholdingAttachment
                     }).ToList()
                 }).OrderByDescending(r => r.BusinessName);
 

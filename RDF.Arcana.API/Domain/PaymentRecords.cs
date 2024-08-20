@@ -1,4 +1,5 @@
-﻿using RDF.Arcana.API.Common;
+﻿using MySqlX.XDevAPI;
+using RDF.Arcana.API.Common;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace RDF.Arcana.API.Domain
@@ -12,9 +13,11 @@ namespace RDF.Arcana.API.Domain
         public bool IsActive { get; set; } = true;
         public string Status { get; set; }
         public string Reason { get; set; }
-        
+        public int? ClientId { get; set; }
+
         public virtual User AddedByUser { get; set; }
         public virtual User ModifiedByUser { get; set; }
         public virtual ICollection<PaymentTransaction> PaymentTransactions { get; set; }
+        public virtual Clients Client { get; set; }
     }
 }

@@ -73,6 +73,7 @@ public class GetAllForClearingTransaction : ControllerBase
         public DateTime Date { get; set; }
         public ICollection<Invoice> Invoices { get; set; }
         public string ATag { get; set; }
+        public string BusinessName { get; set; }
         public class Invoice
 		{
 			public string InvoiceNo { get; set; }
@@ -97,6 +98,7 @@ public class GetAllForClearingTransaction : ControllerBase
                 .ThenInclude(x => x.Transaction)
                 .Include(x => x.PaymentTransactions)
                 .ThenInclude(x => x.ClearedPayment)
+                .Include(x => x.Client)
                 .Where(x => x.PaymentTransactions.Any(x => x.Status.Contains(request.Status)));
 
             if (!string.IsNullOrEmpty(request.Search))
@@ -107,9 +109,10 @@ public class GetAllForClearingTransaction : ControllerBase
 
             var groupedResults = paymentTransactions
                 .SelectMany(x => x.PaymentTransactions)
-                .GroupBy(pt => new { pt.PaymentMethod, pt.ReferenceNo, pt.BankName, pt.ClearedPayment.ATag })
+                .GroupBy(pt => new { pt.PaymentMethod, pt.ReferenceNo, pt.BankName, pt.PaymentRecord.Client.BusinessName, pt.ClearedPayment.ATag })
                 .Select(g => new GetAllForClearingTransactionResult
                 {
+                    BusinessName = g.Key.BusinessName,
                     PaymentMethod = g.Key.PaymentMethod,
                     PaymentChannel = g.Key.BankName,
                     ReferenceNo = g.Key.ReferenceNo,
