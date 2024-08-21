@@ -137,7 +137,8 @@ public class GetAllExpenses : ControllerBase
             .Include(er => er.ExpensesRequests)
             .ThenInclude(oe => oe.OtherExpense)
             .Include(rq => rq.Request)
-            .Include(rq => rq.AddedByUser);
+            .Include(rq => rq.AddedByUser)
+            .Where(t => t.Total > 0);
 
             var userClusters = await _context.CdoClusters.FirstOrDefaultAsync(x => x.UserId == request.AccessBy, cancellationToken);
 
@@ -208,7 +209,7 @@ public class GetAllExpenses : ControllerBase
                     Amount = er.Amount,
                     IsOneTime = er.IsOneTime,
                 }),
-                TotalAmount = oe.ExpensesRequests.Sum(er => er.Amount),
+                TotalAmount = oe.Total,
                 Requestor = oe.AddedByUser.Fullname,
                 RequestorMobileNumber = oe.AddedByUser.MobileNumber,
                 CurrentApprover = oe.Request.CurrentApprover.Fullname,

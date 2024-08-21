@@ -109,7 +109,8 @@ public class AddNewPaymentTransaction : BaseApiController
             {
                 AddedBy = request.AddedBy,
                 ModifiedBy = request.AddedBy,
-                Status = Status.ForClearing
+                Status = Status.ForClearing,
+                ClientId = _context.Transactions.FirstOrDefault(tr => tr.Id == request.TransactionId.FirstOrDefault())?.ClientId
             };
 
             await _context.PaymentRecords.AddAsync(paymentRecord, cancellationToken);
@@ -422,7 +423,7 @@ public class AddNewPaymentTransaction : BaseApiController
 
 
 
-                    if (payment.PaymentMethod.ToLower() == PaymentMethods.Others)
+                    if (payment.PaymentMethod == PaymentMethods.Others)
                     {
                         // Get client IDs for each transaction
                         var transactionClientIds = await _context.Transactions
