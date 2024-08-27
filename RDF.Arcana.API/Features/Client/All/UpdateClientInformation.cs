@@ -95,6 +95,7 @@ public class UpdateClientInformation : ControllerBase
         public string Longitude { get; set; }
         public string Latitude { get; set; }
         public int UpdatedBy { get; set; }
+        public string WithholdingIssuance { get; set; }
         public FixedDiscountToUpdate FixedDiscount { get; set; }
         
         public class ModeOfPayment
@@ -429,6 +430,17 @@ public class UpdateClientInformation : ControllerBase
                
 
             }
+
+            var termsOptions = new TermOptions
+            {
+                TermsId = request.TermsId,
+                CreditLimit = request.CreditLimit,
+                TermDaysId = request.TermDaysId,
+                //AddedBy = request.AddedBy,
+                WithholdingIssuance = request.WithholdingIssuance
+            };
+            //_context.TermOptions.Add(termsOptions);
+
 
             if (request.FixedDiscount.DiscountPercentage.HasValue)
             {

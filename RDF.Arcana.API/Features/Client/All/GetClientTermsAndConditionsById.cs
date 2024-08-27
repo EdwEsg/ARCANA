@@ -58,6 +58,7 @@ public class GetClientTermsAndConditionsById : ControllerBase
         public string TypeOfCustomer { get; set; }
         public bool? DirectDelivery { get; set; }
         public string BookingCoverage { get; set; }
+        public string WithholdingIssuance { get; set; }
         public FixedDiscounts FixedDiscount { get; set; }
         public IEnumerable<ModeOfPayments> ModeofPayments { get; set; }
 
@@ -92,6 +93,9 @@ public class GetClientTermsAndConditionsById : ControllerBase
                 .ThenInclude(x => x.Terms)
                 .Include(x => x.Term)
             .ThenInclude(tt => tt.TermDays)
+            .Include(t => t.Term)
+            .ThenInclude(ts => ts.Terms)
+            .ThenInclude(to => to.TermOptions)
             .FirstOrDefaultAsync(x => x.Id == request.ClientId && x.RegistrationStatus != Status.Requested);
 
             if(termsAndConditions is null)
@@ -111,6 +115,7 @@ public class GetClientTermsAndConditionsById : ControllerBase
                 Freezer = termsAndConditions.Freezer?.AssetTag,
                 TypeOfCustomer =termsAndConditions.CustomerType,
                 VariableDiscount = termsAndConditions.VariableDiscount,
+                WithholdingIssuance = termsAndConditions.Term.Terms.TermOptions.First().WithholdingIssuance,
                 FixedDiscount = termsAndConditions.FixedDiscounts != null
                 ? new ClientTermsAndCondition.FixedDiscounts
                 {
