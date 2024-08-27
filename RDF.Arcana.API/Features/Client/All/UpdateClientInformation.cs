@@ -159,6 +159,9 @@ public class UpdateClientInformation : ControllerBase
                 .Include(ex => ex.Expenses)
                 .ThenInclude(rq => rq.Request)
                 .ThenInclude(ap => ap.Approvals)
+                .Include(t => t.Term)
+                .ThenInclude(ts => ts.Terms)
+                .ThenInclude(to => to.TermOptions)
                 .FirstOrDefaultAsync(client => client.Id == request.ClientId, cancellationToken);
 
             
@@ -431,15 +434,17 @@ public class UpdateClientInformation : ControllerBase
 
             }
 
-            var termsOptions = new TermOptions
-            {
-                TermsId = request.TermsId,
-                CreditLimit = request.CreditLimit,
-                TermDaysId = request.TermDaysId,
-                //AddedBy = request.AddedBy,
-                WithholdingIssuance = request.WithholdingIssuance
-            };
-            //_context.TermOptions.Add(termsOptions);
+            var termsOptions = await _context.TermOptions
+        .FirstOrDefaultAsync(to => to.TermsId == request.TermsId, cancellationToken);
+
+            termsOptions.CreditLimit = request.CreditLimit;
+            termsOptions.TermDaysId = request.TermDaysId;
+            termsOptions.WithholdingIssuance = request.WithholdingIssuance;
+
+            _context.TermOptions.Update(termsOptions);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            existingClient.Terms = termsOptions.Id;
 
 
             if (request.FixedDiscount.DiscountPercentage.HasValue)
