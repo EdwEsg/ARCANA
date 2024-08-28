@@ -109,7 +109,7 @@ public class GetAllForClearingTransaction : ControllerBase
 
             var groupedResults = paymentTransactions
                 .SelectMany(x => x.PaymentTransactions)
-                .GroupBy(pt => new { pt.PaymentMethod, pt.ReferenceNo, pt.BankName, pt.PaymentRecord.Client.BusinessName, pt.ClearedPayment.ATag })
+                .GroupBy(pt => new { pt.PaymentMethod, pt.ReferenceNo, pt.BankName, pt.PaymentRecord.Client.BusinessName, pt.ClearedPayment.ATag, pt.ClearedPayment.Reason })
                 .Select(g => new GetAllForClearingTransactionResult
                 {
                     BusinessName = g.Key.BusinessName,
@@ -119,6 +119,7 @@ public class GetAllForClearingTransaction : ControllerBase
                     TotalPaymentAmount = g.Sum(pt => pt.PaymentAmount),
                     Date = g.Max(pt => pt.DateReceived),
                     ATag = g.Key.ATag,
+                    Reason = g.Key.Reason,
                     Invoices = g.Select(x => new GetAllForClearingTransactionResult.Invoice
                     {
                         InvoiceNo = x.Transaction.InvoiceNo

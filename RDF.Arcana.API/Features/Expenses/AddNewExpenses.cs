@@ -177,7 +177,11 @@ public class AddNewExpenses : ControllerBase
                     OtherExpenseId = expense.OtherExpenseId,
                     Remarks = expense.Remarks,
                     Amount = expense.Amount,
-                    IsOneTime = expense.IsOneTime
+                    IsOneTime = expense.IsOneTime,
+                    RemainingBalance = expense.Amount,
+                    Status = newExpenses.Status,
+                    ClientId = request.ClientId,
+
                 };
 
                 await _context.ExpensesRequests.AddAsync(newExpensesRequest, cancellationToken);

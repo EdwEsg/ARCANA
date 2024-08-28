@@ -56,6 +56,7 @@ public class AddNewPaymentTransaction : BaseApiController
             public string WithholdingNo { get; set; }
             public IFormFile WithholdingAttachment { get; set; }
             public IFormFile  InvoiceAttachment{ get; set; } //receipt
+            public int OthersPayment { get; set; }
 
         }
     
@@ -540,6 +541,46 @@ public class AddNewPaymentTransaction : BaseApiController
                         payment.PaymentAmount = amountToPayOthers;
                         await _context.SaveChangesAsync(cancellationToken);
                     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    if (payment.PaymentMethod == PaymentMethods.Others)
+                    {
+                        // Get client IDs for each transaction
+                        var transactionClientIds = await _context.Transactions
+                            .Where(t => request.TransactionId.Contains(t.Id))
+                            .Select(t => t.ClientId)
+                            .Distinct()
+                            .ToListAsync(cancellationToken);
+
+                        // Get other for each client
+                        var others = await _context.ExpensesRequests
+                            .Where(x =>
+                                transactionClientIds.Contains(x.ClientId) &&
+                                x.Status == Status.Approved &&
+                                x.RemainingBalance > 0 &&
+                                x.OtherExpenseId == payment.OthersPayment)
+                            .OrderBy(x => x.CreatedAt)
+                            .ToListAsync(cancellationToken);
+
+                        // Sum the payment amount for Others
+                        var amountToPayOthers = request.Payments
+                            .Where(pm => pm.PaymentMethod == PaymentMethods.Others)
+                            .Sum(pa => pa.PaymentAmount);
+                    }
+
+
+
 
 
 

@@ -40,8 +40,9 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
 			public string ModeOfPayment { get; set; }
 			public ICollection<Transaction> Transactions { get; set; }
 			public decimal? AdvancePaymentAmount { get; set; }
+            public string Reason { get; set; }
 
-			public class Transaction
+            public class Transaction
 			{
                 public int PaymentTransactionId { get; set; }
                 public string InvoiceType { get; set; }
@@ -94,7 +95,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
 
 				// Perform the grouping and projection in memory
 				var paymentOverview = paymentTransactions
-					.GroupBy(pt => new { pt.PaymentMethod, pt.ReferenceNo, pt.BankName, pt.ChequeDate, pt.AddedByUser })
+					.GroupBy(pt => new { pt.PaymentMethod, pt.ReferenceNo, pt.BankName, pt.ChequeDate, pt.AddedByUser, pt.Reason })
 					.Select(g => new GetPaymentOverviewResponse
 					{
 						PaymentMethod = g.Key.PaymentMethod,
@@ -103,6 +104,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
 						AddedBy = g.Key.AddedByUser.Fullname,
 						TotalAmount = g.Sum(pt => pt.PaymentAmount),
 						ModeOfPayment = g.Key.PaymentMethod,
+						Reason = g.Key.Reason,
 						Transactions = g.Select(pt => new GetPaymentOverviewResponse.Transaction
 						{
 							PaymentTransactionId = pt.Id,

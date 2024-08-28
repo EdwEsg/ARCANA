@@ -11,7 +11,11 @@ public class ExpensesRequest : BaseEntity
     public string Remarks { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
+    public string Status { get; set; }
+    public decimal RemainingBalance { get; set; }
+    public int ClientId { get; set; }
 
     public virtual Expenses Expenses { get; set; }
     public virtual OtherExpenses OtherExpense { get; set; }
+    public virtual Clients Client { get; set; }
 }

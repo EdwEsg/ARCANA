@@ -69,6 +69,7 @@ public class ApproveExpense : ControllerBase
         {
             var expenses = await _context.Requests
                 .Include(e => e.Expenses)
+                .ThenInclude(er => er.ExpensesRequests)
                 .Where(lf => lf.Id == request.RequestId)
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -118,7 +119,12 @@ public class ApproveExpense : ControllerBase
             {
                 expenses.Status = Status.Approved;
                 expenses.Expenses.Status = Status.Approved;
+                foreach (var exp in expenses.Expenses.ExpensesRequests)
+                {
+                    exp.Status = Status.Approved;
+                }
                 expenses.NextApproverId = null;
+
                 
                 var notificationForApprover = new Domain.Notification
                 {
