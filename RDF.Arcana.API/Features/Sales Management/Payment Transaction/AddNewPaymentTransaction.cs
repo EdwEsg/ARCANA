@@ -424,123 +424,123 @@ public class AddNewPaymentTransaction : BaseApiController
 
 
 
-                    if (payment.PaymentMethod == PaymentMethods.Others)
-                    {
-                        // Get client IDs for each transaction
-                        var transactionClientIds = await _context.Transactions
-                            .Where(t => request.TransactionId.Contains(t.Id))
-                            .Select(t => t.ClientId)
-                            .Distinct()
-                            .ToListAsync(cancellationToken);
+                    //if (payment.PaymentMethod == PaymentMethods.Others)
+                    //{
+                    //    // Get client IDs for each transaction
+                    //    var transactionClientIds = await _context.Transactions
+                    //        .Where(t => request.TransactionId.Contains(t.Id))
+                    //        .Select(t => t.ClientId)
+                    //        .Distinct()
+                    //        .ToListAsync(cancellationToken);
 
-                        // Get other for each client
-                        var others = await _context.Expenses
-                            .Where(x =>
-                                transactionClientIds.Contains(x.ClientId) &&
-                                x.IsActive &&
-                                x.Status == Status.Approved &&
-                                x.Total > 0)
-                            .OrderBy(x => x.CreatedAt)
-                            .ToListAsync(cancellationToken);
+                    //    // Get other for each client
+                    //    var others = await _context.Expenses
+                    //        .Where(x =>
+                    //            transactionClientIds.Contains(x.ClientId) &&
+                    //            x.IsActive &&
+                    //            x.Status == Status.Approved &&
+                    //            x.Total > 0)
+                    //        .OrderBy(x => x.CreatedAt)
+                    //        .ToListAsync(cancellationToken);
 
-                        // Sum the payment amount for Others
-                        var amountToPayOthers = request.Payments
-                            .Where(pm => pm.PaymentMethod == PaymentMethods.Others)
-                            .Sum(pa => pa.PaymentAmount);
+                    //    // Sum the payment amount for Others
+                    //    var amountToPayOthers = request.Payments
+                    //        .Where(pm => pm.PaymentMethod == PaymentMethods.Others)
+                    //        .Sum(pa => pa.PaymentAmount);
 
-                        foreach (var currentTransactionId in orderedTransactions)
-                        {
-                            var currentTransaction = await _context.Transactions
-                                .Include(t => t.TransactionSales)
-                                .FirstOrDefaultAsync(t => t.Id == currentTransactionId, cancellationToken);
+                    //    foreach (var currentTransactionId in orderedTransactions)
+                    //    {
+                    //        var currentTransaction = await _context.Transactions
+                    //            .Include(t => t.TransactionSales)
+                    //            .FirstOrDefaultAsync(t => t.Id == currentTransactionId, cancellationToken);
 
-                            if (currentTransaction == null)
-                            {
-                                continue;
-                            }
+                    //        if (currentTransaction == null)
+                    //        {
+                    //            continue;
+                    //        }
 
-                            while (currentTransaction.TransactionSales.RemainingBalance > 0 && amountToPayOthers > 0)
-                            {
-                                var other = others.FirstOrDefault(x => x.ClientId == currentTransaction.ClientId && x.Total > 0);
-                                if (other == null)
-                                {
-                                    break; // No more listing fees available
-                                }
+                    //        while (currentTransaction.TransactionSales.RemainingBalance > 0 && amountToPayOthers > 0)
+                    //        {
+                    //            var other = others.FirstOrDefault(x => x.ClientId == currentTransaction.ClientId && x.Total > 0);
+                    //            if (other == null)
+                    //            {
+                    //                break; // No more listing fees available
+                    //            }
 
-                                decimal paymentAmountForTransaction = Math.Min(currentTransaction.TransactionSales.RemainingBalance, amountToPayOthers);
-                                paymentAmountForTransaction = Math.Min(paymentAmountForTransaction, other.Total);
+                    //            decimal paymentAmountForTransaction = Math.Min(currentTransaction.TransactionSales.RemainingBalance, amountToPayOthers);
+                    //            paymentAmountForTransaction = Math.Min(paymentAmountForTransaction, other.Total);
 
 
-                                if (payment.InvoiceAttachment.Length > 0)
-                                {
-                                    await using var stream = payment.InvoiceAttachment.OpenReadStream(); // Open the uploaded file stream
+                    //            if (payment.InvoiceAttachment.Length > 0)
+                    //            {
+                    //                await using var stream = payment.InvoiceAttachment.OpenReadStream(); // Open the uploaded file stream
 
-                                    var attachmentsParams = new ImageUploadParams
-                                    {
-                                        File = new FileDescription(payment.InvoiceAttachment.FileName, stream), // Create file description
-                                        PublicId = payment.InvoiceAttachment.FileName // Use the file name for Cloudinary ID
-                                    };
+                    //                var attachmentsParams = new ImageUploadParams
+                    //                {
+                    //                    File = new FileDescription(payment.InvoiceAttachment.FileName, stream), // Create file description
+                    //                    PublicId = payment.InvoiceAttachment.FileName // Use the file name for Cloudinary ID
+                    //                };
 
-                                    var attachmentsUploadResult = await _cloudinary.UploadAsync(attachmentsParams); // Upload file to Cloudinary
+                    //                var attachmentsUploadResult = await _cloudinary.UploadAsync(attachmentsParams); // Upload file to Cloudinary
 
-                                    // Store the uploaded file URL and withholding number
-                                    invoiceAttachmentUrl = attachmentsUploadResult.SecureUrl.ToString();
-                                }
+                    //                // Store the uploaded file URL and withholding number
+                    //                invoiceAttachmentUrl = attachmentsUploadResult.SecureUrl.ToString();
+                    //            }
 
-                                // Create payment transaction
-                                var paymentTransaction = new PaymentTransaction
-                                {
-                                    TransactionId = currentTransaction.Id,
-                                    AddedBy = request.AddedBy,
-                                    PaymentRecordId = paymentRecord.Id,
-                                    PaymentMethod = payment.PaymentMethod,
-                                    PaymentAmount = paymentAmountForTransaction,
-                                    TotalAmountReceived = payment.TotalAmountReceived,
-                                    Payee = payment.Payee,
-                                    ChequeDate = payment.ChequeDate,
-                                    BankName = payment.BankName,
-                                    ChequeNo = payment.ChequeNo,
-                                    DateReceived = DateTime.Now,
-                                    ChequeAmount = payment.ChequeAmount,
-                                    AccountName = payment.AccountName,
-                                    AccountNo = payment.AccountNo,
-                                    Status = Status.ForClearing,
-                                    OnlinePlatform = payment.OnlinePlatform,
-                                    ReferenceNo = payment.ReferenceNo,
-                                    InvoiceAttachment = invoiceAttachmentUrl
-                                };
+                    //            // Create payment transaction
+                    //            var paymentTransaction = new PaymentTransaction
+                    //            {
+                    //                TransactionId = currentTransaction.Id,
+                    //                AddedBy = request.AddedBy,
+                    //                PaymentRecordId = paymentRecord.Id,
+                    //                PaymentMethod = payment.PaymentMethod,
+                    //                PaymentAmount = paymentAmountForTransaction,
+                    //                TotalAmountReceived = payment.TotalAmountReceived,
+                    //                Payee = payment.Payee,
+                    //                ChequeDate = payment.ChequeDate,
+                    //                BankName = payment.BankName,
+                    //                ChequeNo = payment.ChequeNo,
+                    //                DateReceived = DateTime.Now,
+                    //                ChequeAmount = payment.ChequeAmount,
+                    //                AccountName = payment.AccountName,
+                    //                AccountNo = payment.AccountNo,
+                    //                Status = Status.ForClearing,
+                    //                OnlinePlatform = payment.OnlinePlatform,
+                    //                ReferenceNo = payment.ReferenceNo,
+                    //                InvoiceAttachment = invoiceAttachmentUrl
+                    //            };
 
-                                await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
+                    //            await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
 
-                                amountToPayOthers -= paymentAmountForTransaction;
-                                currentTransaction.TransactionSales.RemainingBalance -= paymentAmountForTransaction;
-                                other.Total -= paymentAmountForTransaction;
+                    //            amountToPayOthers -= paymentAmountForTransaction;
+                    //            currentTransaction.TransactionSales.RemainingBalance -= paymentAmountForTransaction;
+                    //            other.Total -= paymentAmountForTransaction;
 
-                                if (other.Total <= 0)
-                                {
-                                    other.Total = 0;
-                                    others.Remove(other);
-                                }
+                    //            if (other.Total <= 0)
+                    //            {
+                    //                other.Total = 0;
+                    //                others.Remove(other);
+                    //            }
 
-                                currentTransaction.Status = currentTransaction.TransactionSales.RemainingBalance <= 0 ? Status.Paid : Status.Pending;
+                    //            currentTransaction.Status = currentTransaction.TransactionSales.RemainingBalance <= 0 ? Status.Paid : Status.Pending;
 
-                                await _context.SaveChangesAsync(cancellationToken);
+                    //            await _context.SaveChangesAsync(cancellationToken);
 
-                                if (currentTransaction.TransactionSales.RemainingBalance <= 0)
-                                {
-                                    break;
-                                }
-                            }
+                    //            if (currentTransaction.TransactionSales.RemainingBalance <= 0)
+                    //            {
+                    //                break;
+                    //            }
+                    //        }
 
-                            if (amountToPayOthers <= 0)
-                            {
-                                break; // No more funds available
-                            }
-                        }
+                    //        if (amountToPayOthers <= 0)
+                    //        {
+                    //            break; // No more funds available
+                    //        }
+                    //    }
 
-                        payment.PaymentAmount = amountToPayOthers;
-                        await _context.SaveChangesAsync(cancellationToken);
-                    }
+                    //    payment.PaymentAmount = amountToPayOthers;
+                    //    await _context.SaveChangesAsync(cancellationToken);
+                    //}
 
 
 
@@ -575,8 +575,85 @@ public class AddNewPaymentTransaction : BaseApiController
 
                         // Sum the payment amount for Others
                         var amountToPayOthers = request.Payments
-                            .Where(pm => pm.PaymentMethod == PaymentMethods.Others)
+                            .Where(pm => pm.PaymentMethod == PaymentMethods.Others && others.Any(o => pm.OthersPayment == o.OtherExpenseId))
                             .Sum(pa => pa.PaymentAmount);
+
+                        foreach (var currentTransactionId in orderedTransactions)
+                        {
+                            var currentTransaction = await _context.Transactions
+                                .Include(t => t.TransactionSales)
+                                .FirstOrDefaultAsync(t => t.Id == currentTransactionId, cancellationToken);
+
+                            if (currentTransaction == null)
+                            {
+                                continue;
+                            }
+
+                            while (currentTransaction.TransactionSales.RemainingBalance > 0 && amountToPayOthers > 0)
+                            {
+                                var other = others.FirstOrDefault(x => x.ClientId == currentTransaction.ClientId && x.RemainingBalance > 0);
+                                if (other == null)
+                                {
+                                    break; // No more others available
+                                }
+
+                                decimal paymentAmountForTransaction = Math.Min(currentTransaction.TransactionSales.RemainingBalance, amountToPayOthers);
+                                paymentAmountForTransaction = Math.Min(paymentAmountForTransaction, other.RemainingBalance);
+
+                                
+
+                                // Create payment transaction
+                                var paymentTransaction = new PaymentTransaction
+                                {
+                                    TransactionId = currentTransaction.Id,
+                                    AddedBy = request.AddedBy,
+                                    PaymentRecordId = paymentRecord.Id,
+                                    PaymentMethod = payment.PaymentMethod,
+                                    PaymentAmount = paymentAmountForTransaction,
+                                    TotalAmountReceived = payment.TotalAmountReceived,
+                                    Payee = payment.Payee,
+                                    ChequeDate = payment.ChequeDate,
+                                    BankName = payment.BankName,
+                                    ChequeNo = payment.ChequeNo,
+                                    DateReceived = DateTime.Now,
+                                    ChequeAmount = payment.ChequeAmount,
+                                    AccountName = payment.AccountName,
+                                    AccountNo = payment.AccountNo,
+                                    Status = Status.ForClearing,
+                                    OnlinePlatform = payment.OnlinePlatform,
+                                    ReferenceNo = payment.ReferenceNo
+                                };
+
+                                await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
+
+                                amountToPayOthers -= paymentAmountForTransaction;
+                                currentTransaction.TransactionSales.RemainingBalance -= paymentAmountForTransaction;
+                                other.RemainingBalance -= paymentAmountForTransaction;
+
+                                if (other.RemainingBalance <= 0)
+                                {
+                                    other.RemainingBalance = 0;
+                                    others.Remove(other);
+                                }
+
+                                currentTransaction.Status = currentTransaction.TransactionSales.RemainingBalance <= 0 ? Status.Paid : Status.Pending;
+
+                                await _context.SaveChangesAsync(cancellationToken);
+
+                                if (currentTransaction.TransactionSales.RemainingBalance <= 0)
+                                {
+                                    break;
+                                }
+                            }
+
+                            if (amountToPayOthers <= 0)
+                            {
+                                break; // No more funds available
+                            }
+                        }
+
+                        payment.PaymentAmount = amountToPayOthers;
+                        await _context.SaveChangesAsync(cancellationToken);
                     }
 
 
@@ -589,7 +666,7 @@ public class AddNewPaymentTransaction : BaseApiController
 
 
 
-                    
+
 
 
                     if (payment.PaymentMethod == PaymentMethods.AdvancePayment)
