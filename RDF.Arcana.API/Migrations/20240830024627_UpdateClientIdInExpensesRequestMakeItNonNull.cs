@@ -6,18 +6,108 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace RDF.Arcana.API.Migrations
 {
     /// <inheritdoc />
-    public partial class AddClientIdInExpensesRequest : Migration
+    public partial class UpdateClientIdInExpensesRequestMakeItNonNull : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<int>(
+            migrationBuilder.AlterColumn<int>(
                 name: "client_id",
                 table: "expenses_requests",
                 type: "int",
-                nullable: true,
-                defaultValue: 0);
+                nullable: false,
+                oldClrType: typeof(int),
+                oldNullable: true);
 
+            migrationBuilder.UpdateData(
+                table: "booking_coverages",
+                keyColumn: "id",
+                keyValue: 1,
+                columns: new[] { "created_at", "updated_at" },
+                values: new object[] { new DateTime(2024, 8, 30, 10, 46, 24, 39, DateTimeKind.Local).AddTicks(8124), new DateTime(2024, 8, 30, 10, 46, 24, 39, DateTimeKind.Local).AddTicks(8125) });
+
+            migrationBuilder.UpdateData(
+                table: "booking_coverages",
+                keyColumn: "id",
+                keyValue: 2,
+                columns: new[] { "created_at", "updated_at" },
+                values: new object[] { new DateTime(2024, 8, 30, 10, 46, 24, 39, DateTimeKind.Local).AddTicks(8130), new DateTime(2024, 8, 30, 10, 46, 24, 39, DateTimeKind.Local).AddTicks(8131) });
+
+            migrationBuilder.UpdateData(
+                table: "booking_coverages",
+                keyColumn: "id",
+                keyValue: 3,
+                columns: new[] { "created_at", "updated_at" },
+                values: new object[] { new DateTime(2024, 8, 30, 10, 46, 24, 39, DateTimeKind.Local).AddTicks(8133), new DateTime(2024, 8, 30, 10, 46, 24, 39, DateTimeKind.Local).AddTicks(8133) });
+
+            migrationBuilder.UpdateData(
+                table: "booking_coverages",
+                keyColumn: "id",
+                keyValue: 4,
+                columns: new[] { "created_at", "updated_at" },
+                values: new object[] { new DateTime(2024, 8, 30, 10, 46, 24, 39, DateTimeKind.Local).AddTicks(8135), new DateTime(2024, 8, 30, 10, 46, 24, 39, DateTimeKind.Local).AddTicks(8151) });
+
+            migrationBuilder.UpdateData(
+                table: "booking_coverages",
+                keyColumn: "id",
+                keyValue: 5,
+                columns: new[] { "created_at", "updated_at" },
+                values: new object[] { new DateTime(2024, 8, 30, 10, 46, 24, 39, DateTimeKind.Local).AddTicks(8154), new DateTime(2024, 8, 30, 10, 46, 24, 39, DateTimeKind.Local).AddTicks(8154) });
+
+            migrationBuilder.UpdateData(
+                table: "mode_of_payments",
+                keyColumn: "id",
+                keyValue: 1,
+                column: "created_at",
+                value: new DateTime(2024, 8, 30, 10, 46, 24, 39, DateTimeKind.Local).AddTicks(8279));
+
+            migrationBuilder.UpdateData(
+                table: "mode_of_payments",
+                keyColumn: "id",
+                keyValue: 2,
+                column: "created_at",
+                value: new DateTime(2024, 8, 30, 10, 46, 24, 39, DateTimeKind.Local).AddTicks(8286));
+
+            migrationBuilder.UpdateData(
+                table: "terms",
+                keyColumn: "id",
+                keyValue: 1,
+                column: "created_at",
+                value: new DateTime(2024, 8, 30, 10, 46, 24, 39, DateTimeKind.Local).AddTicks(8209));
+
+            migrationBuilder.UpdateData(
+                table: "terms",
+                keyColumn: "id",
+                keyValue: 2,
+                column: "created_at",
+                value: new DateTime(2024, 8, 30, 10, 46, 24, 39, DateTimeKind.Local).AddTicks(8229));
+
+            migrationBuilder.UpdateData(
+                table: "terms",
+                keyColumn: "id",
+                keyValue: 3,
+                column: "created_at",
+                value: new DateTime(2024, 8, 30, 10, 46, 24, 39, DateTimeKind.Local).AddTicks(8231));
+
+            migrationBuilder.UpdateData(
+                table: "user_roles",
+                keyColumn: "id",
+                keyValue: 1,
+                column: "created_at",
+                value: new DateTime(2024, 8, 30, 10, 46, 24, 39, DateTimeKind.Local).AddTicks(7994));
+
+            migrationBuilder.UpdateData(
+                table: "users",
+                keyColumn: "id",
+                keyValue: 1,
+                columns: new[] { "created_at", "password", "updated_at" },
+                values: new object[] { new DateTime(2024, 8, 30, 10, 46, 23, 806, DateTimeKind.Local).AddTicks(8633), "$2a$11$rBhrHaTDYjgx1XJ37tylwuAvMu3A1FSQDvb0viU5etXxu.22pDvQ6", new DateTime(2024, 8, 30, 10, 46, 23, 806, DateTimeKind.Local).AddTicks(8652) });
+
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
             migrationBuilder.UpdateData(
                 table: "booking_coverages",
                 keyColumn: "id",
@@ -101,119 +191,6 @@ namespace RDF.Arcana.API.Migrations
                 keyValue: 1,
                 columns: new[] { "created_at", "password", "updated_at" },
                 values: new object[] { new DateTime(2024, 8, 28, 13, 23, 58, 866, DateTimeKind.Local).AddTicks(9482), "$2a$11$XJHNN80LVx65JMD5TiSpTehiQu8gKV93YKu1nOPT25IRQcLFnCzfG", new DateTime(2024, 8, 28, 13, 23, 58, 866, DateTimeKind.Local).AddTicks(9504) });
-
-            migrationBuilder.CreateIndex(
-                name: "ix_expenses_requests_client_id",
-                table: "expenses_requests",
-                column: "client_id");
-
-            migrationBuilder.AddForeignKey(
-                name: "fk_expenses_requests_clients_client_id",
-                table: "expenses_requests",
-                column: "client_id",
-                principalTable: "clients",
-                principalColumn: "id",
-                onDelete: ReferentialAction.NoAction);
-        }
-
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropForeignKey(
-                name: "fk_expenses_requests_clients_client_id",
-                table: "expenses_requests");
-
-            migrationBuilder.DropIndex(
-                name: "ix_expenses_requests_client_id",
-                table: "expenses_requests");
-
-            migrationBuilder.DropColumn(
-                name: "client_id",
-                table: "expenses_requests");
-
-            migrationBuilder.UpdateData(
-                table: "booking_coverages",
-                keyColumn: "id",
-                keyValue: 1,
-                columns: new[] { "created_at", "updated_at" },
-                values: new object[] { new DateTime(2024, 8, 28, 10, 21, 25, 940, DateTimeKind.Local).AddTicks(7630), new DateTime(2024, 8, 28, 10, 21, 25, 940, DateTimeKind.Local).AddTicks(7631) });
-
-            migrationBuilder.UpdateData(
-                table: "booking_coverages",
-                keyColumn: "id",
-                keyValue: 2,
-                columns: new[] { "created_at", "updated_at" },
-                values: new object[] { new DateTime(2024, 8, 28, 10, 21, 25, 940, DateTimeKind.Local).AddTicks(7635), new DateTime(2024, 8, 28, 10, 21, 25, 940, DateTimeKind.Local).AddTicks(7635) });
-
-            migrationBuilder.UpdateData(
-                table: "booking_coverages",
-                keyColumn: "id",
-                keyValue: 3,
-                columns: new[] { "created_at", "updated_at" },
-                values: new object[] { new DateTime(2024, 8, 28, 10, 21, 25, 940, DateTimeKind.Local).AddTicks(7636), new DateTime(2024, 8, 28, 10, 21, 25, 940, DateTimeKind.Local).AddTicks(7637) });
-
-            migrationBuilder.UpdateData(
-                table: "booking_coverages",
-                keyColumn: "id",
-                keyValue: 4,
-                columns: new[] { "created_at", "updated_at" },
-                values: new object[] { new DateTime(2024, 8, 28, 10, 21, 25, 940, DateTimeKind.Local).AddTicks(7638), new DateTime(2024, 8, 28, 10, 21, 25, 940, DateTimeKind.Local).AddTicks(7651) });
-
-            migrationBuilder.UpdateData(
-                table: "booking_coverages",
-                keyColumn: "id",
-                keyValue: 5,
-                columns: new[] { "created_at", "updated_at" },
-                values: new object[] { new DateTime(2024, 8, 28, 10, 21, 25, 940, DateTimeKind.Local).AddTicks(7653), new DateTime(2024, 8, 28, 10, 21, 25, 940, DateTimeKind.Local).AddTicks(7653) });
-
-            migrationBuilder.UpdateData(
-                table: "mode_of_payments",
-                keyColumn: "id",
-                keyValue: 1,
-                column: "created_at",
-                value: new DateTime(2024, 8, 28, 10, 21, 25, 940, DateTimeKind.Local).AddTicks(7721));
-
-            migrationBuilder.UpdateData(
-                table: "mode_of_payments",
-                keyColumn: "id",
-                keyValue: 2,
-                column: "created_at",
-                value: new DateTime(2024, 8, 28, 10, 21, 25, 940, DateTimeKind.Local).AddTicks(7724));
-
-            migrationBuilder.UpdateData(
-                table: "terms",
-                keyColumn: "id",
-                keyValue: 1,
-                column: "created_at",
-                value: new DateTime(2024, 8, 28, 10, 21, 25, 940, DateTimeKind.Local).AddTicks(7685));
-
-            migrationBuilder.UpdateData(
-                table: "terms",
-                keyColumn: "id",
-                keyValue: 2,
-                column: "created_at",
-                value: new DateTime(2024, 8, 28, 10, 21, 25, 940, DateTimeKind.Local).AddTicks(7697));
-
-            migrationBuilder.UpdateData(
-                table: "terms",
-                keyColumn: "id",
-                keyValue: 3,
-                column: "created_at",
-                value: new DateTime(2024, 8, 28, 10, 21, 25, 940, DateTimeKind.Local).AddTicks(7698));
-
-            migrationBuilder.UpdateData(
-                table: "user_roles",
-                keyColumn: "id",
-                keyValue: 1,
-                column: "created_at",
-                value: new DateTime(2024, 8, 28, 10, 21, 25, 940, DateTimeKind.Local).AddTicks(7370));
-
-            migrationBuilder.UpdateData(
-                table: "users",
-                keyColumn: "id",
-                keyValue: 1,
-                columns: new[] { "created_at", "password", "updated_at" },
-                values: new object[] { new DateTime(2024, 8, 28, 10, 21, 25, 712, DateTimeKind.Local).AddTicks(3756), "$2a$11$ufn0cEAmjGZQ.E13pn9zuuCxaHDS18/1n0dKL1y0URDaVS7.yNo3i", new DateTime(2024, 8, 28, 10, 21, 25, 712, DateTimeKind.Local).AddTicks(3773) });
         }
     }
 }

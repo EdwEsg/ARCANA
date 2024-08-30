@@ -58,8 +58,9 @@ public class AddTransaction : ControllerBase
         public int AddedBy { get; set; }
         public ICollection<Item> Items { get; set; }
         public decimal SpecialDiscount { get; set; }
+        public int SpecialDiscountId { get; set; }
+        public bool IsOneTime { get; set; }
         public decimal Discount { get; set; }
-        
         public string InvoiceNo { get; set; }
         public string InvoiceType { get; set; }
         public DateTime InvoiceAttachDateReceived { get; set; }
@@ -281,6 +282,14 @@ public class AddTransaction : ControllerBase
             // AddVat is the same as the VAT amount
             var addVat = vatAmount;
 
+            if (request.IsOneTime)
+            {
+                var specialDiscount = await _context.SpecialDiscounts.FirstOrDefaultAsync(sp => sp.Id == request.SpecialDiscountId, cancellationToken);
+                if (specialDiscount != null) 
+                {
+                    specialDiscount.IsActive = false;
+                }
+            }
 
             // Create and save the transaction sales record
             var newTransactionSales = new TransactionSales

@@ -205,22 +205,6 @@ public class AddNewPaymentTransaction : BaseApiController
                         }
 
 
-                        if (payment.InvoiceAttachment.Length > 0)
-                        {
-                            await using var stream = payment.InvoiceAttachment.OpenReadStream(); // Open the uploaded file stream
-
-                            var attachmentsParams = new ImageUploadParams
-                            {
-                                File = new FileDescription(payment.InvoiceAttachment.FileName, stream), // Create file description
-                                PublicId = payment.InvoiceAttachment.FileName // Use the file name for Cloudinary ID
-                            };
-
-                            var attachmentsUploadResult = await _cloudinary.UploadAsync(attachmentsParams); // Upload file to Cloudinary
-
-                            // Store the uploaded file URL and withholding number
-                            invoiceAttachmentUrl = attachmentsUploadResult.SecureUrl.ToString();
-                        }
-
                         var paymentTransaction = new PaymentTransaction
                         {
                             TransactionId = transaction.Id,
@@ -239,8 +223,7 @@ public class AddNewPaymentTransaction : BaseApiController
                             AccountNo = payment.AccountNo,
                             Status = Status.ForClearing,
                             OnlinePlatform = payment.OnlinePlatform,
-                            ReferenceNo = payment.ChequeNo,
-                            InvoiceAttachment = invoiceAttachmentUrl
+                            ReferenceNo = payment.ChequeNo
                         };
 
                         await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
@@ -342,22 +325,6 @@ public class AddNewPaymentTransaction : BaseApiController
                                 paymentAmountForTransaction = Math.Min(paymentAmountForTransaction, listingFee.Total);
 
 
-                                if (payment.InvoiceAttachment.Length > 0)
-                                {
-                                    await using var stream = payment.InvoiceAttachment.OpenReadStream(); // Open the uploaded file stream
-
-                                    var attachmentsParams = new ImageUploadParams
-                                    {
-                                        File = new FileDescription(payment.InvoiceAttachment.FileName, stream), // Create file description
-                                        PublicId = payment.InvoiceAttachment.FileName // Use the file name for Cloudinary ID
-                                    };
-
-                                    var attachmentsUploadResult = await _cloudinary.UploadAsync(attachmentsParams); // Upload file to Cloudinary
-
-                                    // Store the uploaded file URL and withholding number
-                                    invoiceAttachmentUrl = attachmentsUploadResult.SecureUrl.ToString();
-                                }
-
                                 // Create payment transaction
                                 var paymentTransaction = new PaymentTransaction
                                 {
@@ -377,8 +344,7 @@ public class AddNewPaymentTransaction : BaseApiController
                                     AccountNo = payment.AccountNo,
                                     Status = Status.ForClearing,
                                     OnlinePlatform = payment.OnlinePlatform,
-                                    ReferenceNo = payment.ReferenceNo,
-                                    InvoiceAttachment = invoiceAttachmentUrl
+                                    ReferenceNo = payment.ReferenceNo
                                 };
 
                                 await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
@@ -716,22 +682,6 @@ public class AddNewPaymentTransaction : BaseApiController
                                 paymentAmountForTransaction = Math.Min(paymentAmountForTransaction, advancePayment.RemainingBalance);
 
 
-                                if (payment.InvoiceAttachment.Length > 0)
-                                {
-                                    await using var stream = payment.InvoiceAttachment.OpenReadStream(); // Open the uploaded file stream
-
-                                    var attachmentsParams = new ImageUploadParams
-                                    {
-                                        File = new FileDescription(payment.InvoiceAttachment.FileName, stream), // Create file description
-                                        PublicId = payment.InvoiceAttachment.FileName // Use the file name for Cloudinary ID
-                                    };
-
-                                    var attachmentsUploadResult = await _cloudinary.UploadAsync(attachmentsParams); // Upload file to Cloudinary
-
-                                    // Store the uploaded file URL and withholding number
-                                    invoiceAttachmentUrl = attachmentsUploadResult.SecureUrl.ToString();
-                                }
-
                                 // Create payment transaction
                                 var paymentTransaction = new PaymentTransaction
                                 {
@@ -751,8 +701,7 @@ public class AddNewPaymentTransaction : BaseApiController
                                     AccountNo = payment.AccountNo,
                                     Status = Status.ForClearing,
                                     OnlinePlatform = payment.OnlinePlatform,
-                                    ReferenceNo = payment.ReferenceNo,
-                                    InvoiceAttachment = invoiceAttachmentUrl
+                                    ReferenceNo = payment.ReferenceNo
                                 };
 
                                 await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
@@ -848,25 +797,6 @@ public class AddNewPaymentTransaction : BaseApiController
                             remainingToPay -= paymentToApply;
 
 
-
-
-                            if (payment.InvoiceAttachment.Length > 0)
-                            {
-                                await using var stream = payment.InvoiceAttachment.OpenReadStream(); // Open the uploaded file stream
-
-                                var attachmentsParams = new ImageUploadParams
-                                {
-                                    File = new FileDescription(payment.InvoiceAttachment.FileName, stream), // Create file description
-                                    PublicId = payment.InvoiceAttachment.FileName // Use the file name for Cloudinary ID
-                                };
-
-                                var attachmentsUploadResult = await _cloudinary.UploadAsync(attachmentsParams); // Upload file to Cloudinary
-
-                                // Store the uploaded file URL and withholding number
-                                invoiceAttachmentUrl = attachmentsUploadResult.SecureUrl.ToString();
-                            }
-
-
                             var paymentTransaction = new PaymentTransaction
                             {
                                 TransactionId = transaction.Id,
@@ -887,8 +817,7 @@ public class AddNewPaymentTransaction : BaseApiController
                                 OnlinePlatform = currentPayment.OnlinePlatform,
                                 ReferenceNo = transaction.InvoiceNo,
                                 WithholdingAttachment = withholdingAttachmentUrl,
-                                WithholdingNo = withholdingNumber,
-                                InvoiceAttachment = invoiceAttachmentUrl
+                                WithholdingNo = withholdingNumber
                             };
 
                             await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
@@ -928,6 +857,8 @@ public class AddNewPaymentTransaction : BaseApiController
 
                 }
             }
+
+
 
             return Result.Success();
         }

@@ -64,9 +64,12 @@ public class GetClientsForPOSAsync : ControllerBase
         public decimal? DiscountPercentage { get; set; }
         public bool? VariableDiscount { get; set; }
         public decimal? SpecialDiscount { get; set; }
+        public int? SpecialDiscountId { get; set; }
+        public bool? IsOnetimeSp { get; set; }
         public int? CreditLimit { get; set; }
         public string City { get; set; }
         public string Province { get; set; }
+
     }
 
     public class Handler : IRequestHandler<GetClientsForPOSAsyncQuery, Result>
@@ -104,6 +107,8 @@ public class GetClientsForPOSAsync : ControllerBase
                         VariableDiscount = cl.VariableDiscount,
                         DiscountPercentage = cl.FixedDiscounts.DiscountPercentage,
                         SpecialDiscount = cl.SpecialDiscounts.First(x => x.IsActive && x.Status == Status.Approved).Discount,
+                        SpecialDiscountId = cl.SpecialDiscounts.First(x => x.IsActive && x.Status == Status.Approved).Id,
+                        IsOnetimeSp = cl.SpecialDiscounts.First(x => x.IsActive && x.Status == Status.Approved).IsOneTime,
                         CreditLimit = cl.Term.CreditLimit,
                         City = cl.BusinessAddress.City,
                         Province = cl.BusinessAddress.Province
@@ -137,6 +142,8 @@ public class GetClientsForPOSAsync : ControllerBase
                         VariableDiscount = cl.VariableDiscount,
                         DiscountPercentage = cl.FixedDiscounts.DiscountPercentage,
                         SpecialDiscount = cl.SpecialDiscounts.First(x => x.IsActive && x.Status == Status.Approved).Discount,
+                        SpecialDiscountId = cl.SpecialDiscounts.First(x => x.IsActive && x.Status == Status.Approved).Id,
+                        IsOnetimeSp = cl.SpecialDiscounts.First(x => x.IsActive && x.Status == Status.Approved).IsOneTime,
                         CreditLimit = cl.Term.CreditLimit,
                         City = cl.BusinessAddress.City,
                         Province = cl.BusinessAddress.Province
