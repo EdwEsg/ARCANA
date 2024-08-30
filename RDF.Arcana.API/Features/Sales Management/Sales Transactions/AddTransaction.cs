@@ -282,13 +282,13 @@ public class AddTransaction : ControllerBase
             // AddVat is the same as the VAT amount
             var addVat = vatAmount;
 
-            if (request.IsOneTime)
+
+            var specialDiscount = await _context.SpecialDiscounts.FirstOrDefaultAsync(sp => sp.Id == request.SpecialDiscountId, cancellationToken);
+            if (specialDiscount.IsOneTime == true)
             {
-                var specialDiscount = await _context.SpecialDiscounts.FirstOrDefaultAsync(sp => sp.Id == request.SpecialDiscountId, cancellationToken);
-                if (specialDiscount != null) 
-                {
+               
                     specialDiscount.IsActive = false;
-                }
+                
             }
 
             // Create and save the transaction sales record

@@ -858,7 +858,23 @@ public class AddNewPaymentTransaction : BaseApiController
                 }
             }
 
+            //var invoiceAttach = await _context.PaymentRecords.FirstOrDefaultAsync(pr => pr.Id == paymentRecord.Id);
 
+            //if (payment.InvoiceAttachment.Length > 0)
+            //{
+            //    await using var stream = payment.InvoiceAttachment.OpenReadStream(); // Open the uploaded file stream
+
+            //    var attachmentsParams = new ImageUploadParams
+            //    {
+            //        File = new FileDescription(payment.InvoiceAttachment.FileName, stream), // Create file description
+            //        PublicId = payment.InvoiceAttachment.FileName // Use the file name for Cloudinary ID
+            //    };
+
+            //    var attachmentsUploadResult = await _cloudinary.UploadAsync(attachmentsParams); // Upload file to Cloudinary
+
+            //    // Store the uploaded file URL and withholding number
+            //    invoiceAttachmentUrl = attachmentsUploadResult.SecureUrl.ToString();
+            //}
 
             return Result.Success();
         }
