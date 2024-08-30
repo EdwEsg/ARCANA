@@ -14,16 +14,11 @@ public class GetOtherExpensesBalanceByClientId : ControllerBase
         _mediator = mediator;
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> Get(int id)
+    [HttpGet]
+    public async Task<IActionResult> Get([FromQuery] GetOtherExpensesBalanceByClientIdQuery query)
     {
         try
         {
-            var query = new GetOtherExpensesBalanceByClientIdQuery
-            {
-                ClientId = id
-            };
-
             var result = await _mediator.Send(query);
 
             if (result.IsFailure)
