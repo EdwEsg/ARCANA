@@ -11,11 +11,11 @@ namespace RDF.Arcana.API.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "origin",
-                table: "advance_payments",
-                type: "nvarchar(max)",
-                nullable: true);
+            //migrationBuilder.AddColumn<string>(
+            //    name: "origin",
+            //    table: "advance_payments",
+            //    type: "nvarchar(max)",
+            //    nullable: true);
 
             migrationBuilder.CreateTable(
                 name: "payment_records",

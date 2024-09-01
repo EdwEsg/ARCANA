@@ -58,8 +58,8 @@ public class AddTransaction : ControllerBase
         public int AddedBy { get; set; }
         public ICollection<Item> Items { get; set; }
         public decimal SpecialDiscount { get; set; }
-        public int SpecialDiscountId { get; set; }
-        public bool IsOneTime { get; set; }
+        public int? SpecialDiscountId { get; set; }
+        public bool? IsOneTime { get; set; }
         public decimal Discount { get; set; }
         public string InvoiceNo { get; set; }
         public string InvoiceType { get; set; }
@@ -284,7 +284,7 @@ public class AddTransaction : ControllerBase
 
 
             var specialDiscount = await _context.SpecialDiscounts.FirstOrDefaultAsync(sp => sp.Id == request.SpecialDiscountId, cancellationToken);
-            if (specialDiscount.IsOneTime == true)
+            if (specialDiscount != null && specialDiscount.IsOneTime == true)
             {
                
                     specialDiscount.IsActive = false;

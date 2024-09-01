@@ -37,6 +37,7 @@ public class AddNewPaymentTransaction : BaseApiController
     {
         public List<int> TransactionId { get; set; }
         public ICollection<Payment> Payments { get; set; }
+        public IFormFile Receipt { get; set; } //receipt
         public int AddedBy { get; set; }
         public class Payment
         {
@@ -55,8 +56,7 @@ public class AddNewPaymentTransaction : BaseApiController
             public string ReferenceNo { get; set; }
             public string WithholdingNo { get; set; }
             public IFormFile WithholdingAttachment { get; set; }
-            public IFormFile  InvoiceAttachment{ get; set; } //receipt
-            public int OthersPayment { get; set; }
+            public int? OthersPayment { get; set; }
 
         }
     
@@ -82,6 +82,7 @@ public class AddNewPaymentTransaction : BaseApiController
         public async Task<Result> Handle(AddNewPaymentTransactionCommand request, CancellationToken cancellationToken)
         {
             decimal totalAmount = 0;
+            string receiptUpload = string.Empty;
 
             //Get the sum of the total amount due of the transactions selected
             foreach (var transactionId in request.TransactionId)
@@ -104,18 +105,36 @@ public class AddNewPaymentTransaction : BaseApiController
                 }
             }
 
+
             //Create New Payment Records
+            if (request.Receipt != null && request.Receipt.Length > 0)
+            {
+                await using var stream = request.Receipt.OpenReadStream(); // Open the uploaded file stream
+
+                var attachmentsParams = new ImageUploadParams
+                {
+                    File = new FileDescription(request.Receipt.FileName, stream), // Create file description
+                    PublicId = request.Receipt.FileName // Use the file name for Cloudinary ID
+                };
+
+                var receiptUploadResult = await _cloudinary.UploadAsync(attachmentsParams); // Upload file to Cloudinary
+
+                // Store the uploaded file URL 
+                receiptUpload = receiptUploadResult.SecureUrl.ToString();
+            }
 
             var paymentRecord = new PaymentRecords
             {
                 AddedBy = request.AddedBy,
                 ModifiedBy = request.AddedBy,
                 Status = Status.ForClearing,
-                ClientId = _context.Transactions.FirstOrDefault(tr => tr.Id == request.TransactionId.FirstOrDefault())?.ClientId
+                ClientId = _context.Transactions.FirstOrDefault(tr => tr.Id == request.TransactionId.FirstOrDefault())?.ClientId, 
+                Receipt = receiptUpload
             };
 
             await _context.PaymentRecords.AddAsync(paymentRecord, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
+
 
             // Order transactions by total amount due (descending)
             var orderedTransactions = request.TransactionId
@@ -173,7 +192,7 @@ public class AddNewPaymentTransaction : BaseApiController
 
                     decimal paymentAmount = payment.PaymentAmount;
 
-                    string invoiceAttachmentUrl = null;
+
 
 
 
@@ -832,8 +851,6 @@ public class AddNewPaymentTransaction : BaseApiController
 
                             await _context.SaveChangesAsync(cancellationToken);
 
-                            invoiceAttachmentUrl = null;
-
                             if (remainingToPay <= 0)
                             {
                                 break;
@@ -858,23 +875,7 @@ public class AddNewPaymentTransaction : BaseApiController
                 }
             }
 
-            //var invoiceAttach = await _context.PaymentRecords.FirstOrDefaultAsync(pr => pr.Id == paymentRecord.Id);
-
-            //if (payment.InvoiceAttachment.Length > 0)
-            //{
-            //    await using var stream = payment.InvoiceAttachment.OpenReadStream(); // Open the uploaded file stream
-
-            //    var attachmentsParams = new ImageUploadParams
-            //    {
-            //        File = new FileDescription(payment.InvoiceAttachment.FileName, stream), // Create file description
-            //        PublicId = payment.InvoiceAttachment.FileName // Use the file name for Cloudinary ID
-            //    };
-
-            //    var attachmentsUploadResult = await _cloudinary.UploadAsync(attachmentsParams); // Upload file to Cloudinary
-
-            //    // Store the uploaded file URL and withholding number
-            //    invoiceAttachmentUrl = attachmentsUploadResult.SecureUrl.ToString();
-            //}
+            
 
             return Result.Success();
         }
