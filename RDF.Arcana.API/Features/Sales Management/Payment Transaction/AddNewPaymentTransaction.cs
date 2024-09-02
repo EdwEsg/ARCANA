@@ -38,6 +38,7 @@ public class AddNewPaymentTransaction : BaseApiController
         public List<int> TransactionId { get; set; }
         public ICollection<Payment> Payments { get; set; }
         public IFormFile Receipt { get; set; } //receipt
+        public string ReceiptNo { get; set; }
         public int AddedBy { get; set; }
         public class Payment
         {
@@ -129,7 +130,9 @@ public class AddNewPaymentTransaction : BaseApiController
                 ModifiedBy = request.AddedBy,
                 Status = Status.ForClearing,
                 ClientId = _context.Transactions.FirstOrDefault(tr => tr.Id == request.TransactionId.FirstOrDefault())?.ClientId, 
-                Receipt = receiptUpload
+                Receipt = receiptUpload,
+                ReceiptNo = request.ReceiptNo
+                
             };
 
             await _context.PaymentRecords.AddAsync(paymentRecord, cancellationToken);
