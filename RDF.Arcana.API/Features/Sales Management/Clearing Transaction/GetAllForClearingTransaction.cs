@@ -98,7 +98,6 @@ public class GetAllForClearingTransaction : ControllerBase
                 .ThenInclude(x => x.Transaction)
                 .Include(x => x.PaymentTransactions)
                 .ThenInclude(x => x.ClearedPayment)
-                .Include(x => x.Client)
                 .Where(x => x.PaymentTransactions.Any(x => x.Status.Contains(request.Status)));
 
             if (!string.IsNullOrEmpty(request.Search))
@@ -109,7 +108,7 @@ public class GetAllForClearingTransaction : ControllerBase
 
             var groupedResults = paymentTransactions
                 .SelectMany(x => x.PaymentTransactions)
-                .GroupBy(pt => new { pt.PaymentMethod, pt.ReferenceNo, pt.BankName, pt.PaymentRecord.Client.BusinessName, pt.ClearedPayment.ATag, pt.ClearedPayment.Reason })
+                .GroupBy(pt => new { pt.PaymentMethod, pt.ReferenceNo, pt.BankName, pt.Transaction.Client.BusinessName, pt.ClearedPayment.ATag, pt.ClearedPayment.Reason })
                 .Select(g => new GetAllForClearingTransactionResult
                 {
                     BusinessName = g.Key.BusinessName,

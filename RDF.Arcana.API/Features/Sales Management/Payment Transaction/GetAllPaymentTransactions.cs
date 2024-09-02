@@ -73,6 +73,8 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
             public IEnumerable<PaymentTransaction> PaymentTransactions { get; set; }
             public string BusinessName { get; set; }
             public decimal TotalPayment { get; set; }
+            public string Receipt { get; set; }
+            public string ReceiptNo { get; set; }
             public class PaymentTransaction
             {
                 public int Id { get; set; }
@@ -94,7 +96,6 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
                 public decimal ChequeAmount { get; set; }
                 public string AccountName { get; set; }
                 public string AccountNo { get; set; }
-                public string InvoiceAttachment { get; set; }
                 public string WithholdingAttachment { get; set; }
             }
         }
@@ -180,6 +181,8 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
                     Status = result.Status,
                     BusinessName = result.PaymentTransactions.Select(pt => pt.Transaction.Client.BusinessName).FirstOrDefault(),
                     TotalPayment = result.PaymentTransactions.Sum(pt => pt.PaymentAmount),
+                    Receipt = result.Receipt,
+                    ReceiptNo = result.ReceiptNo,
                     PaymentTransactions = result.PaymentTransactions.Select(pt => new GetPaymentTransactionByStatusResult.PaymentTransaction
                     {
                         Id = pt.Id,
@@ -201,7 +204,6 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
                         ChequeAmount = pt.ChequeAmount,
                         AccountName = pt.AccountName,
                         AccountNo = pt.AccountNo,
-                        InvoiceAttachment = pt.InvoiceAttachment,
                         WithholdingAttachment = pt.WithholdingAttachment
                     }).ToList()
                 }).OrderByDescending(r => r.BusinessName);

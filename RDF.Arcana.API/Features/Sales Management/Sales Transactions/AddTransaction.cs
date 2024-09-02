@@ -283,7 +283,7 @@ public class AddTransaction : ControllerBase
             var addVat = vatAmount;
 
 
-            var specialDiscount = await _context.SpecialDiscounts.FirstOrDefaultAsync(sp => sp.Id == request.SpecialDiscountId, cancellationToken);
+            var specialDiscount = await _context.SpecialDiscounts.FirstOrDefaultAsync(sp => sp.Id == request.SpecialDiscountId && sp.IsActive, cancellationToken);
             if (specialDiscount != null && specialDiscount.IsOneTime == true)
             {
                
