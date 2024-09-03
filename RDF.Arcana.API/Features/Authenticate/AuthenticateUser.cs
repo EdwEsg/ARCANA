@@ -109,7 +109,7 @@ public abstract class AuthenticateUser
                     new Claim(ClaimTypes.Name, user.Fullname),
                     new Claim(ClaimTypes.Role, user.UserRoles.UserRoleName)
                 }),
-                Expires = DateTime.UtcNow.AddMinutes(1),
+                Expires = DateTime.UtcNow.AddDays(1),
                 Issuer = issuer,
                 Audience = audience,
                 SigningCredentials = new SigningCredentials(
