@@ -124,7 +124,7 @@ public class GetClientsForPOSAsync : ControllerBase
             }
 
 
-            if (request.RoleName.Contains(Roles.Admin))
+            if (request.RoleName.Contains(Roles.Admin) || request.RoleName.ToLower().Contains(Roles.Finanace))
             {               
                 clients = await _context.Clients
                     .Include(to => to.Term)
