@@ -97,6 +97,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
                 public string AccountName { get; set; }
                 public string AccountNo { get; set; }
                 public string WithholdingAttachment { get; set; }
+                public int? PaymentChannel { get; set; }
             }
         }
 
@@ -204,7 +205,8 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
                         ChequeAmount = pt.ChequeAmount,
                         AccountName = pt.AccountName,
                         AccountNo = pt.AccountNo,
-                        WithholdingAttachment = pt.WithholdingAttachment
+                        WithholdingAttachment = pt.WithholdingAttachment,
+                        PaymentChannel = pt.ExpensesRequestId
                     }).ToList()
                 }).OrderByDescending(r => r.BusinessName);
 

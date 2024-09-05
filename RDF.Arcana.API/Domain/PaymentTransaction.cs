@@ -26,6 +26,7 @@ public class PaymentTransaction : BaseEntity
     public string WithholdingAttachment { get; set; }
     public string WithholdingNo { get; set; }
     public string InvoiceAttachment { get; set; }
+    public int? ExpensesRequestId { get; set; }
 
 
 
@@ -34,5 +35,6 @@ public class PaymentTransaction : BaseEntity
     public virtual PaymentRecords PaymentRecord { get; set; }
     public virtual AdvancePayment AdvancePayment { get; set; }
     public virtual ClearedPayments ClearedPayment { get; set; }
+    public virtual ExpensesRequest ExpensesRequest { get; set; }
 
 }

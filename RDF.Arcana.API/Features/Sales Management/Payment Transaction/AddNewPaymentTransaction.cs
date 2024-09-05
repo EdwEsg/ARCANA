@@ -609,7 +609,8 @@ public class AddNewPaymentTransaction : BaseApiController
                                     AccountNo = payment.AccountNo,
                                     Status = Status.ForClearing,
                                     OnlinePlatform = payment.OnlinePlatform,
-                                    ReferenceNo = payment.ReferenceNo
+                                    ReferenceNo = payment.ReferenceNo,
+                                    ExpensesRequestId = payment.OthersPayment
                                 };
 
                                 await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
