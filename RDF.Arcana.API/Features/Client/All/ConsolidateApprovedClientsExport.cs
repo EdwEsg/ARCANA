@@ -1,4 +1,5 @@
 ﻿using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Bibliography;
 using Microsoft.AspNetCore.Mvc;
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Data;
@@ -47,11 +48,26 @@ public class ConsolidateApprovedClientsExport : ControllerBase
         public async Task<IActionResult> Handle(ConsolidateApprovedClientsExportCommmand request, CancellationToken cancellationToken)
         {
             var query = _context.Clients
+                .Include(oa => oa.OwnersAddress)
+                .Include(ba => ba.BusinessAddress)
+                .Include(c => c.Cluster)
+                .Include(st => st.StoreType)
+                .Include(t => t.Term)
+                    .ThenInclude(t => t.Terms)
+                .Include(t => t.Term)
+                    .ThenInclude(td => td.TermDays)
+                .Include(b => b.BookingCoverages)
+                .Include(f => f.FixedDiscounts)
+                .Include(pm => pm.PriceMode)
+                .Include(f => f.Freezer)
                 .Where(a => a.RegistrationStatus == Status.Approved &&
                             a.CreatedAt >= request.DateFrom &&
-                            a.CreatedAt <= request.DateTo);
+                            a.CreatedAt <= request.DateTo)
+                .AsSplitQuery()
+                .AsNoTracking();
 
             var consolidate = await query.ToListAsync(cancellationToken);
+
 
             using (var workbook = new XLWorkbook())
             {
@@ -75,50 +91,90 @@ public class ConsolidateApprovedClientsExport : ControllerBase
                     "Origin",
                     "Store Type",
                     "Terms",
+                    "Credit Limit",
+                    "Term Days",
+                    "Withholding Isuuance",
                     "Direct Delivery",
                     "Booking Coverage",
                     "Created At",
                     "Fixed Discount",
                     "Variable Discount",
                     "Price Mode",
-                    "Freezer"
+                    "Freezer Tag"
 
 
 
                 };
+
+                var headerRange = worksheet.Range(worksheet.Cell(1, 1), worksheet.Cell(1, headers.Count));
+                headerRange.Style.Fill.BackgroundColor = XLColor.FromHtml("#544d91");  
+                headerRange.Style.Font.Bold = true;
+                headerRange.Style.Font.FontColor = XLColor.White;  
+                headerRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thick;
+                headerRange.Style.Border.OutsideBorderColor = XLColor.Black;
+                headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
                 for (var index = 0; index < headers.Count; index++)
                 {
                     worksheet.Cell(1, index + 1).Value = headers[index];
                 }
 
+                var evenRowColor = XLColor.FromHtml("#eae9f4");  
+                var oddRowColor = XLColor.FromHtml("#dcd9e9");  
+
                 for (var index = 0; index < consolidate.Count; index++)
                 {
                     var row = worksheet.Row(index + 2);
+                   
+                    var rowColor = index % 2 == 0 ? evenRowColor : oddRowColor;
+                    row.Style.Fill.BackgroundColor = rowColor;
 
                     row.Cell(1).Value = consolidate[index].Id;
                     row.Cell(2).Value = consolidate[index].BusinessName;
                     row.Cell(3).Value = consolidate[index].Fullname;
-                    row.Cell(4).Value = consolidate[index].OwnersAddress == null ? string.Empty : consolidate[index].OwnersAddress.ToString();
+                    row.Cell(4).Value = $"{consolidate[index].OwnersAddress?.HouseNumber ?? ""} " +
+                                        $"{consolidate[index].OwnersAddress?.StreetName ?? ""} " +
+                                        $"{consolidate[index].OwnersAddress?.Barangay ?? ""}, " +
+                                        $"{consolidate[index].OwnersAddress?.City ?? ""}, " +
+                                        $"{consolidate[index].OwnersAddress?.Province ?? ""}";
                     row.Cell(5).Value = consolidate[index].PhoneNumber;
-                    row.Cell(6).Value = consolidate[index].DateOfBirth;
+                    row.Cell(6).Value = consolidate[index].DateOfBirth != null
+                        ? consolidate[index].DateOfBirth.ToString("MM/dd/yyyy")
+                        : string.Empty;
                     row.Cell(7).Value = consolidate[index].EmailAddress;
                     row.Cell(8).Value = consolidate[index].TinNumber;
                     row.Cell(9).Value = consolidate[index].RepresentativeName;
                     row.Cell(10).Value = consolidate[index].RepresentativePosition;
-                    row.Cell(11).Value = consolidate[index].BusinessAddress == null ? string.Empty : consolidate[index].OwnersAddress.ToString();
-                    row.Cell(12).Value = consolidate[index].Cluster == null ? string.Empty : consolidate[index].OwnersAddress.ToString();
+                    row.Cell(11).Value = $"{consolidate[index].BusinessAddress?.HouseNumber ?? ""} " +
+                                         $"{consolidate[index].BusinessAddress?.StreetName ?? ""} " +
+                                         $"{consolidate[index].BusinessAddress?.Barangay ?? ""}, " +
+                                         $"{consolidate[index].BusinessAddress?.City ?? ""}, " +
+                                         $"{consolidate[index].BusinessAddress?.Province ?? ""}";
+                    row.Cell(12).Value = $"{consolidate[index].Cluster?.ClusterType ?? ""} ";
                     row.Cell(13).Value = consolidate[index].CustomerType;
                     row.Cell(14).Value = consolidate[index].Origin;
-                    row.Cell(15).Value = consolidate[index].StoreType == null ? string.Empty : consolidate[index].OwnersAddress.ToString();
-                    row.Cell(16).Value = consolidate[index].Terms == null ? string.Empty : consolidate[index].Terms.ToString();
-                    row.Cell(17).Value = consolidate[index].DirectDelivery == null ? string.Empty : consolidate[index].DirectDelivery.ToString();
-                    row.Cell(18).Value = consolidate[index].BookingCoverageId == null ? string.Empty : consolidate[index].BookingCoverageId.ToString();
-                    row.Cell(19).Value = consolidate[index].CreatedAt == null ? string.Empty : consolidate[index].CreatedAt.ToString();
-                    row.Cell(20).Value = consolidate[index].FixedDiscountId == null ? string.Empty : consolidate[index].FixedDiscountId.ToString();
-                    row.Cell(21).Value = consolidate[index].VariableDiscount == null ? string.Empty : consolidate[index].VariableDiscount.ToString();
-                    row.Cell(22).Value = consolidate[index].PriceMode == null ? string.Empty : consolidate[index].PriceMode.ToString();
-                    row.Cell(23).Value = consolidate[index].FreezerId == null ? string.Empty : consolidate[index].FreezerId.ToString();
+                    row.Cell(15).Value = $"{consolidate[index].StoreType?.StoreTypeName ?? ""} ";
+                    row.Cell(16).Value = $"{consolidate[index].Term.Terms?.TermType ?? ""} ";
+                    row.Cell(17).Value = $"{consolidate[index].Term?.CreditLimit.ToString() ?? ""} ";
+                    row.Cell(18).Value = $"{consolidate[index].Term.TermDays?.Days.ToString() ?? ""} ";
+                    row.Cell(19).Value = $"{consolidate[index].Term?.WithholdingIssuance ?? ""} ";
+                    row.Cell(20).Value = consolidate[index].DirectDelivery == null ? string.Empty : consolidate[index].DirectDelivery.ToString();
+                    row.Cell(21).Value = $"{consolidate[index].BookingCoverages?.BookingCoverage ?? ""} ";
+                    row.Cell(22).Value = consolidate[index].CreatedAt != null
+                        ? consolidate[index].CreatedAt.ToString("yyyy/MM/dd")
+                        : string.Empty;
+                    if (consolidate[index].FixedDiscounts != null && consolidate[index].FixedDiscounts.DiscountPercentage != null)
+                    {
+                        decimal fixedDiscount = (decimal)consolidate[index].FixedDiscounts.DiscountPercentage;
+                        row.Cell(23).Value = (fixedDiscount * 100).ToString("0.00") + "%";
+                    }
+                    else
+                    {
+                        row.Cell(23).Value = string.Empty;
+                    }
+                    row.Cell(24).Value = consolidate[index].VariableDiscount == null ? string.Empty : consolidate[index].VariableDiscount.ToString();
+                    row.Cell(25).Value = $"{consolidate[index].PriceMode?.PriceModeDescription ?? ""} ";
+                    row.Cell(26).Value = $"{consolidate[index].Freezer?.AssetTag ?? ""} ";
 
 
 
@@ -131,7 +187,7 @@ public class ConsolidateApprovedClientsExport : ControllerBase
                 workbook.SaveAs(stream);
                 stream.Seek(0, SeekOrigin.Begin);
 
-                string fileName = $"ConsolidatedApprovedClients_{request.DateFrom:yyyyMMdd}_{request.DateTo:yyyyMMdd}.xlsx";
+                string fileName = $"ArcanaApprovedClients_{request.DateFrom:yyyyMMdd}_{request.DateTo:yyyyMMdd}.xlsx";
                 return new FileStreamResult(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 {
                     FileDownloadName = fileName
