@@ -96,6 +96,7 @@ public class UpdateClientInformation : ControllerBase
         public string Latitude { get; set; }
         public int UpdatedBy { get; set; }
         public string WithholdingIssuance { get; set; }
+        public string Reason { get; set; }
         public FixedDiscountToUpdate FixedDiscount { get; set; }
         
         public class ModeOfPayment
@@ -138,7 +139,7 @@ public class UpdateClientInformation : ControllerBase
 
         public async Task<Result> Handle(UpdateClientInformationCommand request, CancellationToken cancellationToken)
         {
-            var existingClient = await _context.Clients
+               var existingClient = await _context.Clients
                 .Include(fr => fr.Freezer)
                 .Include(st => st.StoreType)
                 .Include(fd => fd.FixedDiscounts)
@@ -350,6 +351,7 @@ public class UpdateClientInformation : ControllerBase
             existingClient.VariableDiscount = request.VariableDiscount;
             existingClient.Longitude = request.Longitude;
             existingClient.Latitude = request.Latitude;
+            existingClient.Reason = request.Reason;
             
 
             if(request.RoleName == Roles.Cdo)

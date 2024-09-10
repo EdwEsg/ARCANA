@@ -67,6 +67,11 @@ public class GetOtherExpensesBalanceByClientId : ControllerBase
                              oe.OtherExpenseId == request.OtherExpenseId)
                 .ToListAsync();
 
+            if (!otherExpenses.Any())
+            {
+                return OtherExpensesErrors.NotFound();
+            }
+
             var otherExpensesResults = otherExpenses.Select(oe => new GetOtherExpensesBalanceByClientIdResult.ExpensesRequest
             {
                 RemainingBalance = oe.RemainingBalance
@@ -75,7 +80,7 @@ public class GetOtherExpensesBalanceByClientId : ControllerBase
             var result = new GetOtherExpensesBalanceByClientIdResult
             {
                 BusinessName = otherExpenses.First().Client.BusinessName,
-                TotalBalance = otherExpensesResults.Sum(oe => oe.RemainingBalance),
+                TotalBalance = otherExpensesResults.Sum(oe => (decimal?)oe.RemainingBalance) ?? 0.00m,
                 ExpensesReq = otherExpensesResults
             };
 

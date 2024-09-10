@@ -51,6 +51,9 @@ public class Clients : BaseEntity
     public int? RequestId { get; set; }
     public int? FixedDiscountId { get; set; }
     public bool? VariableDiscount { get; set; }
+    public string Reason { get; set; }
+
+
     public virtual User ModifiedByUser { get; set; }
     public virtual User AddedByUser { get; set; }
     public virtual List<ClientDocuments> ClientDocuments { get; set; }

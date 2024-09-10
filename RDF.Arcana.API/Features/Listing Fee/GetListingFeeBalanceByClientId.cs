@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Data;
+using RDF.Arcana.API.Features.Listing_Fee.Errors;
 
 namespace RDF.Arcana.API.Features.Listing_Fee;
 
@@ -73,6 +74,11 @@ public class GetListingFeeBalanceByClientId : ControllerBase
                 .Where(lf => lf.ClientId == request.ClientId &&
                              lf.Status == Status.Approved)
                 .ToListAsync();
+
+            if (listingFees.Count == 0)
+            {
+                return ListingFeeErrors.NotFound();
+            }
 
             var listingFeeResults = listingFees.Select(lf => new GetListingFeeBalanceByClientQueryResult.ListingFee
             {

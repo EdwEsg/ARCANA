@@ -139,7 +139,7 @@ public class ConsolidateApprovedClientsExport : ControllerBase
                                         $"{consolidate[index].OwnersAddress?.Province ?? ""}";
                     row.Cell(5).Value = consolidate[index].PhoneNumber;
                     row.Cell(6).Value = consolidate[index].DateOfBirth != null
-                        ? consolidate[index].DateOfBirth.ToString("MM/dd/yyyy")
+                        ? consolidate[index].DateOfBirth.ToString("MMM d, yyyy")
                         : string.Empty;
                     row.Cell(7).Value = consolidate[index].EmailAddress;
                     row.Cell(8).Value = consolidate[index].TinNumber;
@@ -158,10 +158,10 @@ public class ConsolidateApprovedClientsExport : ControllerBase
                     row.Cell(17).Value = $"{consolidate[index].Term?.CreditLimit.ToString() ?? ""} ";
                     row.Cell(18).Value = $"{consolidate[index].Term.TermDays?.Days.ToString() ?? ""} ";
                     row.Cell(19).Value = $"{consolidate[index].Term?.WithholdingIssuance ?? ""} ";
-                    row.Cell(20).Value = consolidate[index].DirectDelivery == null ? string.Empty : consolidate[index].DirectDelivery.ToString();
+                    row.Cell(20).Value = consolidate[index].DirectDelivery == true ? "Yes" : "No";
                     row.Cell(21).Value = $"{consolidate[index].BookingCoverages?.BookingCoverage ?? ""} ";
                     row.Cell(22).Value = consolidate[index].CreatedAt != null
-                        ? consolidate[index].CreatedAt.ToString("yyyy/MM/dd")
+                        ? consolidate[index].CreatedAt.ToString("MMM d, yyyy")
                         : string.Empty;
                     if (consolidate[index].FixedDiscounts != null && consolidate[index].FixedDiscounts.DiscountPercentage != null)
                     {
@@ -172,7 +172,7 @@ public class ConsolidateApprovedClientsExport : ControllerBase
                     {
                         row.Cell(23).Value = string.Empty;
                     }
-                    row.Cell(24).Value = consolidate[index].VariableDiscount == null ? string.Empty : consolidate[index].VariableDiscount.ToString();
+                    row.Cell(24).Value = consolidate[index].VariableDiscount == true ? "Yes" : string.Empty;
                     row.Cell(25).Value = $"{consolidate[index].PriceMode?.PriceModeDescription ?? ""} ";
                     row.Cell(26).Value = $"{consolidate[index].Freezer?.AssetTag ?? ""} ";
 
@@ -187,7 +187,7 @@ public class ConsolidateApprovedClientsExport : ControllerBase
                 workbook.SaveAs(stream);
                 stream.Seek(0, SeekOrigin.Begin);
 
-                string fileName = $"ArcanaApprovedClients_{request.DateFrom:yyyyMMdd}_{request.DateTo:yyyyMMdd}.xlsx";
+                string fileName = $"ArcanaApprovedClients_{request.DateFrom:MMM d, yyyy}_{request.DateTo:MMM d, yyyy}.xlsx";
                 return new FileStreamResult(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 {
                     FileDownloadName = fileName
