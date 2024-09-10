@@ -69,7 +69,7 @@ public class GetStoreTypesAsync : ControllerBase
                 IsActive = x.IsActive
             });
 
-            return await PagedList<GetStoreTypesQueryResult>.CreateAsync(result, request.PageNumber, request.PageSize);
+            return await PagedList<GetStoreTypesQueryResult>.CreateAsync(result, request.PageNumber, 20);
 
         }
     }

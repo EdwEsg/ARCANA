@@ -275,6 +275,7 @@ public class ApproveClientRegistration : ControllerBase
             {
                 var expenses = await _context.Requests
                 .Include(expenses => expenses.Expenses)
+                .ThenInclude(er => er.ExpensesRequests)
                 .Where(ex => ex.Id == request.OtherExpensesRequestId && ex.Expenses.ClientId == requestedClient.Clients.Id)
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -323,6 +324,12 @@ public class ApproveClientRegistration : ControllerBase
                 }
 
                 expenses.Status = Status.Approved;
+
+                expenses.Expenses.ExpensesRequests
+                    .Where(er => er.ExpensesId == expenses.Expenses.Id)
+                    .ToList()
+                    .ForEach(s => s.Status = Status.Approved);
+
                 expenses.Expenses.Status = Status.Approved;
 
                 var notification = new Domain.Notification

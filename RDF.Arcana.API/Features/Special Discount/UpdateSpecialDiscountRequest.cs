@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using DocumentFormat.OpenXml.Drawing.Charts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RDF.Arcana.API.Common;
@@ -100,6 +101,7 @@ namespace RDF.Arcana.API.Features.Special_Discount
                 // Determine the appropriate approvers based on the discount using ApproverByRange entity
 
                 var discount = request.Discount;
+
                 var applicableApprovers = await _context.ApproverByRange
                     .Where(ar => ar.ModuleName == Modules.SpecialDiscountApproval && ar.IsActive && Math.Ceiling(discount) >= ar.MinValue)
                     .OrderBy(ar => ar.Level)
@@ -107,8 +109,11 @@ namespace RDF.Arcana.API.Features.Special_Discount
 
                 if (!applicableApprovers.Any())
                 {
-                    return ApprovalErrors.NoApproversFound(Modules.SpecialDiscountApproval);
+                    applicableApprovers = await _context.ApproverByRange
+                        .Where(ar => ar.ModuleName == Modules.SpecialDiscountApproval && ar.IsActive && ar.Level == 1)
+                        .ToListAsync(cancellationToken);
                 }
+
 
                 discount = decimal.Round(request.Discount / 100, 4);
 
@@ -146,6 +151,7 @@ namespace RDF.Arcana.API.Features.Special_Discount
                 _context.RequestApprovers.AddRange(newRequestApprovers);
 
                 specialDiscount.Request.Status = Status.UnderReview;
+                specialDiscount.Status = Status.UnderReview;
                 specialDiscount.Request.CurrentApproverId = approverLevels.First().UserId;
 
                 var newUpdateHistory = new UpdateRequestTrail(
