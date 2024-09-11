@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Common.Extension;
+using RDF.Arcana.API.Common.Helpers;
 using RDF.Arcana.API.Common.Pagination;
 using RDF.Arcana.API.Data;
 using RDF.Arcana.API.Domain;
+using System.Security.Claims;
 
 namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
 {
@@ -22,6 +24,15 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
         {
             try
             {
+                if (User.Identity is ClaimsIdentity identity
+               && IdentityHelper.TryGetUserId(identity, out var userId))
+                {
+                    query.AccessBy = userId;
+
+                    var roleClaim = identity.Claims.SingleOrDefault(c => c.Type == ClaimTypes.Role);
+
+                }
+
                 var transactions = await _mediator.Send(query);
 
                 Response.AddPaginationHeader(
@@ -63,6 +74,9 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
             public string DateTo { get; set; }
             public string Terms  { get; set; }
             public int? ClientId { get; set; }
+            public int AccessBy { get; set; }
+            public string PaymentMethod { get; set; }
+            public int? ClusterId { get; set; }
         }
 
         public class GetAllTransactionQueryResult
@@ -102,9 +116,31 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
                     .ThenInclude(td => td.TermDays)
                     .Include(cl => cl.Client)
                     .ThenInclude(to => to.Term)
-                    .ThenInclude(t => t.Terms);
+                    .ThenInclude(t => t.Terms)
+                    .Include(pt => pt.PaymentTransactions);
 
-                if(request.ClientId != null)
+                //filter for CDO's clusters
+                var userClusters = _context.CdoClusters.FirstOrDefault(x => x.UserId == request.AccessBy);
+
+                if (userClusters != null)
+                {
+                    transactions = transactions.Where(t => t.Client.ClusterId == userClusters.ClusterId);
+                }
+
+
+                //filter for Admin/Finanace/GAS/Treasury
+                var adminClusterFilter = _context.Users.Find(request.AccessBy);
+                if (adminClusterFilter.UserRolesId == 1 ||
+                    adminClusterFilter.UserRolesId == 7 ||
+                    adminClusterFilter.UserRolesId == 8 ||
+                    adminClusterFilter.UserRolesId == 9 ||
+                    adminClusterFilter.UserRolesId == 10)
+                {
+                    transactions = transactions.Where(t => t.Client.ClusterId == request.ClusterId);
+                }
+
+
+                if (request.ClientId != null)
                 {
                     transactions = transactions.Where(tr => tr.ClientId == request.ClientId);
                 }
@@ -137,9 +173,17 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
                     transactions = transactions.Where(t => t.IsActive == request.Status);
                 }
 
+                //filter for PaymentMethods
                 if (!string.IsNullOrEmpty(request.TransactionStatus))
                 {
-                    if(request.TransactionStatus == Status.Overdue && transactions.Any(cl => cl.Client.Term.Terms.TermType == Common.Terms.OneUpOneDown))
+
+                    if (request.TransactionStatus != Status.Pending)
+                    {
+                        transactions = transactions.Where(t => t.PaymentTransactions.Any(pt => pt.PaymentMethod == request.PaymentMethod));
+
+                    }
+
+                    if (request.TransactionStatus == Status.Overdue && transactions.Any(cl => cl.Client.Term.Terms.TermType == Common.Terms.OneUpOneDown))
                     {
                         transactions = transactions.Where(result => result.CreatedAt.AddDays(result.Client.Term.TermDays.Days) < DateTime.Now);
                     }
