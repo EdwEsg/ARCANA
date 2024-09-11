@@ -77,6 +77,7 @@ public class GetAllExpenses : ControllerBase
         public string RoleName { get; set; }
         public int AccessBy { get; set; }
         public string ExpenseStatus { get; set; }
+        public int? ClusterId { get; set; }
     }
 
     public class GetAllExpensesResult
@@ -142,7 +143,16 @@ public class GetAllExpenses : ControllerBase
 
             var userClusters = await _context.CdoClusters.FirstOrDefaultAsync(x => x.UserId == request.AccessBy, cancellationToken);
 
-
+            //filter for Admin/Finanace/GAS/Treasury
+            //var adminClusterFilter = _context.Users.Find(request.AccessBy);
+            //if (adminClusterFilter.UserRolesId == 1 ||
+            //    adminClusterFilter.UserRolesId == 7 ||
+            //    adminClusterFilter.UserRolesId == 8 ||
+            //    adminClusterFilter.UserRolesId == 9 ||
+            //    adminClusterFilter.UserRolesId == 10)
+            //{
+            //    expenses = expenses.Where(t => t.Client.ClusterId == request.ClusterId);
+            //}
 
             if (!string.IsNullOrEmpty(request.Search))
             {

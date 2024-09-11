@@ -86,6 +86,7 @@ public class GetAllListingFee : ControllerBase
         public string RoleName { get; set; }
         public int AccessBy { get; set; }
         public string ListingFeeStatus { get; set; }
+        public int? ClusterId { get; set; }
     }
 
     public class ClientsWithListingFee
@@ -177,6 +178,17 @@ public class GetAllListingFee : ControllerBase
                 .AsSingleQuery();
 
             var userClusters = await _context.CdoClusters.FirstOrDefaultAsync(x => x.UserId == request.AccessBy, cancellationToken);
+
+            ////filter for Admin/Finanace/GAS/Treasury
+            //var adminClusterFilter = _context.Users.Find(request.AccessBy);
+            //if (adminClusterFilter.UserRolesId == 1 ||
+            //    adminClusterFilter.UserRolesId == 7 ||
+            //    adminClusterFilter.UserRolesId == 8 ||
+            //    adminClusterFilter.UserRolesId == 9 ||
+            //    adminClusterFilter.UserRolesId == 10)
+            //{
+            //    listingFees = listingFees.Where(t => t.Client.ClusterId == request.ClusterId);
+            //}
 
             var totalListingFee = await _context.ListingFees
                 .Where(lf => lf.IsActive)

@@ -130,11 +130,12 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
 
                 //filter for Admin/Finanace/GAS/Treasury
                 var adminClusterFilter = _context.Users.Find(request.AccessBy);
-                if (adminClusterFilter.UserRolesId == 1 ||
+                if ((adminClusterFilter.UserRolesId == 1 ||
                     adminClusterFilter.UserRolesId == 7 ||
                     adminClusterFilter.UserRolesId == 8 ||
                     adminClusterFilter.UserRolesId == 9 ||
-                    adminClusterFilter.UserRolesId == 10)
+                    adminClusterFilter.UserRolesId == 10) 
+                    && request.ClusterId is not null)
                 {
                     transactions = transactions.Where(t => t.Client.ClusterId == request.ClusterId);
                 }
@@ -177,7 +178,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
                 if (!string.IsNullOrEmpty(request.TransactionStatus))
                 {
 
-                    if (request.TransactionStatus != Status.Pending)
+                    if (request.TransactionStatus != Status.Pending && request.PaymentMethod is not null)
                     {
                         transactions = transactions.Where(t => t.PaymentTransactions.Any(pt => pt.PaymentMethod == request.PaymentMethod));
 
