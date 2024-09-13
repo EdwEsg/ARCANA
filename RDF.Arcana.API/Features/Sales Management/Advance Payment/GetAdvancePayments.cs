@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Common.Extension;
+using RDF.Arcana.API.Common.Helpers;
 using RDF.Arcana.API.Common.Pagination;
 using RDF.Arcana.API.Data;
 using RDF.Arcana.API.Domain;
+using System.Security.Claims;
 using Result = RDF.Arcana.API.Common.Result;
 
 namespace RDF.Arcana.API.Features.Sales_Transactions.Advance_Payment;
@@ -24,6 +26,16 @@ public class GetAdvancePayments : ControllerBase
     {
         try
         {
+
+            if (User.Identity is ClaimsIdentity identity
+                && IdentityHelper.TryGetUserId(identity, out var userId))
+            {
+                query.AddedBy = userId;
+
+                var roleClaim = identity.Claims.SingleOrDefault(c => c.Type == ClaimTypes.Role);
+
+            }
+
             var advancePayments = await _medaitor.Send(query);
             
             Response.AddPaginationHeader(
@@ -63,6 +75,8 @@ public class GetAdvancePayments : ControllerBase
         public bool? Status { get; set; }
         public string PaymentMethod { get; set; }
         public string AdvancePaymentStatus { get; set; }
+        public int? ClusterId { get; set; }
+        public int AddedBy { get; set; }
     }
 
     public class GetAdvancePaymentResult
@@ -102,6 +116,19 @@ public class GetAdvancePayments : ControllerBase
                 
                 .Include(cl => cl.Client)
                 .Include(u => u.AddedByUser);
+
+
+            //filter for Admin/Finanace/GAS/Treasury
+            var adminClusterFilter = _context.Users.Find(request.AddedBy);
+            if ((adminClusterFilter.UserRolesId == 1 ||
+                    adminClusterFilter.UserRolesId == 7 ||
+                    adminClusterFilter.UserRolesId == 8 ||
+                    adminClusterFilter.UserRolesId == 9 ||
+                    adminClusterFilter.UserRolesId == 10)
+                    && request.ClusterId is not null)
+            {
+                advancePayments = advancePayments.Where(t => t.Client.ClusterId == request.ClusterId);
+            }
 
             if (!string.IsNullOrEmpty(request.Search))
             {

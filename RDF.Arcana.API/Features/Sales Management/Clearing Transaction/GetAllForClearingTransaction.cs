@@ -12,6 +12,8 @@ using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Common.Pagination;
 using RDF.Arcana.API.Data;
 using RDF.Arcana.API.Domain;
+using RDF.Arcana.API.Common.Helpers;
+using System.Security.Claims;
 
 [Route("api/clearing-transaction")]
 [ApiController]
@@ -29,6 +31,15 @@ public class GetAllForClearingTransaction : ControllerBase
     {
         try
         {
+            if (User.Identity is ClaimsIdentity identity
+                && IdentityHelper.TryGetUserId(identity, out var userId))
+            {
+                query.AddedBy = userId;
+
+                var roleClaim = identity.Claims.SingleOrDefault(c => c.Type == ClaimTypes.Role);
+
+            }
+
             var transactions = await _mediator.Send(query);
 
             Response.AddPaginationHeader(transactions.CurrentPage, transactions.PageSize, transactions.TotalCount,
@@ -59,6 +70,9 @@ public class GetAllForClearingTransaction : ControllerBase
     {
         public string Search { get; set; }
         public string Status { get; set; }
+        public int? ClusterId { get; set; }
+        public int AddedBy { get; set; }
+        public string PaymentMethod { get; set; }
     }
 
     public class GetAllForClearingTransactionResult
@@ -99,6 +113,24 @@ public class GetAllForClearingTransaction : ControllerBase
                 .Include(x => x.PaymentTransactions)
                 .ThenInclude(x => x.ClearedPayment)
                 .Where(x => x.PaymentTransactions.Any(x => x.Status.Contains(request.Status)));
+
+            //filter for Admin/Finanace/GAS/Treasury
+            var adminClusterFilter = _context.Users.Find(request.AddedBy);
+            if ((adminClusterFilter.UserRolesId == 1 ||
+                    adminClusterFilter.UserRolesId == 7 ||
+                    adminClusterFilter.UserRolesId == 8 ||
+                    adminClusterFilter.UserRolesId == 9 ||
+                    adminClusterFilter.UserRolesId == 10)
+                    && request.ClusterId is not null)
+            {
+                paymentTransactions = paymentTransactions.Where(t => t.PaymentTransactions.Any(pt => pt.Transaction.Client.ClusterId == request.ClusterId));
+
+            }
+
+            if (request.PaymentMethod is not null)
+            {
+                paymentTransactions = paymentTransactions.Where(t => t.PaymentTransactions.Any(pt => pt.PaymentMethod == request.PaymentMethod));
+            }
 
             if (!string.IsNullOrEmpty(request.Search))
             {

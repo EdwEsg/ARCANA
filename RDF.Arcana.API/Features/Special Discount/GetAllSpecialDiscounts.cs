@@ -73,6 +73,7 @@ public class GetAllSpecialDiscounts : ControllerBase
         public string RoleName { get; set; }
         public int AddedBy { get; set; }
         public bool? Status { get; set; }
+        public int? ClusterId { get; set; }
     }
 
     public class SpecialDiscountResult
@@ -105,7 +106,20 @@ public class GetAllSpecialDiscounts : ControllerBase
                 .Include(r => r.Request)
                 .Include(cl => cl.Client)
                 .Include(ad => ad.AddedByUser);
-            
+
+
+            //filter for Admin/Finanace/GAS/Treasury
+            var adminClusterFilter = _context.Users.Find(request.AddedBy);
+            if ((adminClusterFilter.UserRolesId == 1 ||
+                    adminClusterFilter.UserRolesId == 7 ||
+                    adminClusterFilter.UserRolesId == 8 ||
+                    adminClusterFilter.UserRolesId == 9 ||
+                    adminClusterFilter.UserRolesId == 10)
+                    && request.ClusterId is not null)
+            {
+                specialDiscounts = specialDiscounts.Where(t => t.Client.ClusterId == request.ClusterId);
+            }
+
             if (!string.IsNullOrEmpty(request.Search))
             {
                 specialDiscounts = specialDiscounts.Where(x =>

@@ -7,7 +7,7 @@ public class GetOnlinePayment
     public class GetOnlinePaymentQuery : UserParams, IRequest<PagedList<GetOnlinePaymentResult>>
     {
         public string Search { get; set; }
-        public bool IsActive { get; set; }
+        public bool? IsActive { get; set; }
     }
 
     public class GetOnlinePaymentResult 
