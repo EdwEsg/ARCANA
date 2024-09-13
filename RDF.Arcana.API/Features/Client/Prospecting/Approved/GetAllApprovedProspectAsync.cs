@@ -7,6 +7,7 @@ using RDF.Arcana.API.Common.Extension;
 using RDF.Arcana.API.Common.Helpers;
 using RDF.Arcana.API.Common.Pagination;
 using RDF.Arcana.API.Data;
+using RDF.Arcana.API.Domain;
 
 namespace RDF.Arcana.API.Features.Client.Prospecting.Approved;
 
@@ -84,6 +85,7 @@ public class GetAllApprovedProspectAsync : ControllerBase
         public string SortOrder { get; set; }
         public int AddedBy { get; set; }
         public string Role { get; set; }
+        public int? ClusterId { get; set; }
     }
 
     public class GetAllApprovedProspectResult
@@ -155,7 +157,23 @@ public class GetAllApprovedProspectAsync : ControllerBase
                             x.RegistrationStatus != Status.UnderReview &&
                             x.RegistrationStatus != Status.Rejected);
 
-            if (request.Role is not Roles.Admin)
+            //filter for Admin / Finanace / GAS / Treasury
+            var adminClusterFilter = _context.Users.Find(request.AddedBy);
+            if ((adminClusterFilter.UserRolesId == 1 ||
+                    adminClusterFilter.UserRolesId == 7 ||
+                    adminClusterFilter.UserRolesId == 8 ||
+                    adminClusterFilter.UserRolesId == 9 ||
+                    adminClusterFilter.UserRolesId == 10)
+                    && request.ClusterId is not null)
+            {
+                var userIds = _context.CdoClusters
+                         .Where(c => c.ClusterId == request.ClusterId)
+                         .Select(c => c.UserId);
+
+                approvedProspect = approvedProspect.Where(x => userIds.Contains(x.AddedBy));
+            }
+
+            else if (request.Role is not Roles.Admin)
             {
                 approvedProspect = approvedProspect.Where(x => x.AddedBy == request.AddedBy);
             }

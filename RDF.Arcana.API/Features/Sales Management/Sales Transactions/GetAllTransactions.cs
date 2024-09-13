@@ -77,6 +77,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
             public int AccessBy { get; set; }
             public string PaymentMethod { get; set; }
             public int? ClusterId { get; set; }
+            public string InvoiceType { get; set; }
         }
 
         public class GetAllTransactionQueryResult
@@ -160,6 +161,21 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
                     t.CreatedAt.Date >= fromDate.Date && t.CreatedAt.Date <= toDate.Date)
                                 .OrderByDescending(d => d.CreatedAt);
                 }
+
+                //sales transaction filter for CI and SI
+                if (request.InvoiceType is not null)
+                {
+                    if (request.InvoiceType.ToLower() == "si")
+                    {
+                        transactions = transactions.Where(t => t.InvoiceType == "Sales");
+                    }
+                    else if (request.InvoiceType.ToLower() == "ci")
+                    {
+                        transactions = transactions.Where(t => t.InvoiceType == "Charge");
+                    }
+                    else request.InvoiceType = null;
+                }
+
 
                 if (!string.IsNullOrEmpty(request.Search))
                 {
