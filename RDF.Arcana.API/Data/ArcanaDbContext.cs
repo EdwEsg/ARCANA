@@ -489,8 +489,11 @@ public class ArcanaDbContext : DbContext
             .WithMany()
             .HasForeignKey(x => x.AddedBy);
 
-		
+        modelBuilder.Entity<OnlinePayments>()
+            .HasOne(x => x.AddedByUser)
+            .WithMany()
+            .HasForeignKey(x => x.AddedBy);
 
 
-	}
+    }
 }

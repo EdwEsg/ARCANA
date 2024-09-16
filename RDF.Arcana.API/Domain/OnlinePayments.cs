@@ -10,5 +10,6 @@ namespace RDF.Arcana.API.Domain
         public int AddedBy { get; set; }
         public int? ModifiedBy { get; set; }
         public bool IsActive { get; set; } = true;
+        public virtual User AddedByUser { get; set; }
     }
 }
