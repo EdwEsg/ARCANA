@@ -2,6 +2,7 @@
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Data;
 using RDF.Arcana.API.Domain;
+using RDF.Arcana.API.Features.Price_Mode;
 using RDF.Arcana.API.Features.Setup.Items;
 
 namespace RDF.Arcana.API.Features.Setup.Price_Change;
@@ -55,13 +56,28 @@ public class AddPriceChange : ControllerBase
         public async Task<Result> Handle(AddPriceChangeCommand request, CancellationToken cancellationToken)
         { 
                 var validateItem = await _context.PriceModeItems
-                .Include(x => x.Item).FirstOrDefaultAsync(pmitem =>
-                pmitem.Id == request.PriceModeItemId, cancellationToken);
+                .Include(x => x.ItemPriceChanges)
+                .Include(x => x.Item)
+                .FirstOrDefaultAsync(pmitem =>
+                                     pmitem.Id == request.PriceModeItemId, cancellationToken);
 
                 if (validateItem is null)
                 {
                     return ItemErrors.NotFound(request.PriceModeItemId);
                 }
+
+
+            var existingItem = _context.PriceModeItems
+                .Where(pmi => pmi.ItemId == validateItem.ItemId && pmi.PriceModeId == validateItem.PriceModeId)
+                .SelectMany(pmi => pmi.ItemPriceChanges)
+                .FirstOrDefault(pc => pc.Price == request.Price);
+
+            if (existingItem is not null)
+                {
+                return PriceModeItemsErrors.AlreadyExist(validateItem.Item.ItemCode);
+                }
+
+
 
                 // Check if the latest recorded price change before the specified EffectivityDate has the same price
                 var previousPriceChange = await _context.ItemPriceChanges

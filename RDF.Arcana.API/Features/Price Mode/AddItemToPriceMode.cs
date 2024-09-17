@@ -71,6 +71,10 @@ namespace RDF.Arcana.API.Features.Price_Mode
                 );
 
                 var exisitingItem = await _context.PriceModeItems
+                .Include(ipc => ipc.ItemPriceChanges)
+                    .Where(pmi => 
+                    pmi.ItemPriceChanges.Any(p => p.Price == request.Price) && 
+                    pmi.ItemPriceChanges.Any(p => p.PriceModeItemId == pmi.Id))
                 .Include(i => i.Item)
                     .Where(pmi =>
                     pmi.PriceModeId == request.PriceModeId &&

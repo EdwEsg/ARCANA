@@ -119,14 +119,14 @@ public class GetItemsAsync : ControllerBase
                     .Where(i => i.ItemCode.Contains(request.Search) || i.ItemDescription.Contains(request.Search));
             }
 
-            if(request.PriceModeId is not null)
-            {
-                    var itemIdsInPriceMode = _context.PriceModeItems
-                        .Where(pmi => pmi.PriceModeId == request.PriceModeId)
-                        .Select(pmi => pmi.ItemId);
+            //if(request.PriceModeId is not null)
+            //{
+            //        var itemIdsInPriceMode = _context.PriceModeItems
+            //            .Where(pmi => pmi.PriceModeId == request.PriceModeId)
+            //            .Select(pmi => pmi.ItemId);
 
-                    items = items.Where(i => !itemIdsInPriceMode.Contains(i.Id));
-            }
+            //        items = items.Where(i => !itemIdsInPriceMode.Contains(i.Id));
+            //}
 
             if (request.Status != null)
             {

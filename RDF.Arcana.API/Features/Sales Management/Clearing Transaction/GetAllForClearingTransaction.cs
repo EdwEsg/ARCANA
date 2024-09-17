@@ -138,8 +138,16 @@ public class GetAllForClearingTransaction : ControllerBase
                     .Where(pt => pt.PaymentTransactions.Any(pt => pt.ReferenceNo.Contains(request.Search)));
             }
 
-            var groupedResults = paymentTransactions
+            var groupedQuery = paymentTransactions
                 .SelectMany(x => x.PaymentTransactions)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(request.PaymentMethod))
+            {
+                groupedQuery = groupedQuery.Where(pt => pt.PaymentMethod == request.PaymentMethod);
+            }
+
+            var groupedResults = groupedQuery
                 .GroupBy(pt => new { pt.PaymentMethod, pt.ReferenceNo, pt.BankName, pt.Transaction.Client.BusinessName, pt.ClearedPayment.ATag, pt.ClearedPayment.Reason })
                 .Select(g => new GetAllForClearingTransactionResult
                 {
@@ -158,8 +166,7 @@ public class GetAllForClearingTransaction : ControllerBase
                 })
                 .OrderBy(pt => pt.Date);
 
-			return await PagedList<GetAllForClearingTransactionResult>.CreateAsync(groupedResults, request.PageNumber,
-				request.PageSize);
+            return await PagedList<GetAllForClearingTransactionResult>.CreateAsync(groupedResults, request.PageNumber, request.PageSize);
 		}
 
 	}

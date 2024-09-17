@@ -85,7 +85,8 @@ public class GetAllApprovedProspectAsync : ControllerBase
         public string SortOrder { get; set; }
         public int AddedBy { get; set; }
         public string Role { get; set; }
-        public int? ClusterId { get; set; }
+        //public int? ClusterId { get; set; }
+        public int? BusinessType { get; set; }
     }
 
     public class GetAllApprovedProspectResult
@@ -157,20 +158,25 @@ public class GetAllApprovedProspectAsync : ControllerBase
                             x.RegistrationStatus != Status.UnderReview &&
                             x.RegistrationStatus != Status.Rejected);
 
-            //filter for Admin / Finanace / GAS / Treasury
-            var adminClusterFilter = _context.Users.Find(request.AddedBy);
-            if ((adminClusterFilter.UserRolesId == 1 ||
-                    adminClusterFilter.UserRolesId == 7 ||
-                    adminClusterFilter.UserRolesId == 8 ||
-                    adminClusterFilter.UserRolesId == 9 ||
-                    adminClusterFilter.UserRolesId == 10)
-                    && request.ClusterId is not null)
-            {
-                var userIds = _context.CdoClusters
-                         .Where(c => c.ClusterId == request.ClusterId)
-                         .Select(c => c.UserId);
+            ////filter for Admin / Finanace / GAS / Treasury
+            //var adminClusterFilter = _context.Users.Find(request.AddedBy);
+            //if ((adminClusterFilter.UserRolesId == 1 ||
+            //        adminClusterFilter.UserRolesId == 7 ||
+            //        adminClusterFilter.UserRolesId == 8 ||
+            //        adminClusterFilter.UserRolesId == 9 ||
+            //        adminClusterFilter.UserRolesId == 10)
+            //        && request.ClusterId is not null)
+            //{
+            //    var userIds = _context.CdoClusters
+            //             .Where(c => c.ClusterId == request.ClusterId)
+            //             .Select(c => c.UserId);
 
-                approvedProspect = approvedProspect.Where(x => userIds.Contains(x.AddedBy));
+            //    approvedProspect = approvedProspect.Where(x => userIds.Contains(x.AddedBy));
+            //}
+
+            if (request.BusinessType is not null)
+            {
+                approvedProspect = approvedProspect.Where(t => t.StoreType.Id == request.BusinessType);
             }
 
             else if (request.Role is not Roles.Admin)

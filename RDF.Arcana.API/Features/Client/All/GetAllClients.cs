@@ -8,6 +8,7 @@ using RDF.Arcana.API.Common.Extension;
 using RDF.Arcana.API.Common.Helpers;
 using RDF.Arcana.API.Common.Pagination;
 using RDF.Arcana.API.Data;
+using RDF.Arcana.API.Domain;
 using Result = RDF.Arcana.API.Common.Result;
 
 namespace RDF.Arcana.API.Features.Client.All;
@@ -84,6 +85,8 @@ public class GetAllClients : ControllerBase
         public string Origin { get; set; }
         public int AccessBy { get; set; }
         public string RoleName { get; set; }
+        public int? ClusterId { get; set; }
+        public int? BusinessType { get; set; }
     }
 
     public sealed record GetAllClientResult
@@ -179,6 +182,24 @@ public class GetAllClients : ControllerBase
                     x.Fullname.Contains(request.Search)
                 );
             }
+
+            //filter for Admin/Finanace/GAS/Treasury
+            var adminClusterFilter = _context.Users.Find(request.AccessBy);
+            if ((adminClusterFilter.UserRolesId == 1 ||
+                adminClusterFilter.UserRolesId == 7 ||
+                adminClusterFilter.UserRolesId == 8 ||
+                adminClusterFilter.UserRolesId == 9 ||
+                adminClusterFilter.UserRolesId == 10)
+                && request.ClusterId is not null)
+            {
+                regularClients = regularClients.Where(t => t.ClusterId == request.ClusterId);
+            }
+
+            if (request.BusinessType is not null)
+            {
+                regularClients = regularClients.Where(t => t.StoreType.Id == request.BusinessType);
+            }
+
 
             switch (request.RoleName)
             {
