@@ -9,5 +9,6 @@ public class ItemPriceChange : BaseEntity
     public DateTime EffectivityDate { get; set; }
     public int AddedBy { get; set; }
     public bool IsActive { get; set; } = true;
+    public string Remarks { get; set; }
     public virtual PriceModeItems PriceModeItem { get; set; }
 }
