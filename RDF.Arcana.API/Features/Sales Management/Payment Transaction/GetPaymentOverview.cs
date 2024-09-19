@@ -77,59 +77,113 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
 
 			public async Task<Result> Handle(GetPaymentOverviewRequest request, CancellationToken cancellationToken)
 			{
-				// Fetch PaymentRecords along with the necessary navigation properties eagerly loaded
-				var paymentTransactions = await _context.PaymentRecords
-					.Where(pr => pr.PaymentTransactions.Any(pt => pt.ReferenceNo == request.ReferenceNo))
-					.Include(pr => pr.PaymentTransactions)
-						.ThenInclude(pt => pt.Transaction)
-							.ThenInclude(t => t.TransactionItems)
-								.ThenInclude(ti => ti.Item)
-					.Include(pr => pr.PaymentTransactions)
-						.ThenInclude(pt => pt.AddedByUser)
-					.SelectMany(pr => pr.PaymentTransactions)
-					.Where(pt => (pt.ReferenceNo == request.ReferenceNo && pt.PaymentMethod == request.PaymentMethod))
-					.ToListAsync(cancellationToken);
+                //// Fetch PaymentRecords along with the necessary navigation properties eagerly loaded
+                //var paymentTransactions = await _context.PaymentRecords
+                //	.Where(pr => pr.PaymentTransactions.Any(pt => pt.ReferenceNo == request.ReferenceNo))
+                //	.Include(pr => pr.PaymentTransactions)
+                //		.ThenInclude(pt => pt.Transaction)
+                //			.ThenInclude(t => t.TransactionItems)
+                //				.ThenInclude(ti => ti.Item)
+                //	.Include(pr => pr.PaymentTransactions)
+                //		.ThenInclude(pt => pt.AddedByUser)
+                //	.SelectMany(pr => pr.PaymentTransactions)
+                //	.Where(pt => (pt.ReferenceNo == request.ReferenceNo && pt.PaymentMethod == request.PaymentMethod))
+                //	.ToListAsync(cancellationToken);
 
 
-				var advancePaymentAmount = await _context.AdvancePayments
-					.FirstOrDefaultAsync(x => x.ChequeNo == request.ReferenceNo, cancellationToken: cancellationToken);
-						
-				
+                //var advancePaymentAmount = await _context.AdvancePayments
+                //	.FirstOrDefaultAsync(x => x.ChequeNo == request.ReferenceNo, cancellationToken: cancellationToken);
 
-				// Perform the grouping and projection in memory
-				var paymentOverview = paymentTransactions
-					.GroupBy(pt => new { pt.PaymentMethod, pt.ReferenceNo, pt.BankName, pt.ChequeDate, pt.AddedByUser, pt.Reason })
-					.Select(g => new GetPaymentOverviewResponse
-					{
-						PaymentMethod = g.Key.PaymentMethod,
-						PaymentChannel = g.Key.BankName,
-						CreatedAt = g.Key.ChequeDate.ToString("MM-dd-yyyy"),
-						AddedBy = g.Key.AddedByUser.Fullname,
-						TotalAmount = g.Sum(pt => pt.PaymentAmount),
-						ModeOfPayment = g.Key.PaymentMethod,
-						Reason = g.Key.Reason,
-                        ReceiptNo = g.FirstOrDefault()?.PaymentRecord.ReceiptNo, // Access the first item's PaymentRecord for ReceiptNo
-                        ReceiptAttachment = g.FirstOrDefault()?.PaymentRecord.Receipt, // Access the first item's PaymentRecord for ReceiptAttachment
-                        Attachment = g.FirstOrDefault()?.WithholdingAttachment,
-                        Transactions = g.Select(pt => new GetPaymentOverviewResponse.Transaction
-						{
-							PaymentTransactionId = pt.Id,
-							InvoiceType = pt.Transaction.InvoiceType,
-							InvoiceNo = pt.Transaction.InvoiceNo,
-							PaymentAmount = pt.TotalAmountReceived,
-							TransactionItems = pt.Transaction.TransactionItems.Select(ti => new GetPaymentOverviewResponse.TransactionItem
-							{
-								ItemCode = ti.Item.ItemCode,
-								ItemDescription = ti.Item.ItemDescription,
-								Quantity = ti.Quantity,
-								Amount = ti.Amount
-							}).ToList()
-						}).ToList(),
-						AdvancePaymentAmount = advancePaymentAmount?.AdvancePaymentAmount
-					}).ToList();
 
-				return Result.Success(paymentOverview);
-			}
-		}
+
+                //// Perform the grouping and projection in memory
+                //var paymentOverview = paymentTransactions
+                //	.GroupBy(pt => new { pt.PaymentMethod, pt.ReferenceNo, pt.BankName, pt.ChequeDate, pt.AddedByUser, pt.Reason })
+                //	.Select(g => new GetPaymentOverviewResponse
+                //	{
+                //		PaymentMethod = g.Key.PaymentMethod,
+                //		PaymentChannel = g.Key.BankName,
+                //		CreatedAt = g.Key.ChequeDate.ToString("MM-dd-yyyy"),
+                //		AddedBy = g.Key.AddedByUser.Fullname,
+                //		TotalAmount = g.Sum(pt => pt.PaymentAmount),
+                //		ModeOfPayment = g.Key.PaymentMethod,
+                //		Reason = g.Key.Reason,
+                //                    ReceiptNo = g.FirstOrDefault()?.PaymentRecord.ReceiptNo, // Access the first item's PaymentRecord for ReceiptNo
+                //                    ReceiptAttachment = g.FirstOrDefault()?.PaymentRecord.Receipt, // Access the first item's PaymentRecord for ReceiptAttachment
+                //                    Attachment = g.FirstOrDefault()?.WithholdingAttachment,
+                //                    Transactions = g.Select(pt => new GetPaymentOverviewResponse.Transaction
+                //		{
+                //			PaymentTransactionId = pt.Id,
+                //			InvoiceType = pt.Transaction.InvoiceType,
+                //			InvoiceNo = pt.Transaction.InvoiceNo,
+                //			PaymentAmount = pt.TotalAmountReceived,
+                //			TransactionItems = pt.Transaction.TransactionItems.Select(ti => new GetPaymentOverviewResponse.TransactionItem
+                //			{
+                //				ItemCode = ti.Item.ItemCode,
+                //				ItemDescription = ti.Item.ItemDescription,
+                //				Quantity = ti.Quantity,
+                //				Amount = ti.Amount
+                //			}).ToList()
+                //		}).ToList(),
+                //		AdvancePaymentAmount = advancePaymentAmount?.AdvancePaymentAmount
+                //	}).ToList();
+
+                //return Result.Success(paymentOverview);
+
+                var paymentRecords = await _context.PaymentRecords
+                    .Where(pr => pr.PaymentTransactions.Any(pt => pt.ReferenceNo == request.ReferenceNo))
+                    .Include(pr => pr.PaymentTransactions)
+                        .ThenInclude(pt => pt.Transaction)
+                            .ThenInclude(t => t.TransactionItems)
+                                .ThenInclude(ti => ti.Item)
+                    .Include(pr => pr.PaymentTransactions)
+                        .ThenInclude(pt => pt.AddedByUser)
+                    .ToListAsync(cancellationToken);
+
+                var advancePaymentAmount = await _context.AdvancePayments
+                    .FirstOrDefaultAsync(x => x.ChequeNo == request.ReferenceNo, cancellationToken: cancellationToken);
+
+                // Perform the projection
+                var paymentOverview = paymentRecords
+                    .Select(pr => new GetPaymentOverviewResponse
+                    {
+                        PaymentMethod = pr.PaymentTransactions.First().PaymentMethod,
+                        PaymentChannel = pr.PaymentTransactions.First().BankName,
+                        CreatedAt = pr.PaymentTransactions.First().ChequeDate.ToString("MM-dd-yyyy"),
+                        AddedBy = pr.PaymentTransactions.First().AddedByUser.Fullname,
+                        TotalAmount = pr.PaymentTransactions.Sum(pt => pt.PaymentAmount),
+                        ModeOfPayment = pr.PaymentTransactions.First().PaymentMethod,
+                        Reason = pr.PaymentTransactions.First().Reason,
+
+                        // Access ReceiptNo and Receipt from PaymentRecord
+                        ReceiptNo = pr.ReceiptNo,
+                        ReceiptAttachment = pr.Receipt,
+
+                        // Access WithholdingAttachment from PaymentTransaction
+                        Attachment = pr.PaymentTransactions.FirstOrDefault()?.WithholdingAttachment,
+
+                        Transactions = pr.PaymentTransactions.Select(pt => new GetPaymentOverviewResponse.Transaction
+                        {
+                            PaymentTransactionId = pt.Id,
+                            InvoiceType = pt.Transaction.InvoiceType,
+                            InvoiceNo = pt.Transaction.InvoiceNo,
+                            PaymentAmount = pt.TotalAmountReceived,
+                            TransactionItems = pt.Transaction.TransactionItems.Select(ti => new GetPaymentOverviewResponse.TransactionItem
+                            {
+                                ItemCode = ti.Item.ItemCode,
+                                ItemDescription = ti.Item.ItemDescription,
+                                Quantity = ti.Quantity,
+                                Amount = ti.Amount
+                            }).ToList()
+                        }).ToList(),
+
+                        AdvancePaymentAmount = advancePaymentAmount?.AdvancePaymentAmount
+                    })
+                    .ToList();
+
+                return Result.Success(paymentOverview);
+
+            }
+        }
 	}
 }
