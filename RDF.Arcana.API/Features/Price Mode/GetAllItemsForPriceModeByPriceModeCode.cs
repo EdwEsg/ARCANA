@@ -120,6 +120,28 @@ namespace RDF.Arcana.API.Features.Price_Mode
                 if (request.PriceModeId is not null)
                 {
                     priceModeItems = priceModeItems.Where(pmi => pmi.PriceModeId == request.PriceModeId);
+
+                    if (request.PriceModeId != 1)
+                    {
+                        var priceModeItemsWithId1 = _context.PriceModeItems
+                            .Include(x => x.PriceMode)
+                            .Include(i => i.Item)
+                                .ThenInclude(x => x.Uom)
+                            .Include(i => i.Item)
+                                .ThenInclude(x => x.MeatType)
+                            .Include(i => i.Item)
+                                .ThenInclude(x => x.ProductSubCategory)
+                            .Where(pmi => pmi.PriceModeId == 1);
+
+                        priceModeItems = priceModeItems.Union(priceModeItemsWithId1);
+
+                        //priceModeItems = priceModeItems
+                        //    .GroupBy(pmi => pmi.ItemId)
+                        //    .Select(group =>
+                        //        group.FirstOrDefault(pmi => pmi.PriceModeId == request.PriceModeId) 
+                        //        ?? group.First() 
+                        //    ).AsQueryable();
+                    }
                 }
 
                 var result = priceModeItems.Select(pm => new GetAllItemsForPriceModeResult

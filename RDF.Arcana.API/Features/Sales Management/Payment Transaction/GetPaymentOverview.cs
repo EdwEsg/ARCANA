@@ -41,6 +41,9 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
 			public ICollection<Transaction> Transactions { get; set; }
 			public decimal? AdvancePaymentAmount { get; set; }
             public string Reason { get; set; }
+            public string ReceiptNo { get; set; }
+            public string ReceiptAttachment { get; set; }
+            public string Attachment { get; set; }
 
             public class Transaction
 			{
@@ -105,7 +108,10 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
 						TotalAmount = g.Sum(pt => pt.PaymentAmount),
 						ModeOfPayment = g.Key.PaymentMethod,
 						Reason = g.Key.Reason,
-						Transactions = g.Select(pt => new GetPaymentOverviewResponse.Transaction
+                        ReceiptNo = g.FirstOrDefault()?.PaymentRecord.ReceiptNo, // Access the first item's PaymentRecord for ReceiptNo
+                        ReceiptAttachment = g.FirstOrDefault()?.PaymentRecord.Receipt, // Access the first item's PaymentRecord for ReceiptAttachment
+                        Attachment = g.FirstOrDefault()?.WithholdingAttachment,
+                        Transactions = g.Select(pt => new GetPaymentOverviewResponse.Transaction
 						{
 							PaymentTransactionId = pt.Id,
 							InvoiceType = pt.Transaction.InvoiceType,
