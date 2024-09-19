@@ -88,7 +88,7 @@ public class AddNewPriceModeWithItems : ControllerBase
                 {
                     PriceModeId = priceMode.Id,
                     ItemId = item.ItemId,
-                    AddedBy = item.AddedBy
+                    AddedBy = request.AddedBy
                 };
 
                 _context.Add(priceModeItems);
@@ -99,7 +99,7 @@ public class AddNewPriceModeWithItems : ControllerBase
                     PriceModeItemId = priceModeItems.Id,
                     Price = item.Price,
                     EffectivityDate = DateTime.Now, 
-                    AddedBy = item.AddedBy,
+                    AddedBy = request.AddedBy,
                     Remarks = item.Remarks
                 };
 
