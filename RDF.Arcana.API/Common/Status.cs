@@ -13,6 +13,7 @@ public static class Status
     public const string Rejected = "Rejected";
     public const string Requested = "Requested";
     public const string Voided = "Voided";
+    public const string Cancelled = "Cancelled";
     public const string Archived = "Archived";
     public const string ForListingFeeApproval = "For listing fee approval";
     public const string DirectRegistrationApproval = "Direct Registration Approval";

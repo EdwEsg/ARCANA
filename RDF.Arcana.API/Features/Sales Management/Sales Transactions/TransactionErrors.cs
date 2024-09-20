@@ -12,4 +12,5 @@ public static class TransactionErrors
     public static Error Voided() => new("Transaction.Voided", "This transaction is already voided");
     public static Error SICI() => new("SI/CI", "Invalid Invoice Type [Sales/Charge]");
     public static Error InvalidInvoiceNumber() => new("SI/CI", "Invoice Number must not be value string or null");
+    public static Error InvalidInputs() => new("Input.Error", "Must only hava 1 TransactionId and 0 PaymentRecordsId or Vice Versa");
 }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Data;
+using System.Security.Claims;
 
 
 namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
@@ -18,8 +19,13 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
 		[HttpGet("overview")]
 		public async Task<IActionResult> GetPaymentOverviewAsync([FromQuery] GetPaymentOverviewRequest query)
 		{
+            if (User.Identity is ClaimsIdentity identity
+               && int.TryParse(identity.FindFirst("id")?.Value, out var userId))
+            {
+                query.AddedBy = userId;
+            }
 
-			var result = await _mediator.Send(query);
+            var result = await _mediator.Send(query);
 
 			return result.IsSuccess ? Ok(result) : BadRequest(result);
 		}
@@ -28,6 +34,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
 		{
 			public string ReferenceNo { get; set; }
             public string PaymentMethod { get; set; }
+            public int AddedBy { get; set; }
         }
 
 		public class GetPaymentOverviewResponse
@@ -44,6 +51,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
             public string ReceiptNo { get; set; }
             public string ReceiptAttachment { get; set; }
             public string Attachment { get; set; }
+            public string WithholdingNo { get; set; }
 
             public class Transaction
 			{
@@ -77,58 +85,6 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
 
 			public async Task<Result> Handle(GetPaymentOverviewRequest request, CancellationToken cancellationToken)
 			{
-                //// Fetch PaymentRecords along with the necessary navigation properties eagerly loaded
-                //var paymentTransactions = await _context.PaymentRecords
-                //	.Where(pr => pr.PaymentTransactions.Any(pt => pt.ReferenceNo == request.ReferenceNo))
-                //	.Include(pr => pr.PaymentTransactions)
-                //		.ThenInclude(pt => pt.Transaction)
-                //			.ThenInclude(t => t.TransactionItems)
-                //				.ThenInclude(ti => ti.Item)
-                //	.Include(pr => pr.PaymentTransactions)
-                //		.ThenInclude(pt => pt.AddedByUser)
-                //	.SelectMany(pr => pr.PaymentTransactions)
-                //	.Where(pt => (pt.ReferenceNo == request.ReferenceNo && pt.PaymentMethod == request.PaymentMethod))
-                //	.ToListAsync(cancellationToken);
-
-
-                //var advancePaymentAmount = await _context.AdvancePayments
-                //	.FirstOrDefaultAsync(x => x.ChequeNo == request.ReferenceNo, cancellationToken: cancellationToken);
-
-
-
-                //// Perform the grouping and projection in memory
-                //var paymentOverview = paymentTransactions
-                //	.GroupBy(pt => new { pt.PaymentMethod, pt.ReferenceNo, pt.BankName, pt.ChequeDate, pt.AddedByUser, pt.Reason })
-                //	.Select(g => new GetPaymentOverviewResponse
-                //	{
-                //		PaymentMethod = g.Key.PaymentMethod,
-                //		PaymentChannel = g.Key.BankName,
-                //		CreatedAt = g.Key.ChequeDate.ToString("MM-dd-yyyy"),
-                //		AddedBy = g.Key.AddedByUser.Fullname,
-                //		TotalAmount = g.Sum(pt => pt.PaymentAmount),
-                //		ModeOfPayment = g.Key.PaymentMethod,
-                //		Reason = g.Key.Reason,
-                //                    ReceiptNo = g.FirstOrDefault()?.PaymentRecord.ReceiptNo, // Access the first item's PaymentRecord for ReceiptNo
-                //                    ReceiptAttachment = g.FirstOrDefault()?.PaymentRecord.Receipt, // Access the first item's PaymentRecord for ReceiptAttachment
-                //                    Attachment = g.FirstOrDefault()?.WithholdingAttachment,
-                //                    Transactions = g.Select(pt => new GetPaymentOverviewResponse.Transaction
-                //		{
-                //			PaymentTransactionId = pt.Id,
-                //			InvoiceType = pt.Transaction.InvoiceType,
-                //			InvoiceNo = pt.Transaction.InvoiceNo,
-                //			PaymentAmount = pt.TotalAmountReceived,
-                //			TransactionItems = pt.Transaction.TransactionItems.Select(ti => new GetPaymentOverviewResponse.TransactionItem
-                //			{
-                //				ItemCode = ti.Item.ItemCode,
-                //				ItemDescription = ti.Item.ItemDescription,
-                //				Quantity = ti.Quantity,
-                //				Amount = ti.Amount
-                //			}).ToList()
-                //		}).ToList(),
-                //		AdvancePaymentAmount = advancePaymentAmount?.AdvancePaymentAmount
-                //	}).ToList();
-
-                //return Result.Success(paymentOverview);
 
                 var paymentRecords = await _context.PaymentRecords
                     .Where(pr => pr.PaymentTransactions.Any(pt => pt.ReferenceNo == request.ReferenceNo))
@@ -143,7 +99,6 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
                 var advancePaymentAmount = await _context.AdvancePayments
                     .FirstOrDefaultAsync(x => x.ChequeNo == request.ReferenceNo, cancellationToken: cancellationToken);
 
-                // Perform the projection
                 var paymentOverview = paymentRecords
                     .Select(pr => new GetPaymentOverviewResponse
                     {
@@ -155,12 +110,11 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
                         ModeOfPayment = pr.PaymentTransactions.First().PaymentMethod,
                         Reason = pr.PaymentTransactions.First().Reason,
 
-                        // Access ReceiptNo and Receipt from PaymentRecord
                         ReceiptNo = pr.ReceiptNo,
                         ReceiptAttachment = pr.Receipt,
 
-                        // Access WithholdingAttachment from PaymentTransaction
-                        Attachment = pr.PaymentTransactions.FirstOrDefault()?.WithholdingAttachment,
+                        Attachment = (request.AddedBy == 17 || request.AddedBy == 1) ? pr.PaymentTransactions.FirstOrDefault()?.WithholdingAttachment : null,
+                        WithholdingNo = (request.AddedBy == 17 || request.AddedBy == 1) ? pr.PaymentTransactions.FirstOrDefault()?.WithholdingNo : null,
 
                         Transactions = pr.PaymentTransactions.Select(pt => new GetPaymentOverviewResponse.Transaction
                         {

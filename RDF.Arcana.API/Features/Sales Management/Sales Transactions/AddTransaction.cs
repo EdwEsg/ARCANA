@@ -159,7 +159,8 @@ public class AddTransaction : ControllerBase
                 }
             }
             var existingInvoice = await _context.Transactions
-                                  .AnyAsync(ts => ts.InvoiceNo == request.InvoiceNo && ts.InvoiceType == request.InvoiceType);
+                                  .AnyAsync(ts => ts.InvoiceNo == request.InvoiceNo && ts.InvoiceType == request.InvoiceType 
+                                    && ts.Status != Status.Voided);
 
             if (existingInvoice)
             {
