@@ -3,6 +3,7 @@ using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Common.Extension;
 using RDF.Arcana.API.Common.Pagination;
 using RDF.Arcana.API.Data;
+using RDF.Arcana.API.Domain;
 
 namespace RDF.Arcana.API.Features.Price_Mode
 {
@@ -90,8 +91,7 @@ namespace RDF.Arcana.API.Features.Price_Mode
 
             public async Task<PagedList<GetAllItemsForPriceModeResult>> Handle(GetAllItemsForPriceModeQuery request, CancellationToken cancellationToken)
             {
-                var now = DateTime.Now;
-                IQueryable<Domain.PriceModeItems> priceModeItems = _context.PriceModeItems
+                IQueryable<PriceModeItems> priceModeItems = _context.PriceModeItems
                     .Include(x => x.PriceMode)
                     .Include(i => i.Item)
                     .ThenInclude(x => x.Uom)
@@ -159,7 +159,7 @@ namespace RDF.Arcana.API.Features.Price_Mode
                     IsActive = pm.IsActive,
                     CurrentPrice = pm.ItemPriceChanges
                             .OrderBy(p => p.EffectivityDate)
-                            .First(pc => pc.EffectivityDate <= now).Price
+                            .First(pc => pc.EffectivityDate <= DateTime.Now).Price
                 }).OrderBy(x => x.ItemCode);
 
                 return await PagedList<GetAllItemsForPriceModeResult>.CreateAsync(result, request.PageNumber, request.PageSize);
