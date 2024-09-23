@@ -51,7 +51,7 @@ public class AddNewPriceModeWithItems : ControllerBase
             public int PriceModeId { get; set; }
             public int ItemId { get; set; }
             public decimal Price { get; set; }
-            public string Remarks { get; set; }
+            public bool? IsClearPack { get; set; }
             public int AddedBy { get; set; }
         }
 
@@ -88,7 +88,8 @@ public class AddNewPriceModeWithItems : ControllerBase
                 {
                     PriceModeId = priceMode.Id,
                     ItemId = item.ItemId,
-                    AddedBy = request.AddedBy
+                    AddedBy = request.AddedBy,
+                    IsClearPack = item.IsClearPack,
                 };
 
                 _context.Add(priceModeItems);
@@ -99,8 +100,7 @@ public class AddNewPriceModeWithItems : ControllerBase
                     PriceModeItemId = priceModeItems.Id,
                     Price = item.Price,
                     EffectivityDate = DateTime.Now, 
-                    AddedBy = request.AddedBy,
-                    Remarks = item.Remarks
+                    AddedBy = request.AddedBy
                 };
 
                 _context.Add(itemPrice);
