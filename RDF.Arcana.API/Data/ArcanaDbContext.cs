@@ -63,6 +63,7 @@ public class ArcanaDbContext : DbContext
     public virtual DbSet<PaymentTransaction> PaymentTransactions { get; set; }
     public virtual DbSet<PaymentRecords> PaymentRecords { get; set; }
     public virtual DbSet<ApproverByRange> ApproverByRange { get; set; }
+    public virtual DbSet<Cheque> Cheque { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -490,6 +491,11 @@ public class ArcanaDbContext : DbContext
             .HasForeignKey(x => x.AddedBy);
 
         modelBuilder.Entity<OnlinePayments>()
+            .HasOne(x => x.AddedByUser)
+            .WithMany()
+            .HasForeignKey(x => x.AddedBy);
+
+        modelBuilder.Entity<Cheque>()
             .HasOne(x => x.AddedByUser)
             .WithMany()
             .HasForeignKey(x => x.AddedBy);

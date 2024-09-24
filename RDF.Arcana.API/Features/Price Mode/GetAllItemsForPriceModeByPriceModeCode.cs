@@ -77,7 +77,8 @@ namespace RDF.Arcana.API.Features.Price_Mode
             public bool IsActive { get; set; }
             public string ModifiedBy { get; set; }
             public decimal? CurrentPrice { get; set; }
-            
+            public bool? IsClearPack { get; set; }
+
         }
 
         public class Handler : IRequestHandler<GetAllItemsForPriceModeQuery, PagedList<GetAllItemsForPriceModeResult>>
@@ -139,7 +140,8 @@ namespace RDF.Arcana.API.Features.Price_Mode
                         (pmi.PriceModeId == 1 && !_context.PriceModeItems.Any(p => p.ItemId == pmi.ItemId && p.PriceModeId == request.PriceModeId))
                     );
 
-                    if (priceModeItems.All(pmi => pmi.IsClearPack != true))
+                    if (priceModeItems.All(pmi => pmi.IsClearPack != true) || priceModeItems.Any(pmi => pmi.IsClearPack == true &&
+                            priceModeItems.Count(p => p.ItemId == pmi.ItemId) > 2))
                     {
                         priceModeItems = priceModeItems.Where(pmi =>
                         pmi.PriceModeId == request.PriceModeId ||
@@ -162,7 +164,8 @@ namespace RDF.Arcana.API.Features.Price_Mode
                     IsActive = pm.IsActive,
                     CurrentPrice = pm.ItemPriceChanges
                             .OrderBy(p => p.EffectivityDate)
-                            .First(pc => pc.EffectivityDate <= DateTime.Now).Price
+                            .First(pc => pc.EffectivityDate <= DateTime.Now).Price,
+                    IsClearPack = pm.IsClearPack
                 }).OrderBy(x => x.ItemCode);
 
                 return await PagedList<GetAllItemsForPriceModeResult>.CreateAsync(result, request.PageNumber, request.PageSize);
