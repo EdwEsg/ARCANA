@@ -18,7 +18,6 @@ public class CancelTransactions : ControllerBase
     {
         try
         {
-
             var result = await _mediator.Send(command);
             return result.IsSuccess ? Ok(result) : BadRequest(result);
         }
@@ -30,8 +29,7 @@ public class CancelTransactions : ControllerBase
 
     public class CancelTransactionsCommand : IRequest<Result>
     {
-        public int? TransactionId { get; set; }
-        public int? PaymentRecordsId { get; set; }
+        public int TransactionId { get; set; }
         public string Reason { get; set; }
     }
 
@@ -45,28 +43,30 @@ public class CancelTransactions : ControllerBase
 
         public async Task<Result> Handle(CancelTransactionsCommand request, CancellationToken cancellationToken)
         {
-            if (request.TransactionId is not null && request.PaymentRecordsId is not null)
-            {
-                return TransactionErrors.InvalidInputs();
-            }
-
-            else if (request.TransactionId is not null)
-            {
                 var transaction = await _context.Transactions
                     .Include(ts => ts.TransactionSales)
-                    .FirstOrDefaultAsync(t => t.Status == Status.Pending
-                        && t.Id == request.TransactionId
-                        && t.TransactionSales.TotalAmountDue == t.TransactionSales.RemainingBalance, cancellationToken);
+                    .Include(pt => pt.PaymentTransactions)
+                    .FirstOrDefaultAsync(t => (t.Status == Status.Pending || t.Status == Status.Paid)
+                        && t.Id == request.TransactionId, cancellationToken);
 
                 if (transaction is null)
                 {
                     return TransactionErrors.NotFound();
                 }
+                 
+                if (transaction.TransactionSales.TotalAmountDue != transaction.TransactionSales.RemainingBalance)
+                {
+                    var paymentTransaction = transaction.PaymentTransactions
+                        .Where(pt => pt.PaymentMethod == PaymentMethods.ListingFee ||
+                                     pt.PaymentMethod == PaymentMethods.Others ||
+                                     pt.PaymentMethod == PaymentMethods.AdvancePayment)
+                        .ToList();
+                }
 
                 transaction.Status = Status.Cancelled;
                 transaction.TransactionSales.Remarks = request.Reason;
                 transaction.UpdatedAt = DateTime.Now;
-            }
+            
 
             await _context.SaveChangesAsync(cancellationToken);
             return Result.Success();
