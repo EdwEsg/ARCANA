@@ -136,6 +136,7 @@ public class AddTransaction : ControllerBase
                 .Include(x => x.BusinessAddress)
                 .Include(cl => cl.Term)
                 .ThenInclude(cl => cl.Terms)
+                .Include(pm => pm.PriceMode)
                 .FirstOrDefaultAsync(cl => 
                 cl.Id == request.ClientId,
                 cancellationToken);
@@ -223,7 +224,8 @@ public class AddTransaction : ControllerBase
                     Quantity = item.Quantity,
                     UnitPrice = item.UnitPrice,
                     Amount = item.UnitPrice * item.Quantity,
-                    AddedBy = request.AddedBy
+                    AddedBy = request.AddedBy,
+                    PriceModeId = existingClient.PriceModeId
                 };
 
                 //Get the item details inserted by Item Id

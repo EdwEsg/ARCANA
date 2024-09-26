@@ -15,9 +15,11 @@ public class TransactionItems : BaseEntity
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime UpdatedAt { get; set; }
     public int AddedBy { get; set; }
+    public int? PriceModeId { get; set; }
 
     public virtual Transactions Transaction { get; set; }
     public virtual Items Item { get; set; }
     public virtual User AddedByUser { get; set; }
+    public virtual PriceMode PriceMode { get; set; }
     public bool IsActive { get; set; } = true;
 }
