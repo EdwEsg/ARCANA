@@ -118,35 +118,22 @@ namespace RDF.Arcana.API.Features.Price_Mode
                     priceModeItems = priceModeItems.Where(pmi => pmi.IsActive == request.Status);
                 }
 
-                //if (request.PriceModeId is not null)
-                //{
-                //    priceModeItems = priceModeItems.Where(pmi =>
-                //        pmi.PriceModeId == request.PriceModeId ||
-                //        (pmi.PriceModeId == 1 && !_context.PriceModeItems.Any(p => p.ItemId == pmi.ItemId && p.PriceModeId == request.PriceModeId)));
-                //}
-
                 if (request.PriceModeId is not null)
                 {
-                    var clearPackItemIds = _context.PriceModeItems
-                        .Where(p => p.IsClearPack == true)
-                        .Select(p => p.ItemId)
-                        .ToList();
-
                     priceModeItems = priceModeItems.Where(pmi =>
-                        pmi.PriceModeId == request.PriceModeId ||
+                        (pmi.PriceModeId == request.PriceModeId && (pmi.IsClearPack != true)) ||
 
-                        (pmi.PriceModeId == 1 && clearPackItemIds.Contains(pmi.ItemId)) ||
+                        (pmi.PriceModeId == 1 && !_context.PriceModeItems.Any(p =>
+                            p.ItemId == pmi.ItemId &&
+                            p.PriceModeId == request.PriceModeId &&
+                            (p.IsClearPack != true))) ||
 
-                        (pmi.PriceModeId == 1 && !_context.PriceModeItems.Any(p => p.ItemId == pmi.ItemId && p.PriceModeId == request.PriceModeId))
+                        (pmi.PriceModeId == request.PriceModeId && pmi.IsClearPack == true)
                     );
-
-                    if (priceModeItems.All(pmi => pmi.IsClearPack != true) || priceModeItems.Any(pmi => pmi.IsClearPack == true &&
-                            priceModeItems.Count(p => p.ItemId == pmi.ItemId) > 2))
-                    {
-                        priceModeItems = priceModeItems.Where(pmi =>
-                        pmi.PriceModeId == request.PriceModeId ||
-                        (pmi.PriceModeId == 1 && !_context.PriceModeItems.Any(p => p.ItemId == pmi.ItemId && p.PriceModeId == request.PriceModeId)));
-                    }
+                }
+                else
+                {
+                    priceModeItems = priceModeItems.Where(pmi => pmi.PriceModeId == 1);
                 }
 
                 var result = priceModeItems.Select(pm => new GetAllItemsForPriceModeResult
