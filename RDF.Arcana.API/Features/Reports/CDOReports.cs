@@ -106,6 +106,7 @@ public class CDOReports : ControllerBase
                     "Month",
                     "Date",
                     "Outlet Code",
+                    "CI#",
                     "SI#",
                     "Item Code",
                     "Quantity",
@@ -153,41 +154,51 @@ public class CDOReports : ControllerBase
                     row.Cell(2).Value = consolidate[index].CreatedAt.ToString("MMM");
                     row.Cell(3).Value = consolidate[index].CreatedAt.ToString("dd/MM/yyyy");
                     row.Cell(4).Value = "N/A";
-                    row.Cell(5).Value = consolidate[index].Transaction.InvoiceNo;
-                    row.Cell(6).Value = consolidate[index].Item.ItemCode;
+                    row.Cell(5).Value = consolidate[index].Transaction.InvoiceType == "Charge" ? consolidate[index].Transaction.InvoiceNo : "";
+                    row.Cell(6).Value = consolidate[index].Transaction.InvoiceType == "Sales" ? consolidate[index].Transaction.InvoiceNo : "";
+                    row.Cell(7).Value = consolidate[index].Item.ItemCode;
 
                     //Qty to Discounted Price
-                    row.Cell(7).Value = consolidate[index].Quantity;
-                    row.Cell(8).Value = ((consolidate[index].Transaction.TransactionSales.Discount * 100) +
+                    row.Cell(8).Value = consolidate[index].Quantity;
+                    row.Cell(9).Value = ((consolidate[index].Transaction.TransactionSales.Discount * 100) +
                                         (consolidate[index].Transaction.TransactionSales.SpecialDiscount * 100)).ToString("0.##") + "%";
-                    row.Cell(9).Value = consolidate[index].UnitPrice;
-                    row.Cell(10).Value = consolidate[index].Amount;
+                    row.Cell(10).Value = consolidate[index].UnitPrice;
+                    row.Cell(11).Value = consolidate[index].Amount;
 
                     decimal discountPercentage = consolidate[index].Transaction.TransactionSales.Discount +
                             consolidate[index].Transaction.TransactionSales.SpecialDiscount;
                     decimal discountedPrice = consolidate[index].UnitPrice * (1 - discountPercentage);
-                    row.Cell(11).Value = discountedPrice;
+                    row.Cell(12).Value = discountedPrice;
 
                     decimal totalDiscountedAmount = discountedPrice * consolidate[index].Quantity;
-                    row.Cell(12).Value = totalDiscountedAmount;
+                    row.Cell(13).Value = totalDiscountedAmount;
                     //End of Qty to Discounted Price
 
-                    row.Cell(13).Value = consolidate[index].Item.ItemDescription;
-                    row.Cell(14).Value = consolidate[index].Transaction.Client.BusinessName;
-                    row.Cell(15).Value = consolidate[index].Transaction.Client.BusinessAddress.City;
-                    row.Cell(16).Value = consolidate[index].Transaction.Client.BusinessAddress.Province;
+                    row.Cell(14).Value = consolidate[index].Item.ItemDescription;
+                    row.Cell(15).Value = consolidate[index].Transaction.Client.BusinessName;
+                    row.Cell(16).Value = consolidate[index].Transaction.Client.BusinessAddress.City;
                     row.Cell(17).Value = consolidate[index].Transaction.Client.BusinessAddress.Province;
-                    row.Cell(18).Value = consolidate[index].Transaction.Client.Cluster.ClusterType;
-                    row.Cell(19).Value = consolidate[index].Transaction.Client.CustomerType;
-                    row.Cell(20).Value = consolidate[index].Transaction.Client.StoreType.StoreTypeName;
+                    row.Cell(18).Value = consolidate[index].Transaction.Client.BusinessAddress.Province;
+                    row.Cell(19).Value = consolidate[index].Transaction.Client.Cluster.ClusterType;
+                    row.Cell(20).Value = consolidate[index].Transaction.Client.CustomerType;
+                    row.Cell(21).Value = consolidate[index].Transaction.Client.StoreType.StoreTypeName;
 
                     bool status = consolidate[index].IsActive;
-                    row.Cell(21).Value = status is true ? "Active" : "Delisted";
+                    row.Cell(22).Value = status is true ? "Active" : "Delisted";
 
-                    row.Cell(22).Value = userDictionary.ContainsKey(consolidate[index].AddedBy)
+                    row.Cell(23).Value = userDictionary.ContainsKey(consolidate[index].AddedBy)
                         ? userDictionary[consolidate[index].AddedBy]
                         : "Unknown";
 
+                    //for centering the numeric value for better readability
+                    for (int col = 1; col <= 23; col++)  
+                    {
+                        var cell = row.Cell(col);
+                        if (decimal.TryParse(cell.Value.ToString(), out _))  
+                        {
+                            cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;  
+                        }
+                    }
                 }
 
                 worksheet.Columns().AdjustToContents();
