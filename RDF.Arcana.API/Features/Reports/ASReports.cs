@@ -82,6 +82,7 @@ namespace RDF.Arcana.API.Features.Reports
                         .ThenInclude(pr => pr.PaymentRecord)
                     .Include(pt => pt.PaymentTransactions)
                         .ThenInclude(cl => cl.ClearedPayment)
+                    .Include(u => u.AddedByUser)
                     .AsSplitQuery()
                     .AsNoTracking();
 
@@ -250,8 +251,8 @@ namespace RDF.Arcana.API.Features.Reports
                         row.Cell(34).Value = ""; //Remarks
 
                         string dateColumn = GetExcelColumnName(1); // A
-                        string agingFormula = $"=TODAY()-{dateColumn}{rowNumber}";
-                        row.Cell(35).FormulaA1 = agingFormula; //Aging
+                        string agingFormula = $"=INT(TODAY()-{dateColumn}{rowNumber})";
+                        row.Cell(35).FormulaA1 = agingFormula; // Aging
 
                         row.Cell(36).Value = ""; //Store
                         row.Cell(37).Value = ""; //Sales Rep
@@ -259,11 +260,10 @@ namespace RDF.Arcana.API.Features.Reports
                         row.Cell(39).Value = consolidate[index].Client.IsActive == true ? "Active" : ""; //Status
                         row.Cell(40).Value = consolidate[index].Client.Cluster.ClusterType; //Area
 
-                        var cdo = consolidate[index].Client.Cluster.CdoClusters.FirstOrDefault().UserId;
-                        var userCDO = _context.Users.Where(i => i.Id == cdo);
-                        row.Cell(41).Value = userCDO.FirstOrDefault().Fullname; //SAS
 
-                        row.Cell(42).Value = consolidate[index]?.Client?.Term?.TermDays?.Days ?? 0;
+                        row.Cell(41).Value = consolidate[index].AddedByUser.Fullname; //SAS
+
+                        row.Cell(42).Value = consolidate[index]?.Client?.Term?.TermDays?.Days ?? 0; //Terms
                         row.Cell(43).Value = ""; //RSH
                         row.Cell(44).Value = "Gen Trade"; //Category
                         row.Cell(45).Value = ""; //Previous Sales Rep
