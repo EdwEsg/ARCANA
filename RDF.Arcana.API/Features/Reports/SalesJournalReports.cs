@@ -66,7 +66,8 @@ namespace RDF.Arcana.API.Features.Reports
                         "Vat Reg. No.",
                         "Amount",
                         "Debit",
-                        "Credit"
+                        "Credit",
+                        "Aging"
                     };
 
                     var headerRange = worksheet.Range(worksheet.Cell(1, 1), worksheet.Cell(1, headers.Count));
@@ -102,6 +103,7 @@ namespace RDF.Arcana.API.Features.Reports
                         row.Cell(6).Value = consolidate[index].TransactionSales.TotalAmountDue;
                         row.Cell(7).Value = consolidate[index].TransactionSales.TotalAmountDue - consolidate[index].TransactionSales.RemainingBalance;
                         row.Cell(8).Value = consolidate[index].TransactionSales.RemainingBalance;
+                        row.Cell(9).Value = "";
 
                         //for centering the numeric value for better readability
                         for (int col = 1; col <= 45; col++)
