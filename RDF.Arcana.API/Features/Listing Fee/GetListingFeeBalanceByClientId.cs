@@ -73,12 +73,7 @@ public class GetListingFeeBalanceByClientId : ControllerBase
                 .Include(u => u.RequestedByUser)
                 .Where(lf => lf.ClientId == request.ClientId &&
                              lf.Status == Status.Approved)
-                .ToListAsync();
-
-            if (listingFees.Count == 0)
-            {
-                return ListingFeeErrors.NotFound();
-            }
+                .ToListAsync(cancellationToken);
 
             var listingFeeResults = listingFees.Select(lf => new GetListingFeeBalanceByClientQueryResult.ListingFee
             {
@@ -90,7 +85,7 @@ public class GetListingFeeBalanceByClientId : ControllerBase
 
             var result = new GetListingFeeBalanceByClientQueryResult
             {
-                BusinessName = listingFees.First().Client.BusinessName,
+                BusinessName = listingFees.FirstOrDefault()?.Client.BusinessName ?? string.Empty,
                 TotalBalance = listingFeeResults.Sum(lf => lf.Total),
                 ListingFees = listingFeeResults
             };

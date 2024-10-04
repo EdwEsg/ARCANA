@@ -61,6 +61,21 @@ public class CancelTransactions : ControllerBase
                                      pt.PaymentMethod == PaymentMethods.Others ||
                                      pt.PaymentMethod == PaymentMethods.AdvancePayment)
                         .ToList();
+
+                    //foreach(var payment in paymentTransaction) 
+                    //{
+                    //    if (payment.PaymentMethod == PaymentMethods.ListingFee)
+                    //    {
+                    //        var listingFee = _context.ListingFees.Where(lf => lf.ClientId == transaction.ClientId &&
+                    //                         lf.Status == Status.Approved &&
+                    //                         lf.IsActive)
+                    //                         .OrderBy(lf => lf.CratedAt)
+                    //                         .First();
+
+                    //        listingFee.Total += payment.   
+
+                    //    }
+                    //}
                 }
 
                 transaction.Status = Status.Cancelled;
