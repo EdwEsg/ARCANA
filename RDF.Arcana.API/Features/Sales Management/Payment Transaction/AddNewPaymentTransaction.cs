@@ -642,24 +642,29 @@ public class AddNewPaymentTransaction : BaseApiController
 
 
 
-                    if (payment.PaymentMethod == PaymentMethods.Cash ||
-                        payment.PaymentMethod == PaymentMethods.Online ||
-                        payment.PaymentMethod == PaymentMethods.Withholding)
+
+
+
+
+                    if (payment.PaymentMethod == PaymentMethods.Withholding)
                     {
 
                         decimal remainingToPay = amountToPay;
-                        Payment currentPayment = null; 
+                        Payment currentPayment = null;
 
                         foreach (var paymentItem in orderedPayments)
                         {
-                            string withholdingAttachmentUrl = null;
-                            string withholdingNumber = null;                            
-
-                            if (paymentItem.PaymentMethod != PaymentMethods.Cash &&
-                                paymentItem.PaymentMethod != PaymentMethods.Online &&
-                                paymentItem.PaymentMethod != PaymentMethods.Withholding)
+                            if(paymentItem.PaymentAmount == 0)
                             {
                                 continue;
+                            }
+
+                            string withholdingAttachmentUrl = null;
+                            string withholdingNumber = null;
+
+                            if (paymentItem.PaymentMethod != PaymentMethods.Withholding)
+                            {
+                                break;
                             }
 
                             if (paymentItem.PaymentAmount <= 0 || remainingToPay <= 0)
@@ -667,7 +672,7 @@ public class AddNewPaymentTransaction : BaseApiController
                                 continue;
                             }
 
-                            if (paymentItem.PaymentMethod == PaymentMethods.Withholding && paymentItem.WithholdingAttachment != null)
+                            if(paymentItem.WithholdingAttachment != null)
                             {
                                 if (payment.WithholdingAttachment.Length > 0)
                                 {
@@ -686,9 +691,13 @@ public class AddNewPaymentTransaction : BaseApiController
                                     withholdingNumber = payment.WithholdingNo;
                                 }
                             }
+                            else
+                            {
+                                return TransactionErrors.NullWithholding();
+                            }
 
 
-                            currentPayment = paymentItem; 
+                            currentPayment = paymentItem;
                             decimal currentPaymentAmount = currentPayment.PaymentAmount;
 
                             // Calculate the remaining amount to pay for this transaction
@@ -744,6 +753,199 @@ public class AddNewPaymentTransaction : BaseApiController
 
                         await _context.SaveChangesAsync(cancellationToken);
                     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    if (payment.PaymentMethod == PaymentMethods.Online)
+                    {
+
+                        decimal remainingToPay = amountToPay;
+                        Payment currentPayment = null;
+
+                        foreach (var paymentItem in orderedPayments)
+                        {
+                            if (paymentItem.PaymentAmount == 0)
+                            {
+                                continue;
+                            }
+
+                            if (paymentItem.PaymentMethod != PaymentMethods.Online)
+                            {
+                                break;
+                            }
+
+                            if (paymentItem.PaymentAmount <= 0 || remainingToPay <= 0)
+                            {
+                                continue;
+                            }
+
+                            
+                            currentPayment = paymentItem;
+                            decimal currentPaymentAmount = currentPayment.PaymentAmount;
+
+                            // Calculate the remaining amount to pay for this transaction
+                            decimal paymentToApply = currentPaymentAmount <= remainingToPay ? currentPaymentAmount : remainingToPay;
+                            remainingToPay -= paymentToApply;
+
+
+                            var paymentTransaction = new PaymentTransaction
+                            {
+                                TransactionId = transaction.Id,
+                                AddedBy = request.AddedBy,
+                                PaymentRecordId = paymentRecord.Id,
+                                PaymentMethod = currentPayment.PaymentMethod,
+                                PaymentAmount = origPaymentAmount,
+                                TotalAmountReceived = paymentToApply,
+                                Payee = currentPayment.Payee,
+                                ChequeDate = currentPayment.ChequeDate,
+                                BankName = currentPayment.BankName,
+                                ChequeNo = currentPayment.ChequeNo,
+                                DateReceived = DateTime.Now,
+                                ChequeAmount = currentPayment.ChequeAmount,
+                                AccountName = currentPayment.AccountName,
+                                AccountNo = currentPayment.AccountNo,
+                                Status = Status.ForClearing,
+                                OnlinePlatform = currentPayment.OnlinePlatform,
+                                ReferenceNo = transaction.InvoiceNo,
+                            };
+
+                            await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
+
+                            // Update the remaining balance of the transaction
+                            transaction.TransactionSales.RemainingBalance = remainingToPay;
+                            transaction.Status = remainingToPay <= 0 ? Status.Paid : Status.Pending;
+
+                            // Adjust the payment amount for any remaining balance
+                            currentPayment.PaymentAmount -= paymentToApply;
+                            excessAmount = currentPayment.PaymentAmount;
+
+                            await _context.SaveChangesAsync(cancellationToken);
+
+                            if (remainingToPay <= 0)
+                            {
+                                break;
+                            }
+                        }
+
+                        if (currentPayment != null && currentPayment.PaymentMethod == payment.PaymentMethod)
+                        {
+                            payment.PaymentAmount = excessAmount;
+                        }
+
+                        await _context.SaveChangesAsync(cancellationToken);
+                    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    if (payment.PaymentMethod == PaymentMethods.Cash)
+                    {
+
+                        decimal remainingToPay = amountToPay;
+                        Payment currentPayment = null;
+
+                        foreach (var paymentItem in orderedPayments)
+                        {
+                            if (paymentItem.PaymentAmount == 0)
+                            {
+                                continue;
+                            }
+
+                            if (paymentItem.PaymentMethod != PaymentMethods.Cash)
+                            {
+                                break;
+                            }
+
+                            if (paymentItem.PaymentAmount <= 0 || remainingToPay <= 0)
+                            {
+                                continue;
+                            }
+
+
+                            currentPayment = paymentItem;
+                            decimal currentPaymentAmount = currentPayment.PaymentAmount;
+
+                            // Calculate the remaining amount to pay for this transaction
+                            decimal paymentToApply = currentPaymentAmount <= remainingToPay ? currentPaymentAmount : remainingToPay;
+                            remainingToPay -= paymentToApply;
+
+
+                            var paymentTransaction = new PaymentTransaction
+                            {
+                                TransactionId = transaction.Id,
+                                AddedBy = request.AddedBy,
+                                PaymentRecordId = paymentRecord.Id,
+                                PaymentMethod = currentPayment.PaymentMethod,
+                                PaymentAmount = origPaymentAmount,
+                                TotalAmountReceived = paymentToApply,
+                                Payee = currentPayment.Payee,
+                                ChequeDate = currentPayment.ChequeDate,
+                                BankName = currentPayment.BankName,
+                                ChequeNo = currentPayment.ChequeNo,
+                                DateReceived = DateTime.Now,
+                                ChequeAmount = currentPayment.ChequeAmount,
+                                AccountName = currentPayment.AccountName,
+                                AccountNo = currentPayment.AccountNo,
+                                Status = Status.ForClearing,
+                                OnlinePlatform = currentPayment.OnlinePlatform,
+                                ReferenceNo = transaction.InvoiceNo,
+                            };
+
+                            await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
+
+                            // Update the remaining balance of the transaction
+                            transaction.TransactionSales.RemainingBalance = remainingToPay;
+                            transaction.Status = remainingToPay <= 0 ? Status.Paid : Status.Pending;
+
+                            // Adjust the payment amount for any remaining balance
+                            currentPayment.PaymentAmount -= paymentToApply;
+                            excessAmount = currentPayment.PaymentAmount;
+
+                            await _context.SaveChangesAsync(cancellationToken);
+
+                            if (remainingToPay <= 0)
+                            {
+                                break;
+                            }
+                        }
+
+                        if (currentPayment != null && currentPayment.PaymentMethod == payment.PaymentMethod)
+                        {
+                            payment.PaymentAmount = excessAmount;
+                        }
+
+                        await _context.SaveChangesAsync(cancellationToken);
+                    }
+
+
+
+
+
+
+
+
 
 
 

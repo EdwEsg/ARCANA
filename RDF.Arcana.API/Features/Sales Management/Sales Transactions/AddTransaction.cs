@@ -301,17 +301,18 @@ public class AddTransaction : ControllerBase
                 TotalSales = totalSales,
                 VatableSales = vatableSales,
                 SubTotal = subTotal,
-                AmountDue = amountDue, 
+                AmountDue = amountDue,
                 TotalAmountDue = totalAmountDue,
-                Discount = request.Discount / 100, 
+                Discount = request.Discount / 100,
                 DiscountAmount = userDiscount,
-                SpecialDiscount = request.SpecialDiscount / 100, 
-                SpecialDiscountAmount = specialDiscountAmount, 
+                SpecialDiscount = request.SpecialDiscount / 100,
+                SpecialDiscountAmount = specialDiscountAmount,
                 VatAmount = vatAmount,
                 AddVat = addVat,
                 RemainingBalance = totalAmountDue,
                 AddedBy = request.AddedBy,
-                Remarks = request.Remarks
+                Remarks = request.Remarks,
+                CreatedAt = DateTime.Now
             };
 
             await _context.TransactionSales.AddAsync(newTransactionSales, cancellationToken);

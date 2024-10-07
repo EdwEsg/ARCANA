@@ -62,20 +62,41 @@ public class CancelTransactions : ControllerBase
                                      pt.PaymentMethod == PaymentMethods.AdvancePayment)
                         .ToList();
 
-                    //foreach(var payment in paymentTransaction) 
-                    //{
-                    //    if (payment.PaymentMethod == PaymentMethods.ListingFee)
-                    //    {
-                    //        var listingFee = _context.ListingFees.Where(lf => lf.ClientId == transaction.ClientId &&
-                    //                         lf.Status == Status.Approved &&
-                    //                         lf.IsActive)
-                    //                         .OrderBy(lf => lf.CratedAt)
-                    //                         .First();
+                    foreach (var payment in paymentTransaction)
+                    {
+                        if (payment.PaymentMethod == PaymentMethods.ListingFee)
+                        {
+                            var listingFee = _context.ListingFees.Where(lf => lf.ClientId == transaction.ClientId &&
+                                             lf.Status == Status.Approved &&
+                                             lf.IsActive)
+                                             .OrderBy(lf => lf.CratedAt)
+                                             .First();
 
-                    //        listingFee.Total += payment.   
+                            listingFee.Total += payment.TotalAmountReceived;
 
-                    //    }
-                    //}
+                        }
+
+                        if (payment.PaymentMethod == PaymentMethods.Others)
+                        {
+                            var otherExpenses = _context.ExpensesRequests.Where(oe => oe.ClientId == transaction.ClientId &&
+                                                oe.Status == Status.Approved &&
+                                                oe.OtherExpenseId == payment.ExpensesRequestId)
+                                                .OrderBy(oe => oe.CreatedAt)
+                                                .First();
+                            
+                            otherExpenses.RemainingBalance += payment.TotalAmountReceived;
+                        }
+
+                        if (payment.PaymentMethod == PaymentMethods.AdvancePayment)
+                        {
+                            var advancePayment = _context.AdvancePayments.Where(ap => ap.ClientId == transaction.ClientId &&
+                                                 ap.IsActive)
+                                                 .OrderBy(ap => ap.CreatedAt)
+                                                 .First();
+                            
+                            advancePayment.RemainingBalance += payment.TotalAmountReceived;
+                        }
+                    }
                 }
 
                 transaction.Status = Status.Cancelled;
