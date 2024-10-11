@@ -88,6 +88,7 @@ public class GetAllForClearingTransaction : ControllerBase
         public ICollection<Invoice> Invoices { get; set; }
         public string ATag { get; set; }
         public string BusinessName { get; set; }
+        public string OwnersName { get; set; }
         public class Invoice
 		{
 			public string InvoiceNo { get; set; }
@@ -112,7 +113,9 @@ public class GetAllForClearingTransaction : ControllerBase
                 .ThenInclude(x => x.Transaction)
                 .Include(x => x.PaymentTransactions)
                 .ThenInclude(x => x.ClearedPayment)
-                .Where(x => x.PaymentTransactions.Any(x => x.Status.Contains(request.Status)));
+                .Where(pr => pr.Status == request.Status &&
+                             pr.PaymentTransactions.Any(pr => pr.Transaction.Status != Status.Cancelled &&
+                                pr.Transaction.Status != Status.Voided));
 
             //filter for Admin/Finanace/GAS/Treasury
             var adminClusterFilter = _context.Users.Find(request.AddedBy);
@@ -140,6 +143,8 @@ public class GetAllForClearingTransaction : ControllerBase
 
             var groupedQuery = paymentTransactions
                 .SelectMany(x => x.PaymentTransactions)
+                .Where(pt => pt.Status != Status.Voided &&
+                    pt.Status != Status.Cancelled)
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(request.PaymentMethod))
@@ -148,10 +153,11 @@ public class GetAllForClearingTransaction : ControllerBase
             }
 
             var groupedResults = groupedQuery
-                .GroupBy(pt => new { pt.PaymentMethod, pt.ReferenceNo, pt.BankName, pt.Transaction.Client.BusinessName, pt.ClearedPayment.ATag, pt.ClearedPayment.Reason })
+                .GroupBy(pt => new { pt.PaymentMethod, pt.ReferenceNo, pt.BankName, pt.Transaction.Client.BusinessName, pt.ClearedPayment.ATag, pt.ClearedPayment.Reason, pt.Transaction.Client.Fullname })
                 .Select(g => new GetAllForClearingTransactionResult
                 {
                     BusinessName = g.Key.BusinessName,
+                    OwnersName = g.Key.Fullname,
                     PaymentMethod = g.Key.PaymentMethod,
                     PaymentChannel = g.Key.BankName,
                     ReferenceNo = g.Key.ReferenceNo,

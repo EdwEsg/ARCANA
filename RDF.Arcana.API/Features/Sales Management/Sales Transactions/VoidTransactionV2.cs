@@ -61,9 +61,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
                 if (transaction.TransactionSales.TotalAmountDue != transaction.TransactionSales.RemainingBalance)
                 {
                     var paymentTransaction = transaction.PaymentTransactions
-                        .Where(pt => pt.PaymentMethod == PaymentMethods.ListingFee ||
-                                     pt.PaymentMethod == PaymentMethods.Others ||
-                                     pt.PaymentMethod == PaymentMethods.AdvancePayment)
+                        .Where(pt => pt.TransactionId == transaction.Id)
                         .ToList();
 
                     foreach (var payment in paymentTransaction)
@@ -100,6 +98,8 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
 
                             advancePayment.RemainingBalance += payment.TotalAmountReceived;
                         }
+
+                        payment.Status = Status.Voided;
                     }
                 }
 

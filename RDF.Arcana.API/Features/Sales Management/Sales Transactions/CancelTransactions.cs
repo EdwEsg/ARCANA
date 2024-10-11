@@ -57,9 +57,7 @@ public class CancelTransactions : ControllerBase
                 if (transaction.TransactionSales.TotalAmountDue != transaction.TransactionSales.RemainingBalance)
                 {
                     var paymentTransaction = transaction.PaymentTransactions
-                        .Where(pt => pt.PaymentMethod == PaymentMethods.ListingFee ||
-                                     pt.PaymentMethod == PaymentMethods.Others ||
-                                     pt.PaymentMethod == PaymentMethods.AdvancePayment)
+                        .Where(pt => pt.TransactionId == transaction.Id)
                         .ToList();
 
                     foreach (var payment in paymentTransaction)
@@ -96,6 +94,8 @@ public class CancelTransactions : ControllerBase
                             
                             advancePayment.RemainingBalance += payment.TotalAmountReceived;
                         }
+
+                        payment.Status = Status.Cancelled;
                     }
                 }
 
