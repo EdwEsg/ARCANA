@@ -105,75 +105,84 @@ public class GetAllForClearingTransaction : ControllerBase
         {
             _context = context;
         }
-        public async Task<PagedList<GetAllForClearingTransactionResult>> Handle(GetAllForClearingTransactionQuery request,
-            CancellationToken cancellationToken)
+        public async Task<PagedList<GetAllForClearingTransactionResult>> Handle(GetAllForClearingTransactionQuery request, CancellationToken cancellationToken)
         {
-            var paymentTransactions = _context.PaymentRecords
-                .Include(x => x.PaymentTransactions)
-                .ThenInclude(x => x.Transaction)
-                .Include(x => x.PaymentTransactions)
-                .ThenInclude(x => x.ClearedPayment)
-                .Where(pr => pr.Status == request.Status &&
-                             pr.PaymentTransactions.Any(pr => pr.Transaction.Status != Status.Cancelled &&
-                                pr.Transaction.Status != Status.Voided));
+            var adminClusterFilter = await _context.Users.FindAsync(request.AddedBy);
 
-            //filter for Admin/Finanace/GAS/Treasury
-            var adminClusterFilter = _context.Users.Find(request.AddedBy);
-            if ((adminClusterFilter.UserRolesId == 1 ||
-                    adminClusterFilter.UserRolesId == 7 ||
-                    adminClusterFilter.UserRolesId == 8 ||
-                    adminClusterFilter.UserRolesId == 9 ||
-                    adminClusterFilter.UserRolesId == 10)
-                    && request.ClusterId is not null)
+            var query = _context.PaymentTransactions
+                .Where(pt => pt.PaymentRecord.Status == request.Status &&
+                             pt.Transaction.Status != Status.Cancelled &&
+                             pt.Transaction.Status != Status.Voided &&
+                             pt.Status != Status.Voided &&
+                             pt.Status != Status.Cancelled);
+
+            int[] roleIds = { 1, 7, 8, 9, 10 };
+            int userRoleId = adminClusterFilter.UserRolesId ?? 0;
+
+            if (roleIds.Contains(userRoleId) && request.ClusterId != null)
             {
-                paymentTransactions = paymentTransactions.Where(t => t.PaymentTransactions.Any(pt => pt.Transaction.Client.ClusterId == request.ClusterId));
-
+                query = query.Where(pt => pt.Transaction.Client.ClusterId == request.ClusterId);
             }
 
-            if (request.PaymentMethod is not null)
+            if (!string.IsNullOrEmpty(request.PaymentMethod))
             {
-                paymentTransactions = paymentTransactions.Where(t => t.PaymentTransactions.Any(pt => pt.PaymentMethod == request.PaymentMethod));
+                query = query.Where(pt => pt.PaymentMethod == request.PaymentMethod);
             }
 
             if (!string.IsNullOrEmpty(request.Search))
             {
-                paymentTransactions = paymentTransactions
-                    .Where(pt => pt.PaymentTransactions.Any(pt => pt.ReferenceNo.Contains(request.Search)));
+                query = query.Where(pt => pt.ReferenceNo.Contains(request.Search));
             }
 
-            var groupedQuery = paymentTransactions
-                .SelectMany(x => x.PaymentTransactions)
-                .Where(pt => pt.Status != Status.Voided &&
-                    pt.Status != Status.Cancelled)
-                .AsQueryable();
-
-            if (!string.IsNullOrEmpty(request.PaymentMethod))
-            {
-                groupedQuery = groupedQuery.Where(pt => pt.PaymentMethod == request.PaymentMethod);
-            }
-
-            var groupedResults = groupedQuery
-                .GroupBy(pt => new { pt.PaymentMethod, pt.ReferenceNo, pt.BankName, pt.Transaction.Client.BusinessName, pt.ClearedPayment.ATag, pt.ClearedPayment.Reason, pt.Transaction.Client.Fullname })
+            var groupedQuery = query
+                .Select(pt => new
+                {
+                    pt.PaymentMethod,
+                    pt.ReferenceNo,
+                    pt.BankName,
+                    pt.TotalAmountReceived,
+                    pt.DateReceived,
+                    BusinessName = pt.Transaction.Client.BusinessName,
+                    ATag = pt.ClearedPayment.ATag,
+                    Reason = pt.ClearedPayment.Reason,
+                    OwnersName = pt.Transaction.Client.Fullname,
+                    InvoiceNo = pt.Transaction.InvoiceNo
+                })
+                .GroupBy(x => new
+                {
+                    x.PaymentMethod,
+                    x.ReferenceNo,
+                    x.BankName,
+                    x.BusinessName,
+                    x.ATag,
+                    x.Reason,
+                    x.OwnersName
+                })
                 .Select(g => new GetAllForClearingTransactionResult
                 {
                     BusinessName = g.Key.BusinessName,
-                    OwnersName = g.Key.Fullname,
+                    OwnersName = g.Key.OwnersName,
                     PaymentMethod = g.Key.PaymentMethod,
                     PaymentChannel = g.Key.BankName,
                     ReferenceNo = g.Key.ReferenceNo,
-                    TotalPaymentAmount = g.Sum(pt => pt.PaymentAmount),
-                    Date = g.Max(pt => pt.DateReceived),
+                    TotalPaymentAmount = g.Sum(x => x.TotalAmountReceived),
+                    Date = g.Max(x => x.DateReceived),
                     ATag = g.Key.ATag,
                     Reason = g.Key.Reason,
                     Invoices = g.Select(x => new GetAllForClearingTransactionResult.Invoice
                     {
-                        InvoiceNo = x.Transaction.InvoiceNo
+                        InvoiceNo = x.InvoiceNo
                     }).Distinct().ToList()
                 })
-                .OrderBy(pt => pt.Date);
+                .OrderBy(r => r.Date);
 
-            return await PagedList<GetAllForClearingTransactionResult>.CreateAsync(groupedResults, request.PageNumber, request.PageSize);
-		}
 
-	}
+            return await PagedList<GetAllForClearingTransactionResult>.CreateAsync(
+                groupedQuery,
+                request.PageNumber,
+                request.PageSize);
+        }
+
+
+    }
 }
