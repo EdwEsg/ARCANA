@@ -105,7 +105,8 @@ public class GetAllForClearingTransaction : ControllerBase
         {
             _context = context;
         }
-        public async Task<PagedList<GetAllForClearingTransactionResult>> Handle(GetAllForClearingTransactionQuery request, CancellationToken cancellationToken)
+        public async Task<PagedList<GetAllForClearingTransactionResult>> Handle(
+    GetAllForClearingTransactionQuery request, CancellationToken cancellationToken)
         {
             var adminClusterFilter = await _context.Users.FindAsync(request.AddedBy);
 
@@ -114,8 +115,16 @@ public class GetAllForClearingTransaction : ControllerBase
                              pt.Transaction.Status != Status.Cancelled &&
                              pt.Transaction.Status != Status.Voided &&
                              pt.Status != Status.Voided &&
-                             pt.Status != Status.Cancelled);
+                             pt.Status != Status.Cancelled &&
+                             pt.TotalAmountReceived > 0);
 
+            // Admin, Sir Roger
+            if (adminClusterFilter.Id != 1 && adminClusterFilter.Id != 17)
+            {
+                query = query.Where(pt => pt.PaymentMethod != PaymentMethods.Withholding);
+            }
+
+            // Admin, GAS, Audit, Finance, Treasury
             int[] roleIds = { 1, 7, 8, 9, 10 };
             int userRoleId = adminClusterFilter.UserRolesId ?? 0;
 
@@ -142,6 +151,7 @@ public class GetAllForClearingTransaction : ControllerBase
                     pt.BankName,
                     pt.TotalAmountReceived,
                     pt.DateReceived,
+                    pt.Id, 
                     BusinessName = pt.Transaction.Client.BusinessName,
                     ATag = pt.ClearedPayment.ATag,
                     Reason = pt.ClearedPayment.Reason,
@@ -151,12 +161,12 @@ public class GetAllForClearingTransaction : ControllerBase
                 .GroupBy(x => new
                 {
                     x.PaymentMethod,
-                    x.ReferenceNo,
                     x.BankName,
                     x.BusinessName,
                     x.ATag,
                     x.Reason,
-                    x.OwnersName
+                    x.OwnersName,
+                    ReferenceNoGroupingKey = x.ReferenceNo ?? x.Id.ToString()
                 })
                 .Select(g => new GetAllForClearingTransactionResult
                 {
@@ -164,7 +174,7 @@ public class GetAllForClearingTransaction : ControllerBase
                     OwnersName = g.Key.OwnersName,
                     PaymentMethod = g.Key.PaymentMethod,
                     PaymentChannel = g.Key.BankName,
-                    ReferenceNo = g.Key.ReferenceNo,
+                    ReferenceNo = g.FirstOrDefault(x => x.ReferenceNo != null).ReferenceNo, 
                     TotalPaymentAmount = g.Sum(x => x.TotalAmountReceived),
                     Date = g.Max(x => x.DateReceived),
                     ATag = g.Key.ATag,
@@ -176,12 +186,12 @@ public class GetAllForClearingTransaction : ControllerBase
                 })
                 .OrderBy(r => r.Date);
 
-
             return await PagedList<GetAllForClearingTransactionResult>.CreateAsync(
                 groupedQuery,
                 request.PageNumber,
                 request.PageSize);
         }
+
 
 
     }

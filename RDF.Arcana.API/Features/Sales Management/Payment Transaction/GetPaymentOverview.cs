@@ -33,6 +33,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
 		public class GetPaymentOverviewRequest : IRequest<Result>
 		{
 			public string ReferenceNo { get; set; }
+            public int? TransactionId { get; set; }
             public string PaymentMethod { get; set; }
             public int AddedBy { get; set; }
         }
@@ -85,9 +86,9 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
 
             public async Task<Result> Handle(GetPaymentOverviewRequest request, CancellationToken cancellationToken)
             {
-                // Start from PaymentTransactions directly
                 var query = _context.PaymentTransactions
-                    .Where(pt => pt.ReferenceNo == request.ReferenceNo)
+                    .Where(pt => (request.ReferenceNo != null && pt.ReferenceNo == request.ReferenceNo) ||
+                        (request.ReferenceNo == null && request.TransactionId != null && pt.TransactionId == request.TransactionId))
                     .Select(pt => new
                     {
                         pt,
@@ -110,7 +111,6 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
                             .FirstOrDefault()
                     });
 
-                // Perform projection directly in the query
                 var paymentOverview = await query
                     .GroupBy(x => new
                     {
@@ -136,11 +136,11 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
                         Reason = g.Key.Reason,
                         ReceiptNo = g.Key.ReceiptNo,
                         ReceiptAttachment = g.Key.Receipt,
-                        Attachment = (request.AddedBy == 17 || request.AddedBy == 1) ? g.Key.WithholdingAttachment : null,
-                        WithholdingNo = (request.AddedBy == 17 || request.AddedBy == 1) ? g.Key.WithholdingNo : null,
+                        Attachment = g.Key.WithholdingAttachment,
+                        WithholdingNo = g.Key.WithholdingNo,
                         Transactions = g.Select(x => new GetPaymentOverviewResponse.Transaction
                         {
-                            PaymentTransactionId = x.pt.Id,
+                            PaymentTransactionId = x.pt.TransactionId,
                             InvoiceType = x.InvoiceType,
                             InvoiceNo = x.InvoiceNo,
                             PaymentAmount = x.pt.TotalAmountReceived,
