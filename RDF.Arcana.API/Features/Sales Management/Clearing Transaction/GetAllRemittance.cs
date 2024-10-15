@@ -1,4 +1,5 @@
-﻿//using RDF.Arcana.API.Common.Pagination;
+﻿//using RDF.Arcana.API.Common;
+//using RDF.Arcana.API.Common.Pagination;
 //using RDF.Arcana.API.Data;
 
 //namespace RDF.Arcana.API.Features.Sales_Management.Clearing_Transaction
@@ -42,9 +43,13 @@
 
 //            public Task<PagedList<GetAllRemittanceResult>> Handle(GetAllRemittanceQuery request, CancellationToken cancellationToken)
 //            {
-//                var paymentTransactions = _context.PaymentRecords
-//                    .Include(pt => pt.PaymentTransactions)
-//                        .ThenInclude()
+//                var paymentTransactions = _context.PaymentTransactions
+//                    .Where(pt => pt.PaymentRecord.Status == request.Status &&
+//                             pt.Transaction.Status != Status.Cancelled &&
+//                             pt.Transaction.Status != Status.Voided &&
+//                             pt.Status != Status.Voided &&
+//                             pt.Status != Status.Cancelled &&
+//                             pt.TotalAmountReceived > 0);
 //            }
 //        }
 //    }

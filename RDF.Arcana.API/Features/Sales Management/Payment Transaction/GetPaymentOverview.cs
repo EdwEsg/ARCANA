@@ -87,8 +87,11 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
             public async Task<Result> Handle(GetPaymentOverviewRequest request, CancellationToken cancellationToken)
             {
                 var query = _context.PaymentTransactions
-                    .Where(pt => (request.ReferenceNo != null && pt.ReferenceNo == request.ReferenceNo) ||
-                        (request.ReferenceNo == null && request.TransactionId != null && pt.TransactionId == request.TransactionId))
+                    .Where(pt =>
+                        ((request.ReferenceNo != null && pt.ReferenceNo == request.ReferenceNo) ||
+                        (request.ReferenceNo == null && request.TransactionId != null && pt.TransactionId == request.TransactionId)) &&
+                        (request.PaymentMethod == null || pt.PaymentMethod == request.PaymentMethod) 
+                    )
                     .Select(pt => new
                     {
                         pt,
@@ -157,6 +160,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
                     .ToListAsync(cancellationToken);
 
                 return Result.Success(paymentOverview);
+
             }
 
         }
