@@ -32,9 +32,9 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
 
 		public class GetPaymentOverviewRequest : IRequest<Result>
 		{
-			public string ReferenceNo { get; set; }
-            public int? TransactionId { get; set; }
+			public int PaymentRecordId { get; set; }
             public string PaymentMethod { get; set; }
+            public string CheckReferenceNo { get; set; }
             public int AddedBy { get; set; }
         }
 
@@ -87,11 +87,8 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
             public async Task<Result> Handle(GetPaymentOverviewRequest request, CancellationToken cancellationToken)
             {
                 var query = _context.PaymentTransactions
-                    .Where(pt =>
-                        ((request.ReferenceNo != null && pt.ReferenceNo == request.ReferenceNo) ||
-                        (request.ReferenceNo == null && request.TransactionId != null && pt.TransactionId == request.TransactionId)) &&
-                        (request.PaymentMethod == null || pt.PaymentMethod == request.PaymentMethod) 
-                    )
+                    .Where(pt => pt.PaymentRecordId == request.PaymentRecordId &&
+                                 pt.PaymentMethod == request.PaymentMethod)
                     .Select(pt => new
                     {
                         pt,
@@ -109,7 +106,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
                         pt.Transaction.InvoiceType,
                         pt.Transaction.InvoiceNo,
                         AdvancePaymentAmount = _context.AdvancePayments
-                            .Where(ap => ap.ChequeNo == request.ReferenceNo)
+                            .Where(ap => ap.ChequeNo == request.CheckReferenceNo)
                             .Select(ap => (decimal?)ap.AdvancePaymentAmount)
                             .FirstOrDefault()
                     });
