@@ -9,7 +9,7 @@ public class TransactionItems : BaseEntity
 {
     public int TransactionId { get; set; }
     public int ItemId { get; set; }
-    public int Quantity { get; set; }
+    public decimal Quantity { get; set; }
     public decimal UnitPrice  { get; set; }
     public decimal Amount { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;

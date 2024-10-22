@@ -133,6 +133,7 @@ public class GetClientsForPOSAsync : ControllerBase
                     .Where(x => x.RegistrationStatus == Status.Approved &&
                                 (x.Term.TermsId != 2 || (x.Transactions.Any(ts => ts.Status == Status.Paid) ||
                                 x.Transactions.Count == 0)))
+                    //.Where(c => c.RegistrationStatus == Status.Approved) //this is for temporary restraining the 1 up 1 down Logic
                     .Select(cl => new GetClientsForPOSAsyncResult
                     {
                         ClientId = cl.Id,

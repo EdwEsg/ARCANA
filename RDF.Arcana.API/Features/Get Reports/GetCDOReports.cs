@@ -73,7 +73,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
             public DateTime Date { get; set; }
             public string InvoiceNo { get; set; }
             public string ItemDescription { get; set; }
-            public int Quantity { get; set; }
+            public decimal Quantity { get; set; }
             public decimal UnitPrice { get; set; }
             public decimal Amount { get; set; }
             public string Outlet { get; set; }
