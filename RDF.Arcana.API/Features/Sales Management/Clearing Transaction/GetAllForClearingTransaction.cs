@@ -77,7 +77,7 @@ public class GetAllForClearingTransaction : ControllerBase
 
     public class GetAllForClearingTransactionResult
     {
-        public int Id { get; set; }
+        public int PaymentRecordId { get; set; }
         public string PaymentMethod { get; set; }
         public string PaymentChannel { get; set; }
         public List<string> ReferenceNos { get; set; }
@@ -172,6 +172,7 @@ public class GetAllForClearingTransaction : ControllerBase
                 })
                 .Select(g => new GetAllForClearingTransactionResult
                 {
+                    PaymentRecordId = g.Key.PaymentRecordId,
                     BusinessName = g.Key.BusinessName,
                     OwnersName = g.Key.OwnersName,
                     PaymentMethod = g.Key.PaymentMethod,
