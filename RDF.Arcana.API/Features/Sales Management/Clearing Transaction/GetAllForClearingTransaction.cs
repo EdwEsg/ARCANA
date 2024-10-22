@@ -80,7 +80,7 @@ public class GetAllForClearingTransaction : ControllerBase
         public int Id { get; set; }
         public string PaymentMethod { get; set; }
         public string PaymentChannel { get; set; }
-        public string ReferenceNo { get; set; }
+        public List<string> ReferenceNos { get; set; }
         public decimal TotalPaymentAmount { get; set; }
         public int ClearingId { get; set; }
         public string Reason { get; set; }
@@ -156,7 +156,8 @@ public class GetAllForClearingTransaction : ControllerBase
                     ATag = pt.ClearedPayment.ATag,
                     Reason = pt.ClearedPayment.Reason,
                     OwnersName = pt.Transaction.Client.Fullname,
-                    InvoiceNo = pt.Transaction.InvoiceNo
+                    InvoiceNo = pt.Transaction.InvoiceNo,
+                    pt.PaymentRecordId
                 })
                 .GroupBy(x => new
                 {
@@ -166,7 +167,8 @@ public class GetAllForClearingTransaction : ControllerBase
                     x.ATag,
                     x.Reason,
                     x.OwnersName,
-                    ReferenceNoGroupingKey = x.ReferenceNo ?? x.Id.ToString()
+                    x.PaymentRecordId
+                    //ReferenceNoGroupingKey = x.ReferenceNo ?? x.Id.ToString()
                 })
                 .Select(g => new GetAllForClearingTransactionResult
                 {
@@ -174,7 +176,7 @@ public class GetAllForClearingTransaction : ControllerBase
                     OwnersName = g.Key.OwnersName,
                     PaymentMethod = g.Key.PaymentMethod,
                     PaymentChannel = g.Key.BankName,
-                    ReferenceNo = g.FirstOrDefault(x => x.ReferenceNo != null).ReferenceNo, 
+                    ReferenceNos = g.Select(x => x.ReferenceNo).Where(r => r != null).Distinct().ToList(),
                     TotalPaymentAmount = g.Sum(x => x.TotalAmountReceived),
                     Date = g.Max(x => x.DateReceived),
                     ATag = g.Key.ATag,
