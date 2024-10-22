@@ -81,6 +81,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Clearing_Transaction
                     {
 						paymentTransaction.Status = Status.ForFiling;
 
+
 						var clearingTransaction = new ClearedPayments
 						{
 							PaymentTransactionId = paymentTransaction.Id,
@@ -93,6 +94,10 @@ namespace RDF.Arcana.API.Features.Sales_Management.Clearing_Transaction
 					}
                     await _context.SaveChangesAsync(cancellationToken);
 				}
+
+                var paymentRecord = _context.PaymentRecords.FirstOrDefault(pr => pr.Id == request.PaymentRecordId);
+                paymentRecord.Status = Status.ForFiling;
+                await _context.SaveChangesAsync(cancellationToken);
 
                 return Result.Success();
 
