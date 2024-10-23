@@ -79,6 +79,7 @@ public class GetAllForClearingTransaction : ControllerBase
     {
         public int PaymentRecordId { get; set; }
         public string PaymentMethod { get; set; }
+        public decimal PaymentAmount { get; set; }
         public string PaymentChannel { get; set; }
         public List<string> ReferenceNos { get; set; }
         public decimal TotalPaymentAmount { get; set; }
@@ -111,7 +112,7 @@ public class GetAllForClearingTransaction : ControllerBase
             var adminClusterFilter = await _context.Users.FindAsync(request.AddedBy);
 
             var query = _context.PaymentTransactions
-                .Where(pt => pt.PaymentRecord.Status == request.Status &&
+                .Where(pt => pt.Status == request.Status &&
                              pt.Transaction.Status != Status.Cancelled &&
                              pt.Transaction.Status != Status.Voided &&
                              pt.Status != Status.Voided &&
@@ -146,6 +147,7 @@ public class GetAllForClearingTransaction : ControllerBase
             var groupedQuery = query
                 .Select(pt => new
                 {
+                    pt.PaymentAmount,
                     pt.PaymentMethod,
                     pt.ReferenceNo,
                     pt.BankName,
@@ -161,6 +163,7 @@ public class GetAllForClearingTransaction : ControllerBase
                 })
                 .GroupBy(x => new
                 {
+                    x.PaymentAmount,
                     x.PaymentMethod,
                     x.BankName,
                     x.BusinessName,
@@ -173,6 +176,7 @@ public class GetAllForClearingTransaction : ControllerBase
                 .Select(g => new GetAllForClearingTransactionResult
                 {
                     PaymentRecordId = g.Key.PaymentRecordId,
+                    PaymentAmount = g.Key.PaymentAmount,
                     BusinessName = g.Key.BusinessName,
                     OwnersName = g.Key.OwnersName,
                     PaymentMethod = g.Key.PaymentMethod,

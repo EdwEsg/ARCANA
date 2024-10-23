@@ -23,8 +23,14 @@ public class FileClearingTransaction : ControllerBase
 
 	public class FiledClearingTransctionCommand : IRequest<Result>
 	{
-            public List<int> PaymentTransactionIds { get; set; }
+        public ICollection<PaymentRecord> PaymentRecords { get; set; }
+        public class PaymentRecord
+        {
+            public int PaymentRecordId { get; set; }
+            public string PaymentMethod { get; set; }
+            public decimal PaymentAmount { get; set; }
         }
+    }
 
 	public class Handler : IRequestHandler<FiledClearingTransctionCommand, Result>
 	{
@@ -37,31 +43,24 @@ public class FileClearingTransaction : ControllerBase
 
 		public async Task<Result> Handle(FiledClearingTransctionCommand request, CancellationToken cancellationToken)
         {
-                foreach (var paymentTransactionId in request.PaymentTransactionIds)
+                foreach (var paymentRecord in request.PaymentRecords)
                 {
-                    var paymentTransaction = await _context.ClearedPayments
-                        .Include(x => x.PaymentTransaction)
-                        .ThenInclude(x => x.Transaction)
-                        .FirstOrDefaultAsync(pt => pt.PaymentTransactionId == paymentTransactionId, cancellationToken: cancellationToken);
+                    var paymentTransaction = await _context.PaymentTransactions
+                        .Where(pt => pt.PaymentRecordId == paymentRecord.PaymentRecordId && 
+                                     pt.PaymentMethod == paymentRecord.PaymentMethod &&
+                                     pt.PaymentAmount == paymentRecord.PaymentAmount)
+                        .ToListAsync(cancellationToken);
 
-                    if (paymentTransaction is not null)
+                    foreach (var payment in paymentTransaction)
                     {
-                        paymentTransaction.Status = Status.Cleared;
-                        paymentTransaction.PaymentTransaction.Status = Status.Cleared;
-                        paymentTransaction.PaymentTransaction.Transaction.Status = Status.Cleared;
+                        payment.Status = Status.Cleared;
                         await _context.SaveChangesAsync(cancellationToken);
                     }
                 }
 
-                // Check if any payment transactions were found
-                if (request.PaymentTransactionIds.Any())
-                {
-                    return Result.Success();
-                }
-                else
-                {
-                    return ClearingErrors.NotFound();
-                }
+                
+                return Result.Success();
+                
         }
 	}
 }

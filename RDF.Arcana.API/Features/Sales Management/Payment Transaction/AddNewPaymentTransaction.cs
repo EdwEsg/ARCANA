@@ -721,7 +721,7 @@ public class AddNewPaymentTransaction : BaseApiController
                                 ChequeAmount = currentPayment.ChequeAmount,
                                 AccountName = currentPayment.AccountName,
                                 AccountNo = currentPayment.AccountNo,
-                                Status = Status.ForClearing,
+                                Status = Status.ForFiling,
                                 OnlinePlatform = currentPayment.OnlinePlatform,
                                 ReferenceNo = transaction.InvoiceNo,
                                 WithholdingAttachment = withholdingAttachmentUrl,
