@@ -95,6 +95,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Clearing_Transaction
                     await _context.SaveChangesAsync(cancellationToken);
 				}
 
+                //For conformity of paymentRecord Status, but I get Status in paymentTransactions, please disregard this codeblock
                 var paymentRecord = _context.PaymentRecords.FirstOrDefault(pr => pr.Id == request.PaymentRecordId);
                 paymentRecord.Status = Status.ForFiling;
                 await _context.SaveChangesAsync(cancellationToken);

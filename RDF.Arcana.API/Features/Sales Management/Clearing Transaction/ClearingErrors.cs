@@ -19,6 +19,6 @@ namespace RDF.Arcana.API.Features.Sales_Management.Clearing_Transaction
         public static Error NotFoundReferece() =>
         new("Reference.NotFound", "Please input ChequeNo, ReferenceNo, or TransactionNo");
 
-        public static Error Unauthorized() => new("Unauthorized", "You do not have permission to file");
+        public static Error Unauthorized() => new("Unauthorized", "You do not have permission to do this action (Sir Roger ONLY!)");
     }
 }

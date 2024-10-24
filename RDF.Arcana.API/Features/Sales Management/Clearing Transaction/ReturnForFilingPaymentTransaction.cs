@@ -24,49 +24,64 @@ namespace RDF.Arcana.API.Features.Sales_Management.Clearing_Transaction
 
 		public class ReturnForFilingPaymentTransactionCommand : IRequest<Result>
 		{
-            public List<int> PaymentTransactionIds { get; set; }
-            public string Reason { get; set; }
+            public int AddedBy { get; set; }
+            public ICollection<ReturnPaymentRecordTo> PaymentRecords { get; set; }
+            public class ReturnPaymentRecordTo
+            {
+                public int PaymentRecordId { get; set; }
+                public string PaymentMethod { get; set; }
+                public decimal PaymentAmount { get; set; }
+            }
         }
 
-		public class Handler : IRequestHandler<ReturnForFilingPaymentTransactionCommand, Result>
-		{
-			private readonly ArcanaDbContext _context;
+		//public class Handler : IRequestHandler<ReturnForFilingPaymentTransactionCommand, Result>
+		//{
+		//	private readonly ArcanaDbContext _context;
 
-			public Handler(ArcanaDbContext context)
-			{
-				_context = context;
-			}
+		//	public Handler(ArcanaDbContext context)
+		//	{
+		//		_context = context;
+		//	}
 
-			public async Task<Result> Handle(ReturnForFilingPaymentTransactionCommand request, CancellationToken cancellationToken)
-			{
-				foreach (var paymentTransactionId in request.PaymentTransactionIds)
-				{
-					var paymentTransaction = await _context.ClearedPayments
-						.Include(x => x.PaymentTransaction)
-						.ThenInclude(x => x.Transaction)
-						.FirstOrDefaultAsync(pt => pt.PaymentTransactionId == paymentTransactionId, cancellationToken: cancellationToken);
+		//	public async Task<Result> Handle(ReturnForFilingPaymentTransactionCommand request, CancellationToken cancellationToken)
+		//	{
+  //              //Admin and Sir Roger
+  //              if (request.AddedBy != 1 && request.AddedBy != 17)
+  //              {
+  //                  return ClearingErrors.Unauthorized();
+  //              }
 
-					if (paymentTransaction is not null)
-					{
-						paymentTransaction.Status = Status.ForClearing;
-						paymentTransaction.Reason = request.Reason;
-						paymentTransaction.PaymentTransaction.Reason = request.Reason;
-						paymentTransaction.PaymentTransaction.Status = Status.ForClearing;
-						paymentTransaction.PaymentTransaction.Transaction.Status = Status.ForClearing;
-						await _context.SaveChangesAsync(cancellationToken);
-					}
-				}
+  //              if (request.PaymentRecords is null)
+  //              {
+  //                  return ClearingErrors.NotFound();
+  //              }
 
-				// Check if any payment transactions were found
-				if (request.PaymentTransactionIds.Any())
-				{
-					return Result.Success();
-				}
-				else
-				{
-					return ClearingErrors.NotFound();
-				}
-			}
-		}
+  //              foreach (var paymentRecord in request.PaymentRecords)
+		//		{
+		//			var paymentTransaction = await _context.PaymentTransactions
+		//				.Where(pt => pt.PaymentRecordId == paymentRecord.PaymentRecordId &&
+		//							 pt.PaymentMethod == paymentRecord.PaymentMethod &&
+		//							 pt.PaymentAmount == paymentRecord.PaymentAmount)
+		//				.ToListAsync(cancellationToken);
+
+  //                  foreach (var payment in paymentTransaction)
+  //                  {
+  //                      payment.Status = Status.ForClearing;
+		//				payment.
+  //                      await _context.SaveChangesAsync(cancellationToken);
+  //                  }
+  //              }
+
+		//		// Check if any payment transactions were found
+		//		if (request.PaymentTransactionIds.Any())
+		//		{
+		//			return Result.Success();
+		//		}
+		//		else
+		//		{
+		//			return ClearingErrors.NotFound();
+		//		}
+		//	}
+		//}
 	}
 }
