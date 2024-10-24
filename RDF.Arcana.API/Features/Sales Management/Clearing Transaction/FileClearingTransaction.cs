@@ -78,11 +78,16 @@ public class FileClearingTransaction : ControllerBase
                                      pt.PaymentMethod == paymentRecord.PaymentMethod &&
                                      pt.PaymentAmount == paymentRecord.PaymentAmount)
                         .ToListAsync(cancellationToken);
+                    
+                    if (paymentTransaction is null)
+                    {
+                        return ClearingErrors.NotFound();
+                    }
 
                     foreach (var payment in paymentTransaction)
                     {
-                        payment.Status = Status.Cleared;
-                        await _context.SaveChangesAsync(cancellationToken);
+                            payment.Status = Status.Cleared;
+                            await _context.SaveChangesAsync(cancellationToken);
                     }
                 }
 

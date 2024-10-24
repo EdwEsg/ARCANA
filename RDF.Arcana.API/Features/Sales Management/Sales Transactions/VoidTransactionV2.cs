@@ -66,6 +66,11 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
 
                     foreach (var payment in paymentTransaction)
                     {
+                        if (payment.Status == Status.Cleared || payment.Status == Status.ForFiling)
+                        {
+                            return TransactionErrors.HasATag();
+                        }
+
                         if (payment.PaymentMethod == PaymentMethods.ListingFee)
                         {
                             var listingFee = _context.ListingFees.Where(lf => lf.ClientId == transaction.ClientId &&

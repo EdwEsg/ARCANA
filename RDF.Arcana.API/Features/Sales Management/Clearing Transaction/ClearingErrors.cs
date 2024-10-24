@@ -5,7 +5,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Clearing_Transaction
     public class ClearingErrors
     {
         public static Error NotFound() =>
-        new("Transaction.NotFound", "Client not found");
+        new("Transaction.NotFound", "Transaction not found");
 
         public static Error AlreadyExist() =>
         new("Already.Exist", "Transaction Already Cleared");

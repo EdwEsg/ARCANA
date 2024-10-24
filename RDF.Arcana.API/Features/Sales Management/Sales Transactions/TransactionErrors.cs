@@ -14,4 +14,6 @@ public static class TransactionErrors
     public static Error InvalidInvoiceNumber() => new("SI/CI", "Invoice Number must not be value string or null");
     public static Error InvalidInputs() => new("Input.Error", "Must only hava 1 TransactionId and 0 PaymentRecordsId or Vice Versa");
     public static Error NullWithholding() => new("NullWithholding", "Withholding Attachment is null");
+
+    public static Error HasATag() => new("Has.Atag", "Cannot Void/Cancel, Transaction has A-Tag Already");
 }
