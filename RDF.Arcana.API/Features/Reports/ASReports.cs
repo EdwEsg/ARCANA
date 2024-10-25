@@ -93,7 +93,9 @@ namespace RDF.Arcana.API.Features.Reports
                 //acess only for admin and finance 
                 if (request.AddedBy == 1 || currentUserRole.UserRolesId == 9)
                 {
-                    query = query.Where(t => t.CreatedAt >= request.DateFrom && t.CreatedAt <= request.DateTo);
+                    query = query.Where(t => t.CreatedAt >= request.DateFrom && t.CreatedAt <= request.DateTo &&
+                                t.Status != Status.Voided &&
+                                t.Status != Status.Cancelled);
                 }
                 else
                 {

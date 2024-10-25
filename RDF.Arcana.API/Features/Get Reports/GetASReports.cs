@@ -104,7 +104,9 @@ namespace RDF.Arcana.API.Features.Get_Reports
                 //acess only for admin and finance 
                 if (request.AddedBy == 1 || currentUserRole.UserRolesId == 9)
                 {
-                    transactions = transactions.Where(t => t.CreatedAt >= request.DateFrom && t.CreatedAt <= request.DateTo);
+                    transactions = transactions.Where(t => t.CreatedAt >= request.DateFrom && t.CreatedAt <= request.DateTo &&
+                                t.Status != Status.Voided &&
+                                t.Status != Status.Cancelled);
                 }
                 else
                 {

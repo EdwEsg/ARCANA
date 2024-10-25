@@ -1,5 +1,6 @@
 ﻿using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
+using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Data;
 
 namespace RDF.Arcana.API.Features.Reports
@@ -47,7 +48,9 @@ namespace RDF.Arcana.API.Features.Reports
                     .Include(ts => ts.TransactionSales)
                     .Include(c => c.Client)
                         .ThenInclude(ba => ba.BusinessAddress)
-                    .Where(t => t.CreatedAt >= request.DateFrom && t.CreatedAt <= request.DateTo)
+                    .Where(t => t.CreatedAt >= request.DateFrom && t.CreatedAt <= request.DateTo &&
+                                t.Status != Status.Voided &&
+                                t.Status != Status.Cancelled)
                     .AsSplitQuery()
                     .AsNoTracking();
 

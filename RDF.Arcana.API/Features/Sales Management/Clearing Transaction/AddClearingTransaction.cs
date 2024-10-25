@@ -44,6 +44,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Clearing_Transaction
         {
             public int PaymentRecordId { get; set; }
             public string PaymentMethod { get; set; }
+            public decimal PaymentAmount { get; set; }
             public string ATag { get; set; }
             public int AddedBy { get; set; }
             public int? ModifiedBy { get; set; }
@@ -63,7 +64,8 @@ namespace RDF.Arcana.API.Features.Sales_Management.Clearing_Transaction
             {
                 var paymentTransactions = await _context.PaymentTransactions
 					.Where(pt => pt.PaymentMethod == request.PaymentMethod && 
-                                 pt.PaymentRecordId == request.PaymentRecordId)
+                                 pt.PaymentRecordId == request.PaymentRecordId &&
+                                 pt.PaymentAmount == request.PaymentAmount)
 					.ToListAsync(cancellationToken);
 
                 foreach (var paymentTransaction in paymentTransactions)
