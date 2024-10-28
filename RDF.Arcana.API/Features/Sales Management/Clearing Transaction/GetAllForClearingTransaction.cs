@@ -111,13 +111,23 @@ public class GetAllForClearingTransaction : ControllerBase
         {
             var adminClusterFilter = await _context.Users.FindAsync(request.AddedBy);
 
-            var query = _context.PaymentTransactions
-                .Where(pt => pt.Status == request.Status &&
-                             pt.Transaction.Status != Status.Cancelled &&
-                             pt.Transaction.Status != Status.Voided &&
-                             pt.Status != Status.Voided &&
-                             pt.Status != Status.Cancelled &&
-                             pt.TotalAmountReceived > 0);
+
+            var query = _context.PaymentTransactions.AsQueryable();
+
+            if (request.Status == Status.Voided)
+            {
+                query = query.Where(pt => pt.Status == Status.Voided);
+            }
+            else
+            {
+                query = query.Where(pt => pt.Status == request.Status &&
+                                          pt.Transaction.Status != Status.Cancelled &&
+                                          pt.Transaction.Status != Status.Voided &&
+                                          pt.Status != Status.Voided &&
+                                          pt.Status != Status.Cancelled &&
+                                          pt.TotalAmountReceived > 0);
+            }
+
 
             // Admin, Sir Roger
             if (adminClusterFilter.Id != 1 && adminClusterFilter.Id != 17)

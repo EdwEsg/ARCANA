@@ -70,6 +70,8 @@ namespace RDF.Arcana.API.Features.Reports
 
             public async Task<IActionResult> Handle(ASReportsCommand request, CancellationToken cancellationToken)
             {
+                var adjustedDateTo = request.DateTo.AddDays(1);
+
                 var query = _context.Transactions
                     .Include(ts => ts.TransactionSales)
                     .Include(c => c.Client)
@@ -93,7 +95,7 @@ namespace RDF.Arcana.API.Features.Reports
                 //acess only for admin and finance 
                 if (request.AddedBy == 1 || currentUserRole.UserRolesId == 9)
                 {
-                    query = query.Where(t => t.CreatedAt >= request.DateFrom && t.CreatedAt <= request.DateTo &&
+                    query = query.Where(t => t.CreatedAt >= request.DateFrom && t.CreatedAt < adjustedDateTo &&
                                 t.Status != Status.Voided &&
                                 t.Status != Status.Cancelled);
                 }

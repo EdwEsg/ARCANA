@@ -66,6 +66,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
             public decimal Amount { get; set; }
             public decimal Debit { get; set; }
             public decimal Credit { get; set; }
+            public string Cluster { get; set; }
         }
 
         public class Handler : IRequestHandler<GetSalesJournalReportsQuery, PagedList<GetSalesJournalReportsResult>>
@@ -78,17 +79,19 @@ namespace RDF.Arcana.API.Features.Get_Reports
 
             public Task<PagedList<GetSalesJournalReportsResult>> Handle(GetSalesJournalReportsQuery request, CancellationToken cancellationToken)
             {
+                var adjustedDateTo = request.DateTo.AddDays(1);
+
                 var transactions = _context.Transactions
                     .Include(ts => ts.TransactionSales)
                     .Include(c => c.Client)
                         .ThenInclude(ba => ba.BusinessAddress)
-                    .Where(t => t.CreatedAt >= request.DateFrom && t.CreatedAt <= request.DateTo &&
+                    .Include(c => c.Client)
+                        .ThenInclude(cl => cl.Cluster)
+                    .Where(t => t.CreatedAt >= request.DateFrom && t.CreatedAt < adjustedDateTo &&
                                 t.Status != Status.Voided &&
                                 t.Status != Status.Cancelled)
                     .AsSplitQuery()
                 .AsNoTracking();
-
-                transactions = transactions.Where(t => t.CreatedAt >= request.DateFrom && t.CreatedAt <= request.DateTo);
 
                 var result = transactions.Select(t => new GetSalesJournalReportsResult
                 {
@@ -98,7 +101,8 @@ namespace RDF.Arcana.API.Features.Get_Reports
                     InvoiceNo = t.InvoiceNo,
                     Amount = t.TransactionSales.TotalAmountDue,
                     Debit = t.TransactionSales.TotalAmountDue - t.TransactionSales.RemainingBalance,
-                    Credit = t.TransactionSales.RemainingBalance
+                    Credit = t.TransactionSales.RemainingBalance,
+                    Cluster = t.Client.Cluster.ClusterType
                 }).OrderBy(d => d.Date);
 
                 return PagedList<GetSalesJournalReportsResult>.CreateAsync(result, request.PageNumber, request.PageSize);

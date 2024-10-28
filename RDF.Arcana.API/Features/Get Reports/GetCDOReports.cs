@@ -89,6 +89,8 @@ namespace RDF.Arcana.API.Features.Get_Reports
 
             public async Task<PagedList<GetCDOReportsResult>> Handle(GetCDOReportsQuery request, CancellationToken cancellationToken)
             {
+                var adjustedDateTo = request.DateTo.AddDays(1);
+
                 var transactionItem = _context.TransactionItems
                     .Include(t => t.Transaction)
                         .ThenInclude(ts => ts.TransactionSales)
@@ -98,13 +100,14 @@ namespace RDF.Arcana.API.Features.Get_Reports
                     .AsSplitQuery()
                     .AsNoTracking();
 
+                //admin
                 if (request.AddedBy == 1)
                 {
-                    transactionItem = transactionItem.Where(ti => ti.CreatedAt >= request.DateFrom && ti.CreatedAt <= request.DateTo);
+                    transactionItem = transactionItem.Where(ti => ti.CreatedAt >= request.DateFrom && ti.CreatedAt < adjustedDateTo);
                 }
                 else
                 {
-                    transactionItem = transactionItem.Where(ti => ti.CreatedAt >= request.DateFrom && ti.CreatedAt <= request.DateTo
+                    transactionItem = transactionItem.Where(ti => ti.CreatedAt >= request.DateFrom && ti.CreatedAt < adjustedDateTo
                                               && ti.AddedBy == request.AddedBy);
 
                     var hasMatchingItems = await transactionItem.AnyAsync(cancellationToken);

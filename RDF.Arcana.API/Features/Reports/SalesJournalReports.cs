@@ -44,11 +44,15 @@ namespace RDF.Arcana.API.Features.Reports
 
             public async Task<IActionResult> Handle(SalesJournalReportsQuery request, CancellationToken cancellationToken)
             {
+                var adjustedDateTo = request.DateTo.AddDays(1);
+
                 var query = _context.Transactions
                     .Include(ts => ts.TransactionSales)
                     .Include(c => c.Client)
                         .ThenInclude(ba => ba.BusinessAddress)
-                    .Where(t => t.CreatedAt >= request.DateFrom && t.CreatedAt <= request.DateTo &&
+                    .Include(c => c.Client)
+                        .ThenInclude(cl => cl.Cluster)
+                    .Where(t => t.CreatedAt >= request.DateFrom && t.CreatedAt < adjustedDateTo &&
                                 t.Status != Status.Voided &&
                                 t.Status != Status.Cancelled)
                     .AsSplitQuery()
@@ -70,7 +74,8 @@ namespace RDF.Arcana.API.Features.Reports
                         "Amount",
                         "Debit",
                         "Credit",
-                        "Aging"
+                        "Aging",
+                        "Cluster"
                     };
 
                     var headerRange = worksheet.Range(worksheet.Cell(1, 1), worksheet.Cell(1, headers.Count));
@@ -107,6 +112,7 @@ namespace RDF.Arcana.API.Features.Reports
                         row.Cell(7).Value = consolidate[index].TransactionSales.TotalAmountDue - consolidate[index].TransactionSales.RemainingBalance;
                         row.Cell(8).Value = consolidate[index].TransactionSales.RemainingBalance;
                         row.Cell(9).Value = "";
+                        row.Cell(10).Value = consolidate[index].Client.Cluster.ClusterType;
 
                         //for centering the numeric value for better readability
                         for (int col = 1; col <= 45; col++)

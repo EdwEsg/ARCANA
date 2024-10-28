@@ -56,6 +56,8 @@ public class CDOReports : ControllerBase
 
         public async Task<IActionResult> Handle(CDOReportsCommand request, CancellationToken cancellationToken)
         {
+            var adjustedDateTo = request.DateTo.AddDays(1);
+
             var userDictionary = await _context.Users
                 .Where(u => _context.TransactionItems.Select(ti => ti.AddedBy).Distinct().Contains(u.Id))
                 .ToDictionaryAsync(u => u.Id, u => u.Fullname, cancellationToken);
@@ -80,11 +82,11 @@ public class CDOReports : ControllerBase
 
             if (request.AddedBy == 1)
             {
-                query = query.Where(ti => ti.CreatedAt >= request.DateFrom && ti.CreatedAt <= request.DateTo);
+                query = query.Where(ti => ti.CreatedAt >= request.DateFrom && ti.CreatedAt < adjustedDateTo);
             }
             else
             {
-                query = query.Where(ti => ti.CreatedAt >= request.DateFrom && ti.CreatedAt <= request.DateTo
+                query = query.Where(ti => ti.CreatedAt >= request.DateFrom && ti.CreatedAt < adjustedDateTo
                                           && ti.AddedBy == request.AddedBy);
 
                 var hasMatchingItems = await query.AnyAsync(cancellationToken);

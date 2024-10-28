@@ -89,6 +89,8 @@ namespace RDF.Arcana.API.Features.Get_Reports
 
             public async Task<PagedList<GetAsReportsResult>> Handle(GetASReportsQuery request, CancellationToken cancellationToken)
             {
+                var adjustedDateTo = request.DateTo.AddDays(1);
+
                 var transactions = _context.Transactions
                     .Include(c => c.Client)
                         .ThenInclude(cl => cl.Cluster)
@@ -104,7 +106,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
                 //acess only for admin and finance 
                 if (request.AddedBy == 1 || currentUserRole.UserRolesId == 9)
                 {
-                    transactions = transactions.Where(t => t.CreatedAt >= request.DateFrom && t.CreatedAt <= request.DateTo &&
+                    transactions = transactions.Where(t => t.CreatedAt >= request.DateFrom && t.CreatedAt < adjustedDateTo &&
                                 t.Status != Status.Voided &&
                                 t.Status != Status.Cancelled);
                 }
