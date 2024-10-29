@@ -94,6 +94,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
             public decimal TotalAmountDue { get; set; }
             public string CIAttachment { get; set; }
             public string Remarks { get; set; }
+            public string VoidReason { get; set; }
         }
 
         public class Handler : IRequestHandler<GetAllTransactionsQuery, PagedList<GetAllTransactionQueryResult>>
@@ -250,7 +251,8 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
                         RemainingBalance = result.TransactionSales.RemainingBalance,
                         TotalAmountDue = result.TransactionSales.TotalAmountDue,
                         CIAttachment = result.InvoiceAttach,
-                        Remarks = result.TransactionSales.Remarks
+                        Remarks = result.TransactionSales.Remarks,
+                        VoidReason = result.PaymentTransactions.FirstOrDefault(pt => pt.Status == Status.Voided).Reason
 
                     });
 
@@ -271,7 +273,9 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
                     RemainingBalance = result.TransactionSales.RemainingBalance,
                     TotalAmountDue = result.TransactionSales.TotalAmountDue,
                     CIAttachment = result.InvoiceAttach,
-                    Remarks = result.TransactionSales.Remarks
+                    Remarks = result.TransactionSales.Remarks,
+                    VoidReason = result.PaymentTransactions.FirstOrDefault(pt => pt.Status == Status.Voided).Reason
+
                 }).OrderByDescending(d => d.CreatedAt);
 
                 return PagedList<GetAllTransactionQueryResult>.CreateAsync(result, request.PageNumber,

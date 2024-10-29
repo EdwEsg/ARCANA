@@ -112,7 +112,10 @@ public class GetAllForClearingTransaction : ControllerBase
             var adminClusterFilter = await _context.Users.FindAsync(request.AddedBy);
 
 
-            var query = _context.PaymentTransactions.AsQueryable();
+            var query = _context.PaymentTransactions
+                .Include(t => t.Transaction)
+                    .ThenInclude(c => c.Client)
+                .AsQueryable();
 
             if (request.Status == Status.Voided)
             {
@@ -151,7 +154,9 @@ public class GetAllForClearingTransaction : ControllerBase
 
             if (!string.IsNullOrEmpty(request.Search))
             {
-                query = query.Where(pt => pt.ReferenceNo.Contains(request.Search));
+                query = query.Where(pt => pt.ReferenceNo.Contains(request.Search) ||
+                                          pt.Transaction.Client.Fullname.Contains(request.Search) ||
+                                          pt.Transaction.Client.BusinessName.Contains(request.Search));
             }
 
             var groupedQuery = query
