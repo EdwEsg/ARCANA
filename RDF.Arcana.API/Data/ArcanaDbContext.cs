@@ -64,6 +64,7 @@ public class ArcanaDbContext : DbContext
     public virtual DbSet<PaymentRecords> PaymentRecords { get; set; }
     public virtual DbSet<ApproverByRange> ApproverByRange { get; set; }
     public virtual DbSet<Cheque> Cheque { get; set; }
+    public virtual DbSet<CheckIn> CheckIns { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
