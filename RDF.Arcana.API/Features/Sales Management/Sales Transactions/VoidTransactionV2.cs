@@ -58,6 +58,20 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
                     return TransactionErrors.NotFound();
                 }
 
+                //var paymentChecking = transaction.PaymentTransactions
+                //                         .Where(pt => pt.TransactionId == transaction.Id &&
+                //                                pt.Status != Status.Voided &&
+                //                                pt.Status != Status.ForFiling &&
+                //                                pt.Status != Status.Cleared &&
+                //                                pt.IsActive)
+                //                         .ToList();
+
+                //if (paymentChecking is not null)
+                //{
+                //    return TransactionErrors.HasATag();
+                //}
+
+
                 if (transaction.TransactionSales.TotalAmountDue != transaction.TransactionSales.RemainingBalance)
                 {
                     var paymentTransaction = transaction.PaymentTransactions

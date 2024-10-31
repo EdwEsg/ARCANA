@@ -82,6 +82,19 @@ public class AddNewPaymentTransaction : BaseApiController
 
         public async Task<Result> Handle(AddNewPaymentTransactionCommand request, CancellationToken cancellationToken)
         {
+
+            bool hasNoInvoiceAttach = _context.Transactions
+                .Where(t => request.TransactionId.Contains(t.Id))
+                .Any(t => t.InvoiceAttach == null);
+
+            if (hasNoInvoiceAttach)
+            {
+                return TransactionErrors.NoInvoiceAttach();
+            }
+
+
+
+
             decimal totalAmount = 0;
             string receiptUpload = string.Empty;
 

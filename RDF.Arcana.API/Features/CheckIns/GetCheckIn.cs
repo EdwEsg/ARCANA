@@ -112,7 +112,7 @@ namespace RDF.Arcana.API.Features.CheckIns
                     CreatedBy = ck.CreatedBy.Fullname,
                     CreatedDate = ck.CreatedDate
 
-                });
+                }).OrderByDescending(d => d.CreatedDate);
 
                 return await PagedList<GetCheckInResult>.CreateAsync(result, request.PageNumber, request.PageSize);
                 

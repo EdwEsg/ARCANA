@@ -74,6 +74,8 @@ public class FileClearingTransaction : ControllerBase
                 foreach (var paymentRecord in request.PaymentRecords)
                 {
                     var paymentTransaction = await _context.PaymentTransactions
+                        .Include(t => t.Transaction)
+                            .ThenInclude(ts => ts.TransactionSales)
                         .Where(pt => pt.PaymentRecordId == paymentRecord.PaymentRecordId && 
                                      pt.PaymentMethod == paymentRecord.PaymentMethod &&
                                      pt.PaymentAmount == paymentRecord.PaymentAmount)
@@ -87,8 +89,16 @@ public class FileClearingTransaction : ControllerBase
                     foreach (var payment in paymentTransaction)
                     {
                             payment.Status = Status.Cleared;
+
+                            if (payment.Transaction.TransactionSales.RemainingBalance == 0)
+                            {
+                                payment.Transaction.Status = Status.Cleared;
+                            }
+
                             await _context.SaveChangesAsync(cancellationToken);
                     }
+
+
                 }
 
                 

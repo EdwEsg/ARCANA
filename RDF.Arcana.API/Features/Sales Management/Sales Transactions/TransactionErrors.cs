@@ -15,5 +15,6 @@ public static class TransactionErrors
     public static Error InvalidInputs() => new("Input.Error", "Must only hava 1 TransactionId and 0 PaymentRecordsId or Vice Versa");
     public static Error NullWithholding() => new("NullWithholding", "Withholding Attachment is null");
 
-    public static Error HasATag() => new("Has.Atag", "Cannot Void/Cancel, Transaction has A-Tag Already");
+    public static Error HasATag() => new("Has.Atag", "Cannot Void/Cancel, Payment has an A-Tag Already");
+    public static Error NoInvoiceAttach() => new("NoInvoiceAttach", "Transaction has no Invoice Attachment, please input first");
 }
