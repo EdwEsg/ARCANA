@@ -40,12 +40,20 @@ namespace RDF.Arcana.API.Features.CheckIns
 
         public class AddCheckInCommand : IRequest<Result>
         {
-            public int ClientId { get; set; }
+            public int? ClientId { get; set; }
             public string Latitude { get; set; }
             public string Longitude { get; set; }
             public IFormFile Image { get; set; }
             public string Remarks { get; set; }
             public int CreatedBy { get; set; }
+
+            
+                public string BusinessName { get; set; }
+                public string FullName { get; set; }
+                public string Barangay { get; set; }
+                public string City { get; set; }
+                public string Province { get; set; }
+            
         }
 
         public class Handler : IRequestHandler<AddCheckInCommand, Result>
@@ -89,7 +97,6 @@ namespace RDF.Arcana.API.Features.CheckIns
 
                     var imageUploadResult = await _cloudinary.UploadAsync(attachmentsParams); 
 
-                    // Store the uploaded file URL 
                     imageUpload = imageUploadResult.SecureUrl.ToString();
                 }
 
@@ -98,19 +105,46 @@ namespace RDF.Arcana.API.Features.CheckIns
                     return CheckInErrors.NoImageUploaded();
                 }
 
-                var checkIns = new CheckIn
+                if (request.ClientId is null)
                 {
-                    ClientId = request.ClientId,
-                    Latitude = request.Latitude,
-                    Longitude = request.Longitude,
-                    Image = imageUpload,
-                    Remarks = request.Remarks,
-                    CreatedById = request.CreatedBy,
-                    CreatedDate = DateTime.Now,
-                };
+                    
+                        var checkIn = new CheckIn
+                        {
+                            ClientId = null, 
+                            Latitude = request.Latitude,
+                            Longitude = request.Longitude,
+                            Image = imageUpload,
+                            Remarks = request.Remarks,
+                            CreatedById = request.CreatedBy,
+                            CreatedDate = DateTime.Now,
+                            BusinessNameOthers = request.BusinessName,
+                            FullNameOthers = request.FullName,
+                            BarangayOthers = request.Barangay,
+                            CityOthers = request.City,
+                            ProvinceOthers = request.Province
+                        };
 
-                await _context.CheckIns.AddAsync(checkIns, cancellationToken);
-                await _context.SaveChangesAsync(cancellationToken);
+                        await _context.CheckIns.AddAsync(checkIn, cancellationToken);
+                    
+
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
+                else
+                {
+                    var checkIn = new CheckIn
+                    {
+                        ClientId = request.ClientId,
+                        Latitude = request.Latitude,
+                        Longitude = request.Longitude,
+                        Image = imageUpload,
+                        Remarks = request.Remarks,
+                        CreatedById = request.CreatedBy,
+                        CreatedDate = DateTime.Now,
+                    };
+
+                    await _context.CheckIns.AddAsync(checkIn, cancellationToken);
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
 
                 return Result.Success();
             }

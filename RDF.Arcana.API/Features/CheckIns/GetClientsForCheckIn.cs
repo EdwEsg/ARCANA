@@ -41,6 +41,7 @@ namespace RDF.Arcana.API.Features.CheckIns
             public string StoreType { get; set; }
             public string Municipality { get; set; }
             public string BarangayName { get; set; }
+            public string Province { get; set; }
         }
 
         public class Handler : IRequestHandler<GetClientsForCheckInQuery, Result>
@@ -73,7 +74,8 @@ namespace RDF.Arcana.API.Features.CheckIns
                     BusinessName = c.BusinessName ?? "",
                     StoreType = c.StoreType?.StoreTypeName ?? "",
                     Municipality = c.BusinessAddress?.City ?? "",
-                    BarangayName = c.BusinessAddress?.Barangay ?? ""
+                    BarangayName = c.BusinessAddress?.Barangay ?? "",
+                    Province = c.BusinessAddress?.Province ?? ""
                 }).ToList();
 
 
