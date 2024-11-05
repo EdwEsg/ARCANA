@@ -92,27 +92,31 @@ namespace RDF.Arcana.API.Features.CheckIns
 
                 if (!string.IsNullOrEmpty(request.Search))
                 {
-                    checkIn = checkIn.Where(ck => ck.Client.Fullname.Contains(request.Search) ||
-                              ck.Client.BusinessName.Contains(request.Search));
+                    checkIn = checkIn.Where(ck =>
+                        (ck.Client != null && (ck.Client.Fullname.Contains(request.Search) || ck.Client.BusinessName.Contains(request.Search))) ||
+                        (ck.ClientId == null && (ck.BusinessNameOthers.Contains(request.Search) || ck.FullNameOthers.Contains(request.Search)))
+                    );
                 }
 
-                var result = checkIn.Select(ck => new GetCheckInResult
-                {
-                    BusinessName = ck.Client.BusinessName,
-                    FullName = ck.Client.Fullname,
-                    HouseNo = ck.Client.BusinessAddress.HouseNumber,
-                    StreetName = ck.Client.BusinessAddress.StreetName,
-                    Barangay = ck.Client.BusinessAddress.Barangay,
-                    City = ck.Client.BusinessAddress.City,
-                    Province = ck.Client.BusinessAddress.Province,
-                    Latitude = ck.Latitude,
-                    Longitude = ck.Longitude,
-                    Image = ck.Image,
-                    Remarks = ck.Remarks,
-                    CreatedBy = ck.CreatedBy.Fullname,
-                    CreatedDate = ck.CreatedDate
+                var result = checkIn
+                            .OrderByDescending(ck => ck.CreatedDate)
+                            .Select(ck => new GetCheckInResult
+                            {
+                                BusinessName = ck.ClientId == null ? ck.BusinessNameOthers : ck.Client.BusinessName,
+                                FullName = ck.ClientId == null ? ck.FullNameOthers : ck.Client.Fullname,
+                                HouseNo = ck.ClientId == null ? null : ck.Client.BusinessAddress.HouseNumber,
+                                StreetName = ck.ClientId == null ? null : ck.Client.BusinessAddress.StreetName,
+                                Barangay = ck.ClientId == null ? ck.BarangayOthers : ck.Client.BusinessAddress.Barangay,
+                                City = ck.ClientId == null ? ck.CityOthers : ck.Client.BusinessAddress.City,
+                                Province = ck.ClientId == null ? ck.ProvinceOthers : ck.Client.BusinessAddress.Province,
+                                Latitude = ck.Latitude,
+                                Longitude = ck.Longitude,
+                                Image = ck.Image,
+                                Remarks = ck.Remarks,
+                                CreatedBy = ck.CreatedBy.Fullname,
+                                CreatedDate = ck.CreatedDate
+                            });
 
-                }).OrderByDescending(d => d.CreatedDate);
 
                 return await PagedList<GetCheckInResult>.CreateAsync(result, request.PageNumber, request.PageSize);
                 
