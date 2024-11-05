@@ -156,7 +156,8 @@ public class GetAllForClearingTransaction : ControllerBase
             {
                 query = query.Where(pt => pt.ReferenceNo.Contains(request.Search) ||
                                           pt.Transaction.Client.Fullname.Contains(request.Search) ||
-                                          pt.Transaction.Client.BusinessName.Contains(request.Search));
+                                          pt.Transaction.Client.BusinessName.Contains(request.Search) ||
+                                          pt.Transaction.Id.ToString().Contains(request.Search));
             }
 
             var groupedQuery = query

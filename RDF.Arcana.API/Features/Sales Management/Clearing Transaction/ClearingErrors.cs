@@ -20,5 +20,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Clearing_Transaction
         new("Reference.NotFound", "Please input ChequeNo, ReferenceNo, or TransactionNo");
 
         public static Error Unauthorized() => new("Unauthorized", "You do not have permission to do this action (Sir Roger ONLY!)");
+
+        public static Error ExistingATag() => new("ExistingATag", "A-Tag already used");
     }
 }

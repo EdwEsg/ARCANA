@@ -60,7 +60,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
                 public string InvoiceType { get; set; }
                 public string InvoiceNo { get; set; }
                 public decimal TotalAmount { get; set; }
-                public decimal PaymentAmount { get; set; }
+                //public decimal PaymentAmount { get; set; }
                 public ICollection<TransactionItem> TransactionItems { get; set; }
 
             }
@@ -114,6 +114,8 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
                 var paymentOverview = await query
                     .GroupBy(x => new
                     {
+                        x.pt.PaymentAmount,
+                        x.pt.PaymentRecordId,
                         x.pt.PaymentMethod,
                         x.pt.BankName,
                         x.pt.ChequeDate,
@@ -138,20 +140,24 @@ namespace RDF.Arcana.API.Features.Sales_Management.Payment_Transaction
                         ReceiptAttachment = g.Key.Receipt,
                         Attachment = g.Key.WithholdingAttachment,
                         WithholdingNo = g.Key.WithholdingNo,
-                        Transactions = g.Select(x => new GetPaymentOverviewResponse.Transaction
-                        {
-                            PaymentTransactionId = x.pt.TransactionId,
-                            InvoiceType = x.InvoiceType,
-                            InvoiceNo = x.InvoiceNo,
-                            PaymentAmount = x.pt.TotalAmountReceived,
-                            TransactionItems = x.TransactionItems.Select(ti => new GetPaymentOverviewResponse.TransactionItem
+                        Transactions = g
+                            .Select(x => new GetPaymentOverviewResponse.Transaction
                             {
-                                ItemCode = ti.ItemCode,
-                                ItemDescription = ti.ItemDescription,
-                                Quantity = ti.Quantity,
-                                Amount = ti.Amount
-                            }).ToList()
-                        }).ToList(),
+                                PaymentTransactionId = x.pt.TransactionId,
+                                InvoiceType = x.InvoiceType,
+                                InvoiceNo = x.InvoiceNo,
+                                TransactionItems = x.TransactionItems.Select(ti => new GetPaymentOverviewResponse.TransactionItem
+                                {
+                                    ItemCode = ti.ItemCode,
+                                    ItemDescription = ti.ItemDescription,
+                                    Quantity = ti.Quantity,
+                                    Amount = ti.Amount
+                                }).ToList()
+                            })
+                            .GroupBy(t => new { t.PaymentTransactionId, t.InvoiceType, t.InvoiceNo })
+                            .Select(grp => grp.First())
+                            .ToList(),
+
                         AdvancePaymentAmount = g.Key.AdvancePaymentAmount
                     })
                     .ToListAsync(cancellationToken);

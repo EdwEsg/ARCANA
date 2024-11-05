@@ -62,6 +62,15 @@ namespace RDF.Arcana.API.Features.Sales_Management.Clearing_Transaction
 
             public async Task<Result> Handle(AddClearingTransactionCommand request, CancellationToken cancellationToken)
             {
+                bool aTagDuplicate = _context.ClearedPayments
+                                     .Any(cl => cl.ATag == request.ATag);
+                
+                if (aTagDuplicate)
+                {
+                    return ClearingErrors.ExistingATag();
+                }
+
+
                 var paymentTransactions = await _context.PaymentTransactions
 					.Where(pt => pt.PaymentMethod == request.PaymentMethod && 
                                  pt.PaymentRecordId == request.PaymentRecordId &&

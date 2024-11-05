@@ -118,6 +118,18 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
                             advancePayment.RemainingBalance += payment.TotalAmountReceived;
                         }
 
+                        if (payment.PaymentMethod == PaymentMethods.Cheque)
+                        {
+                            var advancePaymentExcess = _context.AdvancePayments.Where(ap => ap.ClientId == transaction.ClientId &&
+                                                       ap.IsActive &&
+                                                       ap.ChequeNo == payment.ChequeNo).First();
+
+                            if (advancePaymentExcess is not null)
+                            {
+                                advancePaymentExcess.RemainingBalance -= (payment.PaymentAmount - payment.TotalAmountReceived);
+                            }
+                        }
+
                         payment.Status = Status.Voided;
                     }
                 }

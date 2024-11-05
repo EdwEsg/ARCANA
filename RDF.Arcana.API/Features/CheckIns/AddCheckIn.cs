@@ -79,15 +79,15 @@ namespace RDF.Arcana.API.Features.CheckIns
 
                 if (request.Image != null && request.Image.Length > 0)
                 {
-                    await using var stream = request.Image.OpenReadStream(); // Open the uploaded file stream
+                    await using var stream = request.Image.OpenReadStream(); 
 
                     var attachmentsParams = new ImageUploadParams
                     {
-                        File = new FileDescription(request.Image.FileName, stream), // Create file description
-                        PublicId = request.Image.FileName // Use the file name for Cloudinary ID
+                        File = new FileDescription(request.Image.FileName, stream), 
+                        PublicId = request.Image.FileName 
                     };
 
-                    var imageUploadResult = await _cloudinary.UploadAsync(attachmentsParams); // Upload file to Cloudinary
+                    var imageUploadResult = await _cloudinary.UploadAsync(attachmentsParams); 
 
                     // Store the uploaded file URL 
                     imageUpload = imageUploadResult.SecureUrl.ToString();
