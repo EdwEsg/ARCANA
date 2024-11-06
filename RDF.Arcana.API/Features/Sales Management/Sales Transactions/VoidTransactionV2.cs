@@ -58,18 +58,6 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
                     return TransactionErrors.NotFound();
                 }
 
-                //var paymentChecking = transaction.PaymentTransactions
-                //                         .Where(pt => pt.TransactionId == transaction.Id &&
-                //                                pt.Status != Status.Voided &&
-                //                                pt.Status != Status.ForFiling &&
-                //                                pt.Status != Status.Cleared &&
-                //                                pt.IsActive)
-                //                         .ToList();
-
-                //if (paymentChecking is not null)
-                //{
-                //    return TransactionErrors.HasATag();
-                //}
 
 
                 if (transaction.TransactionSales.TotalAmountDue != transaction.TransactionSales.RemainingBalance)
@@ -122,11 +110,16 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
                         {
                             var advancePaymentExcess = _context.AdvancePayments.Where(ap => ap.ClientId == transaction.ClientId &&
                                                        ap.IsActive &&
-                                                       ap.ChequeNo == payment.ChequeNo).First();
+                                                       ap.ChequeNo == payment.ChequeNo).FirstOrDefault();
 
                             if (advancePaymentExcess is not null)
                             {
                                 advancePaymentExcess.RemainingBalance -= (payment.PaymentAmount - payment.TotalAmountReceived);
+
+                                if (advancePaymentExcess.RemainingBalance < 0)
+                                {
+                                    advancePaymentExcess.RemainingBalance = 0;
+                                }
                             }
                         }
 

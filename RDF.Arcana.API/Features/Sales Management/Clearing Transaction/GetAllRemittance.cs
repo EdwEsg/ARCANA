@@ -58,6 +58,12 @@ namespace Arcana.API.Features.Sales_Management.Clearing.Transaction
         public string Status { get; set; }
         public string InvoiceNo { get; set; }
         public string InvoiceType { get; set; }
+        public ICollection<PaymentTran> Payments { get; set; }
+        public class PaymentTran
+        {
+            public decimal Payment { get; set; }
+            public string PaymentMethod { get; set; }
+        }
     }
 
     public class Handler : IRequestHandler<GetAllRemittanceQuery, PagedList<GetAllRemittanceResult>>
@@ -70,17 +76,32 @@ namespace Arcana.API.Features.Sales_Management.Clearing.Transaction
 
         public async Task<PagedList<GetAllRemittanceResult>> Handle(GetAllRemittanceQuery request, CancellationToken cancellationToken)
         {
-            var query = from transact in _context.Transactions
-                        where transact.Status == Status.Paid
-                        select new GetAllRemittanceResult
-                        {
-                            BusinessName = transact.Client.BusinessName,
-                            Status = transact.Status,
-                            InvoiceNo = transact.InvoiceNo,
-                            InvoiceType = transact.InvoiceType,
-                        };
+            //var query = from transact in _context.Transactions
+            //            where transact.Status == Status.Paid
+            //            select new GetAllRemittanceResult
+            //            {
+            //                BusinessName = transact.Client.BusinessName,
+            //                Status = transact.Status,
+            //                InvoiceNo = transact.InvoiceNo,
+            //                InvoiceType = transact.InvoiceType,
+            //            };
 
-            return await PagedList<GetAllRemittanceResult>.CreateAsync(query, request.PageNumber, request.PageSize);
+            var query2 =  _context.Transactions
+                         .Where(t => t.Status == Status.Paid)
+                         .Select(t => new GetAllRemittanceResult
+                         {
+                             BusinessName = t.Client.BusinessName,
+                             Status = t.Status,
+                             InvoiceNo = t.InvoiceNo,
+                             InvoiceType = t.InvoiceType,
+                             Payments = t.PaymentTransactions.Select(pt => new GetAllRemittanceResult.PaymentTran
+                             {
+                                 Payment = pt.TotalAmountReceived,
+                                 PaymentMethod = pt.PaymentMethod,
+                             }).ToList()
+                         });
+
+            return await PagedList<GetAllRemittanceResult>.CreateAsync(query2, request.PageNumber, request.PageSize);
         }
     }
 }
