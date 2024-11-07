@@ -57,15 +57,31 @@ namespace RDF.Arcana.API.Features.CheckIns
                 var clients = await _context.Clients
                     .Include(st => st.StoreType)
                     .Include(b => b.BusinessAddress)
-                    .Where(c => c.Origin == request.Origin && c.IsActive)
+                    .Where(c => c.IsActive)
                     .ToListAsync(cancellationToken);
 
+
+                if (request.Origin == Origin.Direct)
+                {
+                    clients = clients.Where(c =>
+                                c.Origin == Origin.Direct ||
+                                (c.Origin == Origin.Prospecting &&
+                                 (c.RegistrationStatus == Status.UnderReview || c.RegistrationStatus == Status.Approved))
+                            ).ToList();
+                }
+
+                else if (request.Origin == Origin.Prospecting)
+                {
+                    clients = clients.Where(c => c.Origin == Origin.Prospecting && 
+                              (c.RegistrationStatus != Status.UnderReview && c.RegistrationStatus != Status.Approved)).ToList();
+                }
 
                 if (!string.IsNullOrEmpty(request.Search))
                 {
                     clients = clients.Where(c => c.BusinessName.Contains(request.Search) ||
                               c.Fullname.Contains(request.Search)).ToList();
                 }
+
 
                 var result = clients.Select(c => new GetClientsForCheckInResult
                 {

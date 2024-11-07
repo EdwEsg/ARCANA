@@ -1,7 +1,10 @@
 ﻿using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
 using RDF.Arcana.API.Common;
+using RDF.Arcana.API.Common.Helpers;
 using RDF.Arcana.API.Data;
+using RDF.Arcana.API.Domain;
+using System.Security.Claims;
 
 namespace RDF.Arcana.API.Features.Reports
 {
@@ -19,6 +22,15 @@ namespace RDF.Arcana.API.Features.Reports
         {
             try
             {
+                if (User.Identity is ClaimsIdentity identity
+               && IdentityHelper.TryGetUserId(identity, out var userId))
+                {
+                    query.AddedBy = userId;
+
+                    var roleClaim = identity.Claims.SingleOrDefault(c => c.Type == ClaimTypes.Role);
+
+                }
+
                 var result = await _mediator.Send(query);
                 return result;
             }
@@ -33,6 +45,7 @@ namespace RDF.Arcana.API.Features.Reports
             public int? AddedBy { get; set; }
             public DateTime DateFrom { get; set; }
             public DateTime DateTo { get; set; }
+            public int? ClusterId { get; set; }
         }
 
         public class Handler : IRequestHandler<CheckInReportsQuery, IActionResult>
@@ -50,10 +63,35 @@ namespace RDF.Arcana.API.Features.Reports
                 var query = _context.CheckIns
                     .Include(c => c.Client)
                         .ThenInclude(b => b.BusinessAddress)
-                    .Include(u => u.CreatedBy)
-                    .Where(c => c.CreatedDate >= request.DateFrom && c.CreatedDate < adjustedDateTo)
-                    .AsSplitQuery()
-                    .AsNoTracking();
+                    .Include(c => c.CreatedBy)
+                        .ThenInclude(u => u.UserRoles)
+                    .Include(c => c.CreatedBy)
+                        .ThenInclude(u => u.CdoCluster)
+                    .Where(t => t.CreatedDate >= request.DateFrom && t.CreatedDate < adjustedDateTo)
+                    .AsQueryable();
+
+                var userClusters = _context.CdoClusters
+                    .FirstOrDefault(x => x.UserId == request.AddedBy);
+
+                //per CDO viewing
+                if (userClusters != null)
+                {
+                    query = query.Where(c =>
+                        c.CreatedBy.UserRoles.Id == 6 &&
+                        c.CreatedBy.CdoCluster.ClusterId == userClusters.ClusterId);
+                }
+
+                //filter for Admin/Finanace/GAS/Treasury
+                var adminClusterFilter = _context.Users.Find(request.AddedBy);
+                if ((adminClusterFilter.UserRolesId == 1 ||
+                    adminClusterFilter.UserRolesId == 7 ||
+                    adminClusterFilter.UserRolesId == 8 ||
+                    adminClusterFilter.UserRolesId == 9 ||
+                    adminClusterFilter.UserRolesId == 10)
+                    && request.ClusterId is not null)
+                {
+                    query = query.Where(c => c.CreatedBy.CdoCluster.ClusterId == request.ClusterId);
+                }
 
                 var consolidate = await query.ToListAsync(cancellationToken);
 

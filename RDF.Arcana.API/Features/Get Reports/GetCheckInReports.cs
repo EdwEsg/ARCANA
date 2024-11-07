@@ -2,8 +2,11 @@
 using Microsoft.AspNetCore.Mvc;
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Common.Extension;
+using RDF.Arcana.API.Common.Helpers;
 using RDF.Arcana.API.Common.Pagination;
 using RDF.Arcana.API.Data;
+using RDF.Arcana.API.Domain;
+using System.Security.Claims;
 using static RDF.Arcana.API.Features.CheckIns.GetCheckIn;
 
 namespace RDF.Arcana.API.Features.Get_Reports
@@ -22,6 +25,15 @@ namespace RDF.Arcana.API.Features.Get_Reports
         {
             try
             {
+                if (User.Identity is ClaimsIdentity identity
+               && IdentityHelper.TryGetUserId(identity, out var userId))
+                {
+                    query.AddedBy = userId;
+
+                    var roleClaim = identity.Claims.SingleOrDefault(c => c.Type == ClaimTypes.Role);
+
+                }
+
                 var checkIn = await _mediator.Send(query);
 
                 Response.AddPaginationHeader(
@@ -58,6 +70,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
             public int? AddedBy { get; set; }
             public DateTime DateFrom { get; set; }
             public DateTime DateTo { get; set; }
+            public int? ClusterId { get; set; }
         }
 
         public class GetCheckInReportsResult
@@ -92,9 +105,35 @@ namespace RDF.Arcana.API.Features.Get_Reports
                 var checkIn = _context.CheckIns
                     .Include(c => c.Client)
                         .ThenInclude(b => b.BusinessAddress)
-                    .Include(u => u.CreatedBy)
+                    .Include(c => c.CreatedBy)
+                        .ThenInclude(u => u.UserRoles)
+                    .Include(c => c.CreatedBy)
+                        .ThenInclude(u => u.CdoCluster)
                     .Where(t => t.CreatedDate >= request.DateFrom && t.CreatedDate < adjustedDateTo)
                     .AsQueryable();
+
+                var userClusters = _context.CdoClusters
+                    .FirstOrDefault(x => x.UserId == request.AddedBy);
+
+                //per CDO viewing
+                if (userClusters != null)
+                {
+                    checkIn = checkIn.Where(c =>
+                        c.CreatedBy.UserRoles.Id == 6 &&
+                        c.CreatedBy.CdoCluster.ClusterId == userClusters.ClusterId);
+                }
+
+                //filter for Admin/Finanace/GAS/Treasury
+                var adminClusterFilter = _context.Users.Find(request.AddedBy);
+                if ((adminClusterFilter.UserRolesId == 1 ||
+                    adminClusterFilter.UserRolesId == 7 ||
+                    adminClusterFilter.UserRolesId == 8 ||
+                    adminClusterFilter.UserRolesId == 9 ||
+                    adminClusterFilter.UserRolesId == 10)
+                    && request.ClusterId is not null)
+                {
+                    checkIn = checkIn.Where(c => c.CreatedBy.CdoCluster.ClusterId == request.ClusterId);
+                }
 
                 var result = checkIn
                             .OrderByDescending(ck => ck.CreatedDate)
