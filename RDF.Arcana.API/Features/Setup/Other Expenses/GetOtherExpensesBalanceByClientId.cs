@@ -37,17 +37,16 @@ public class GetOtherExpensesBalanceByClientId : ControllerBase
     public class GetOtherExpensesBalanceByClientIdQuery : IRequest<Result>
     {
         public int ClientId { get; set;}
-        public int OtherExpenseId { get; set; }
     }
 
     public class GetOtherExpensesBalanceByClientIdResult
     {
         public string BusinessName { get; set; }
-        public decimal TotalBalance { get; set; }
-        public IEnumerable<ExpensesRequest> ExpensesReq { get; set; }
-        public class ExpensesRequest
+        public ICollection<OtherEx> Others { get; set; }
+        public class OtherEx
         {
-            public decimal RemainingBalance { get; set; }
+            public string OtherExpenseName { get; set; }
+            public decimal Balance { get; set; }
         }
     }
 
@@ -58,33 +57,39 @@ public class GetOtherExpensesBalanceByClientId : ControllerBase
         {
             _context = context;
         }
+
         public async Task<Result> Handle(GetOtherExpensesBalanceByClientIdQuery request, CancellationToken cancellationToken)
         {
-            var otherExpenses = await _context.ExpensesRequests
-                .Include(c => c.Client)
-                .Where(oe => oe.ClientId == request.ClientId &&
-                             oe.Status == Status.Approved &&
-                             oe.OtherExpenseId == request.OtherExpenseId)
-                .ToListAsync();
+            var client = await _context.Clients
+                .FirstOrDefaultAsync(c => c.Id == request.ClientId, cancellationToken);
 
-            if (!otherExpenses.Any())
+            if (client == null)
             {
                 return OtherExpensesErrors.NotFound();
             }
 
-            var otherExpensesResults = otherExpenses.Select(oe => new GetOtherExpensesBalanceByClientIdResult.ExpensesRequest
-            {
-                RemainingBalance = oe.RemainingBalance
-            }).ToList();
+
+            var others = await _context.OtherExpenses
+                .Select(oe => new GetOtherExpensesBalanceByClientIdResult.OtherEx
+                {
+                    OtherExpenseName = oe.ExpenseType,
+                    Balance = _context.ExpensesRequests
+                        .Where(er => er.OtherExpenseId == oe.Id &&
+                                     er.ClientId == request.ClientId &&
+                                     er.Status == Status.Approved)
+                        .Sum(er => (decimal?)er.RemainingBalance) ?? 0
+                })
+                .ToListAsync(cancellationToken);
 
             var result = new GetOtherExpensesBalanceByClientIdResult
             {
-                BusinessName = otherExpenses.First().Client.BusinessName,
-                TotalBalance = otherExpensesResults.Sum(oe => (decimal?)oe.RemainingBalance) ?? 0.00m,
-                ExpensesReq = otherExpensesResults
+                BusinessName = client.BusinessName,
+                Others = others
             };
 
             return Result.Success(result);
         }
     }
+
+
 }
