@@ -17,5 +17,6 @@ public static class TransactionErrors
 
     public static Error HasATag() => new("Has.Atag", "Cannot Void/Cancel, Payment has an A-Tag Already");
     public static Error NoInvoiceAttach() => new("NoInvoiceAttach", "Transaction has no Invoice Attachment, please input first");
-    public static Error CannotVoid() => new("CannotVoid", "Cannot void. The Cheque has paid multiple transactions.");
+    public static Error CannotVoid() => new("CannotVoid", "Cannot void/cancel. The Cheque has paid multiple transactions.");
+    public static Error APUsed() => new("AdvancePayment.Used", "Cannot void/cancel. Check's Excess Amount was used.");
 }
