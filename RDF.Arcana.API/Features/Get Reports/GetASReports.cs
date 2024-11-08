@@ -66,6 +66,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
             public int? AddedBy { get; set; }
             public DateTime DateFrom { get; set; }
             public DateTime DateTo { get; set; }
+            public int? ClusterId { get; set; }
         }
 
         public class GetAsReportsResult
@@ -113,6 +114,11 @@ namespace RDF.Arcana.API.Features.Get_Reports
                 else
                 {
                     throw new UnauthorizedAccessException("Unauthorized");
+                }
+
+                if (request.ClusterId is not null)
+                {
+                    transactions = transactions.Where(t => t.Client.ClusterId == request.ClusterId);
                 }
 
                 var result = transactions.Select(t => new GetAsReportsResult

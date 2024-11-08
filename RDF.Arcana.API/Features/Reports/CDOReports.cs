@@ -3,6 +3,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using RDF.Arcana.API.Common.Helpers;
 using RDF.Arcana.API.Data;
+using RDF.Arcana.API.Domain;
 using System.Security.Claims;
 
 
@@ -44,6 +45,7 @@ public class CDOReports : ControllerBase
         public int? AddedBy { get; set; }
         public DateTime DateFrom { get; set; }
         public DateTime DateTo { get; set; }
+        public int? ClusterId { get; set; }
     }
 
     public class Handler : IRequestHandler<CDOReportsCommand, IActionResult>
@@ -94,6 +96,11 @@ public class CDOReports : ControllerBase
                 {
                     return new UnauthorizedResult();
                 }
+            }
+
+            if (request.ClusterId is not null)
+            {
+                query = query.Where(t => t.Transaction.Client.ClusterId == request.ClusterId);
             }
 
             var consolidate = await query.ToListAsync(cancellationToken);

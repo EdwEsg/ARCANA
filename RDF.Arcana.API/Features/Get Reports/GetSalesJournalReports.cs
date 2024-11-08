@@ -2,9 +2,11 @@
 using Microsoft.AspNetCore.Mvc;
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Common.Extension;
+using RDF.Arcana.API.Common.Helpers;
 using RDF.Arcana.API.Common.Pagination;
 using RDF.Arcana.API.Data;
 using RDF.Arcana.API.Domain;
+using System.Security.Claims;
 
 namespace RDF.Arcana.API.Features.Get_Reports
 {
@@ -55,6 +57,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
         {
             public DateTime DateFrom { get; set; }
             public DateTime DateTo { get; set; }
+            public int? ClusterId { get; set; }
         }
 
         public class GetSalesJournalReportsResult
@@ -92,6 +95,12 @@ namespace RDF.Arcana.API.Features.Get_Reports
                                 t.Status != Status.Cancelled)
                     .AsSplitQuery()
                 .AsNoTracking();
+
+
+                if (request.ClusterId is not null)
+                {
+                    transactions = transactions.Where(t => t.Client.ClusterId == request.ClusterId);
+                }
 
                 var result = transactions.Select(t => new GetSalesJournalReportsResult
                 {

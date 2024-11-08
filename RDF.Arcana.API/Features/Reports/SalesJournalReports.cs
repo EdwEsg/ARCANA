@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Data;
+using System.Security.Claims;
 
 namespace RDF.Arcana.API.Features.Reports
 {
@@ -19,6 +20,7 @@ namespace RDF.Arcana.API.Features.Reports
         {
             try
             {
+
                 var result = await _mediator.Send(query);
                 return result;
             }
@@ -32,6 +34,7 @@ namespace RDF.Arcana.API.Features.Reports
         {
             public DateTime DateFrom { get; set; }
             public DateTime DateTo { get; set; }
+            public int? ClusterId { get; set; }
         }
 
         public class Handler : IRequestHandler<SalesJournalReportsQuery, IActionResult>
@@ -58,7 +61,14 @@ namespace RDF.Arcana.API.Features.Reports
                     .AsSplitQuery()
                     .AsNoTracking();
 
+
+                if (request.ClusterId is not null)
+                {
+                    query = query.Where(t => t.Client.ClusterId == request.ClusterId);
+                }
+
                 var consolidate = await query.ToListAsync(cancellationToken);
+               
 
                 using (var workbook = new XLWorkbook())
                 {

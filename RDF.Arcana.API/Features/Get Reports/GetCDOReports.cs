@@ -66,6 +66,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
             public int? AddedBy { get; set; }
             public DateTime DateFrom { get; set; }
             public DateTime DateTo { get; set; }
+            public int? ClusterId { get; set; }
         }
 
         public class GetCDOReportsResult
@@ -115,6 +116,12 @@ namespace RDF.Arcana.API.Features.Get_Reports
                     {
                         throw new UnauthorizedAccessException("Unauthorized");
                     }
+                }
+
+
+                if (request.ClusterId is not null)
+                {
+                    transactionItem = transactionItem.Where(t => t.Transaction.Client.ClusterId == request.ClusterId);
                 }
 
                 var result = transactionItem.Select(t => new GetCDOReportsResult

@@ -81,14 +81,8 @@ namespace RDF.Arcana.API.Features.Reports
                         c.CreatedBy.CdoCluster.ClusterId == userClusters.ClusterId);
                 }
 
-                //filter for Admin/Finanace/GAS/Treasury
-                var adminClusterFilter = _context.Users.Find(request.AddedBy);
-                if ((adminClusterFilter.UserRolesId == 1 ||
-                    adminClusterFilter.UserRolesId == 7 ||
-                    adminClusterFilter.UserRolesId == 8 ||
-                    adminClusterFilter.UserRolesId == 9 ||
-                    adminClusterFilter.UserRolesId == 10)
-                    && request.ClusterId is not null)
+
+                if (request.ClusterId is not null)
                 {
                     query = query.Where(c => c.CreatedBy.CdoCluster.ClusterId == request.ClusterId);
                 }
