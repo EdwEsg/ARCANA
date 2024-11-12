@@ -18,6 +18,7 @@ namespace RDF.Arcana.API.Domain
         public int CreatedById { get; set; }
         public DateTime CreatedDate { get; set; }
         public bool IsActive { get; set; } = true;
+        public DateTime? TimeOut { get; set; }
 
         public virtual Clients Client { get; set; }
         public virtual User CreatedBy { get; set; }
