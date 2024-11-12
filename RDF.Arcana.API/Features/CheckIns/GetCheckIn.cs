@@ -59,6 +59,7 @@ namespace RDF.Arcana.API.Features.CheckIns
 
         public class GetCheckInResult
         {
+            public int Id { get; set; }
             public string BusinessName { get; set; }
             public string FullName { get; set; }
             public string HouseNo { get; set; }
@@ -102,6 +103,7 @@ namespace RDF.Arcana.API.Features.CheckIns
                             .OrderByDescending(ck => ck.CreatedDate)
                             .Select(ck => new GetCheckInResult
                             {
+                                Id = ck.Id,
                                 BusinessName = ck.ClientId == null ? ck.BusinessNameOthers : ck.Client.BusinessName,
                                 FullName = ck.ClientId == null ? ck.FullNameOthers : ck.Client.Fullname,
                                 HouseNo = ck.ClientId == null ? null : ck.Client.BusinessAddress.HouseNumber,

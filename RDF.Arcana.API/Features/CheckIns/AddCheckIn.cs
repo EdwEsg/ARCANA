@@ -121,7 +121,8 @@ namespace RDF.Arcana.API.Features.CheckIns
                             FullNameOthers = request.FullName,
                             BarangayOthers = request.Barangay,
                             CityOthers = request.City,
-                            ProvinceOthers = request.Province
+                            ProvinceOthers = request.Province,
+                            TimeOut = null
                         };
 
                         await _context.CheckIns.AddAsync(checkIn, cancellationToken);
@@ -140,6 +141,7 @@ namespace RDF.Arcana.API.Features.CheckIns
                         Remarks = request.Remarks,
                         CreatedById = request.CreatedBy,
                         CreatedDate = DateTime.Now,
+                        TimeOut = null
                     };
 
                     await _context.CheckIns.AddAsync(checkIn, cancellationToken);

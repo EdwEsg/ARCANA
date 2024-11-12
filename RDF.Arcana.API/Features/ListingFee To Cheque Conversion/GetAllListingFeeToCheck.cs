@@ -84,6 +84,7 @@ namespace RDF.Arcana.API.Features.ListingFee_To_Cheque_Conversion
                 var checks = _context.Cheque
                     .Include(c => c.Client)
                     .Include(u => u.AddedByUser)
+                    .Where(ch => ch.Amount > 0)
                     .AsSplitQuery()
                     .AsNoTracking();
 
