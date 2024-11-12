@@ -3,9 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Common.Helpers;
 using RDF.Arcana.API.Data;
+using RDF.Arcana.API.Features.Sales_Management.Sales_Transactions;
 using System.Security.Claims;
-using static RDF.Arcana.API.Features.Sales_Management.Payment_Transaction.AddNewPaymentTransaction.AddNewPaymentTransactionCommand;
-using static RDF.Arcana.API.Features.Sales_Management.Payment_Transaction.VoidPaymentTransaction;
 
 namespace RDF.Arcana.API.Features.Sales_Management.Clearing_Transaction
 {
@@ -108,6 +107,27 @@ namespace RDF.Arcana.API.Features.Sales_Management.Clearing_Transaction
                                              .First();
 
                         advancePayment.RemainingBalance += payment.TotalAmountReceived;
+                    }
+
+                    if (payment.PaymentMethod == PaymentMethods.Cheque)
+                    {
+                        var advancePaymentExcess = _context.AdvancePayments.Where(ap => ap.ClientId == payment.Transaction.ClientId &&
+                                                   ap.IsActive &&
+                                                   ap.ChequeNo == payment.ChequeNo).FirstOrDefault();
+
+                        if (advancePaymentExcess is not null)
+                        {
+
+
+                            //possible error if excess payment was used and max out to 0
+                            if (advancePaymentExcess.AdvancePaymentAmount != advancePaymentExcess.RemainingBalance &&
+                                advancePaymentExcess.RemainingBalance != 0)
+                            {
+                                return TransactionErrors.APUsed();
+                            }
+
+                            advancePaymentExcess.RemainingBalance = 0;
+                        }
                     }
 
                     payment.Status = Status.Voided;

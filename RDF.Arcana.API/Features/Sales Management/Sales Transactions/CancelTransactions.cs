@@ -101,7 +101,36 @@ public class CancelTransactions : ControllerBase
                             advancePayment.RemainingBalance += payment.TotalAmountReceived;
                         }
 
-                        payment.Status = Status.Cancelled;
+                        if (payment.PaymentMethod == PaymentMethods.Cheque)
+                        {
+                            var validateCheque = _context.PaymentTransactions.Where(c => c.ChequeNo == payment.ChequeNo).ToList();
+                            if (validateCheque.Count > 1)
+                            {
+                                return TransactionErrors.CannotVoid();
+                            }
+
+
+                            var advancePaymentExcess = _context.AdvancePayments.Where(ap => ap.ClientId == transaction.ClientId &&
+                                                       ap.IsActive &&
+                                                       ap.ChequeNo == payment.ChequeNo).FirstOrDefault();
+
+                            if (advancePaymentExcess is not null)
+                            {
+                                if (advancePaymentExcess.AdvancePaymentAmount != advancePaymentExcess.RemainingBalance)
+                                {
+                                    return TransactionErrors.APUsed();
+                                }
+
+                                advancePaymentExcess.RemainingBalance -= (payment.PaymentAmount - payment.TotalAmountReceived);
+
+                                if (advancePaymentExcess.RemainingBalance < 0)
+                                {
+                                    advancePaymentExcess.RemainingBalance = 0;
+                                }
+                            }
+                        }
+
+                    payment.Status = Status.Cancelled;
                     }
                 }
 
