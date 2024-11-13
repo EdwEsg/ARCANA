@@ -96,7 +96,8 @@ namespace RDF.Arcana.API.Features.Reports
                     var headers = new List<string>
                     {
                         "User",
-                        "Visit Date",
+                        "Time In",
+                        "Time Out",
                         "Business Name",
                         "Business Owner",
                         "Barangay",
@@ -133,13 +134,14 @@ namespace RDF.Arcana.API.Features.Reports
 
                         row.Cell(1).Value = consolidate[index].CreatedBy.Fullname;
                         row.Cell(2).Value = consolidate[index].CreatedDate.ToString("MM/dd/yy HH:mm:ss");
-                        row.Cell(3).Value = consolidate[index].Client?.BusinessName ?? consolidate[index].BusinessNameOthers;
-                        row.Cell(4).Value = consolidate[index].Client?.Fullname ?? consolidate[index].FullNameOthers;
-                        row.Cell(5).Value = consolidate[index].Client?.BusinessAddress?.Barangay ?? consolidate[index].BarangayOthers;
-                        row.Cell(6).Value = consolidate[index].Client?.BusinessAddress?.City ?? consolidate[index].CityOthers;
-                        row.Cell(7).Value = consolidate[index].Client?.BusinessAddress?.Province ?? consolidate[index].ProvinceOthers;
-                        row.Cell(8).Value = consolidate[index].Latitude;
-                        row.Cell(9).Value = consolidate[index].Longitude;
+                        row.Cell(3).Value = consolidate[index].TimeOut?.ToString("MM/dd/yy HH:mm:ss") ?? "";
+                        row.Cell(4).Value = consolidate[index].Client?.BusinessName ?? consolidate[index].BusinessNameOthers;
+                        row.Cell(5).Value = consolidate[index].Client?.Fullname ?? consolidate[index].FullNameOthers;
+                        row.Cell(6).Value = consolidate[index].Client?.BusinessAddress?.Barangay ?? consolidate[index].BarangayOthers;
+                        row.Cell(7).Value = consolidate[index].Client?.BusinessAddress?.City ?? consolidate[index].CityOthers;
+                        row.Cell(8).Value = consolidate[index].Client?.BusinessAddress?.Province ?? consolidate[index].ProvinceOthers;
+                        row.Cell(9).Value = consolidate[index].Latitude;
+                        row.Cell(10).Value = consolidate[index].Longitude;
 
                         //for centering the numeric value for better readability
                         for (int col = 1; col <= 45; col++)

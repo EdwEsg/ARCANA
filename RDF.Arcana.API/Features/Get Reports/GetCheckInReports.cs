@@ -88,6 +88,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
             public string Remarks { get; set; }
             public string CreatedBy { get; set; }
             public DateTime CreatedDate { get; set; }
+            public DateTime? TimeOut { get; set; }
         }
 
         public class Handler : IRequestHandler<GetCheckInReportsQuery, PagedList<GetCheckInReportsResult>>
@@ -145,7 +146,8 @@ namespace RDF.Arcana.API.Features.Get_Reports
                                 Image = ck.Image,
                                 Remarks = ck.Remarks,
                                 CreatedBy = ck.CreatedBy.Fullname,
-                                CreatedDate = ck.CreatedDate
+                                CreatedDate = ck.CreatedDate,
+                                TimeOut = ck.TimeOut
                             });
 
                 return await PagedList<GetCheckInReportsResult>.CreateAsync(result, request.PageNumber, request.PageSize);
