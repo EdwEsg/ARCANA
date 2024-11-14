@@ -55,6 +55,10 @@ namespace RDF.Arcana.API.Features.Get_Reports
                 public decimal? RemainingBalance { get; set; }
                 public string Remarks { get; set; }
             }
+            public decimal GrandTotalCharges { get; set; }
+            public decimal GrandTotalTaxWithheld { get; set; }
+            public decimal GrandTotalPayment { get; set; }
+            public decimal GrandTotalRemainingBalance { get; set; }
         }
 
         public class Handler : IRequestHandler<GetSOAReportsCommand, Result>
@@ -98,28 +102,37 @@ namespace RDF.Arcana.API.Features.Get_Reports
                     {
                         BusinessName = client?.BusinessName ?? "N/A",
                         FullName = client?.Fullname ?? "N/A",
-                        PendingSoa = new List<GetSOAReportsResult.ClientSoa>()
+                        PendingSoa = new List<GetSOAReportsResult.ClientSoa>(),
+                        GrandTotalCharges = 0,
+                        GrandTotalTaxWithheld = 0,
+                        GrandTotalPayment = 0,
+                        GrandTotalRemainingBalance = 0
                     };
 
                     return Result.Success(result);
                 }
 
+                var pendingSoaList = transactions.Select(t => new GetSOAReportsResult.ClientSoa
+                {
+                    DeliveryDate = t.CreatedDate,
+                    InvoiceNo = t.Invoice,
+                    Aging = (adjustedDateTo - t.CreatedDate)?.Days ?? 0,
+                    Charges = t.Payment,
+                    TaxWithheld = 0, 
+                    Payment = t.Payment - t.Balance,
+                    RemainingBalance = t.Balance,
+                    Remarks = ""
+                }).ToList();
 
                 var resultWithPending = new GetSOAReportsResult
                 {
                     BusinessName = transactions.First().BusinessName,
                     FullName = transactions.First().FullName,
-                    PendingSoa = transactions.Select(t => new GetSOAReportsResult.ClientSoa
-                    {
-                        DeliveryDate = t.CreatedDate,
-                        InvoiceNo = t.Invoice,
-                        Aging = (adjustedDateTo - t.CreatedDate)?.Days ?? 0,
-                        Charges = t.Payment,
-                        TaxWithheld = null,
-                        Payment = t.Payment - t.Balance,
-                        RemainingBalance = t.Balance,
-                        Remarks = ""
-                    }).ToList()
+                    PendingSoa = pendingSoaList,
+                    GrandTotalCharges = pendingSoaList.Sum(c => c.Charges ?? 0),
+                    GrandTotalTaxWithheld = 0,
+                    GrandTotalPayment = pendingSoaList.Sum(p => p.Payment ?? 0),
+                    GrandTotalRemainingBalance = pendingSoaList.Sum(r => r.RemainingBalance ?? 0)
                 };
 
                 return Result.Success(resultWithPending);
