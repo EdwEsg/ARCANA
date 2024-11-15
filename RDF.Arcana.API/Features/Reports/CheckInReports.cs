@@ -103,8 +103,7 @@ namespace RDF.Arcana.API.Features.Reports
                         "Barangay",
                         "City",
                         "Province",
-                        "Latitude",
-                        "Longitude"
+                        "Duration"
                     };
 
                     var headerRange = worksheet.Range(worksheet.Cell(1, 1), worksheet.Cell(1, headers.Count));
@@ -140,8 +139,10 @@ namespace RDF.Arcana.API.Features.Reports
                         row.Cell(6).Value = consolidate[index].Client?.BusinessAddress?.Barangay ?? consolidate[index].BarangayOthers;
                         row.Cell(7).Value = consolidate[index].Client?.BusinessAddress?.City ?? consolidate[index].CityOthers;
                         row.Cell(8).Value = consolidate[index].Client?.BusinessAddress?.Province ?? consolidate[index].ProvinceOthers;
-                        row.Cell(9).Value = consolidate[index].Latitude;
-                        row.Cell(10).Value = consolidate[index].Longitude;
+                        row.Cell(9).Value = consolidate[index].TimeOut.HasValue
+                            ? $"{(consolidate[index].TimeOut.Value - consolidate[index].CreatedDate).Hours:D2}H {(consolidate[index].TimeOut.Value - consolidate[index].CreatedDate).Minutes:D2}M"
+                            : null;
+
 
                         //for centering the numeric value for better readability
                         for (int col = 1; col <= 45; col++)

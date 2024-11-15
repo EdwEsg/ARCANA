@@ -89,6 +89,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
             public string CreatedBy { get; set; }
             public DateTime CreatedDate { get; set; }
             public DateTime? TimeOut { get; set; }
+            public string Duration { get; set; }
         }
 
         public class Handler : IRequestHandler<GetCheckInReportsQuery, PagedList<GetCheckInReportsResult>>
@@ -147,7 +148,10 @@ namespace RDF.Arcana.API.Features.Get_Reports
                                 Remarks = ck.Remarks,
                                 CreatedBy = ck.CreatedBy.Fullname,
                                 CreatedDate = ck.CreatedDate,
-                                TimeOut = ck.TimeOut
+                                TimeOut = ck.TimeOut,
+                                Duration = ck.TimeOut.HasValue
+                                    ? $"{(ck.TimeOut.Value - ck.CreatedDate).Hours:D2}H {(ck.TimeOut.Value - ck.CreatedDate).Minutes:D2}M"
+                                    : null,
                             });
 
                 return await PagedList<GetCheckInReportsResult>.CreateAsync(result, request.PageNumber, request.PageSize);

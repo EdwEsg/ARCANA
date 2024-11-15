@@ -74,6 +74,7 @@ namespace RDF.Arcana.API.Features.CheckIns
             public string CreatedBy { get; set; }
             public DateTime CreatedDate { get; set; }
             public DateTime? TimeOut { get; set; }
+            public string Duration { get; set; }
         }
 
         public class Handler : IRequestHandler<GetCheckInQuery, PagedList<GetCheckInResult>>
@@ -118,7 +119,11 @@ namespace RDF.Arcana.API.Features.CheckIns
                                 Remarks = ck.Remarks,
                                 CreatedBy = ck.CreatedBy.Fullname,
                                 CreatedDate = ck.CreatedDate,
-                                TimeOut = ck.TimeOut
+                                TimeOut = ck.TimeOut,
+                                Duration = ck.TimeOut.HasValue
+                                    ? $"{(ck.TimeOut.Value - ck.CreatedDate).Hours:D2}H {(ck.TimeOut.Value - ck.CreatedDate).Minutes:D2}M"
+                                    : null,
+
                             });
 
 
