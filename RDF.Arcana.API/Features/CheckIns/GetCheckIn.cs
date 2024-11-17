@@ -121,7 +121,7 @@ namespace RDF.Arcana.API.Features.CheckIns
                                 CreatedDate = ck.CreatedDate,
                                 TimeOut = ck.TimeOut,
                                 Duration = ck.TimeOut.HasValue
-                                    ? $"{(ck.TimeOut.Value - ck.CreatedDate).Hours:D2}H {(ck.TimeOut.Value - ck.CreatedDate).Minutes:D2}M"
+                                    ? $"{(ck.TimeOut.Value - ck.CreatedDate).Days:D2}D {(ck.TimeOut.Value - ck.CreatedDate).Hours:D2}H {(ck.TimeOut.Value - ck.CreatedDate).Minutes:D2}M"
                                     : null,
 
                             });

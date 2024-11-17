@@ -115,7 +115,7 @@ namespace RDF.Arcana.API.Features.ListingFee_To_Cheque_Conversion
                     Amount = c.Amount,
                     AddedBy = c.AddedByUser.Fullname,
                     CreatedDate = c.CreatedDate
-                }).OrderBy(c => c.CreatedDate);
+                }).OrderByDescending(c => c.CreatedDate);
 
                 return PagedList<GetAllListingFeeToCheckResult>.CreateAsync(result, request.PageNumber, request.PageSize);
             }

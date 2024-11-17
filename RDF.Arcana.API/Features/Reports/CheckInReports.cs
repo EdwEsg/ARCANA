@@ -140,8 +140,9 @@ namespace RDF.Arcana.API.Features.Reports
                         row.Cell(7).Value = consolidate[index].Client?.BusinessAddress?.City ?? consolidate[index].CityOthers;
                         row.Cell(8).Value = consolidate[index].Client?.BusinessAddress?.Province ?? consolidate[index].ProvinceOthers;
                         row.Cell(9).Value = consolidate[index].TimeOut.HasValue
-                            ? $"{(consolidate[index].TimeOut.Value - consolidate[index].CreatedDate).Hours:D2}H {(consolidate[index].TimeOut.Value - consolidate[index].CreatedDate).Minutes:D2}M"
+                            ? $"{(consolidate[index].TimeOut.Value - consolidate[index].CreatedDate).Days:D2}D {(consolidate[index].TimeOut.Value - consolidate[index].CreatedDate).Hours:D2}H {(consolidate[index].TimeOut.Value - consolidate[index].CreatedDate).Minutes:D2}M"
                             : null;
+
 
 
                         //for centering the numeric value for better readability
