@@ -175,7 +175,8 @@ public class GetAllListingFee : ControllerBase
                 .Include(x => x.ListingFeeItems)
                 .ThenInclude(x => x.Item)
                 .ThenInclude(x => x.Uom)
-                .AsSingleQuery();
+                .AsSingleQuery()
+                .Where(t => t.Total > 0);
 
             var userClusters = await _context.CdoClusters.FirstOrDefaultAsync(x => x.UserId == request.AccessBy, cancellationToken);
 
