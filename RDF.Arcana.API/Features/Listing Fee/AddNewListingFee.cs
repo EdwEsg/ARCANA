@@ -185,7 +185,8 @@ public class AddNewListingFee : ControllerBase
                 RequestId = newRequest.Id,
                 Status = Status.UnderReview,
                 RequestedBy = request.RequestedBy,
-                Total = request.Total
+                Total = request.Total,
+                OriginalTotal = request.Total
             };
 
             await _context.ListingFees.AddAsync(listingFee, cancellationToken);

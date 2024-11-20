@@ -16,4 +16,6 @@ public class ListingFeeErrors
         new Error("ListingFee.AlreadyRequested", $"{itemDescription} has already been requested.");
     public static Error MerchandisingAllowanceNotValid() => new("ListingFee.MerchandisingAllowanceNotValid",
         "Merchandising allowance should be greater than 0");
+    public static Error NoClientFound() =>
+        new Error("Not.Found", "No Client Found");
 }
