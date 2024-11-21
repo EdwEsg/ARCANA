@@ -48,6 +48,7 @@ namespace RDF.Arcana.API.Features.Listing_Fee
                 public string PaymentType { get; set; }
                 public decimal Amount { get; set; }
                 public DateTime CreatedDate { get; set; }
+                public string TransactedBy { get; set; }
             }
         }
 
@@ -81,7 +82,8 @@ namespace RDF.Arcana.API.Features.Listing_Fee
                     {
                         PaymentType = "Payment",
                         Amount = pt.TotalAmountReceived,
-                        CreatedDate = pt.DateReceived
+                        CreatedDate = pt.DateReceived,
+                        TransactedBy = pt.AddedByUser.Fullname
                     })
                     .ToListAsync(cancellationToken);
 
@@ -91,9 +93,10 @@ namespace RDF.Arcana.API.Features.Listing_Fee
                                 c.Amount > 0)
                     .Select(c => new GetListingFeeHistoryByClientIdResult.LHistory
                     {
-                        PaymentType = "Check",
+                        PaymentType = "Cheque",
                         Amount = c.Amount,
-                        CreatedDate = c.CreatedDate
+                        CreatedDate = c.CreatedDate,
+                        TransactedBy = c.AddedByUser.Fullname
                     })
                     .ToListAsync(cancellationToken);
 
@@ -103,9 +106,10 @@ namespace RDF.Arcana.API.Features.Listing_Fee
                         lf.OriginalTotal > 0 )
                     .Select(lf => new GetListingFeeHistoryByClientIdResult.LHistory
                     {
-                        PaymentType = "Add",
+                        PaymentType = "Add Balance",
                         Amount = lf.OriginalTotal,
-                        CreatedDate = lf.CratedAt
+                        CreatedDate = lf.CratedAt,
+                        TransactedBy = lf.RequestedByUser.Fullname
                     })
                     .ToListAsync(cancellationToken);
 
