@@ -13,7 +13,7 @@ public class ListingFee : BaseEntity
     public string Status { get; set; }
     public int RequestedBy { get; set; }
     public decimal Total { get; set; }
-    public decimal OriginalTotal { get; set; } = 0;
+    public decimal OriginalTotal { get; set; }
     public virtual Clients Client { get; set; }
     public virtual User RequestedByUser { get; set; }
     

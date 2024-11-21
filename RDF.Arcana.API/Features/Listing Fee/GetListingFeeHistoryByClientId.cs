@@ -97,11 +97,20 @@ namespace RDF.Arcana.API.Features.Listing_Fee
                     })
                     .ToListAsync(cancellationToken);
 
-                //var listing = await _context.ListingFees
-                //    .Where(l => l.)
+                var listing = await _context.ListingFees
+                    .Where(lf => lf.ClientId == request.ClientId &&
+                        lf.Status == Status.Approved && 
+                        lf.OriginalTotal > 0 )
+                    .Select(lf => new GetListingFeeHistoryByClientIdResult.LHistory
+                    {
+                        PaymentType = "Add",
+                        Amount = lf.OriginalTotal,
+                        CreatedDate = lf.CratedAt
+                    })
+                    .ToListAsync(cancellationToken);
 
 
-                var listingHistory = paymentTransactions.Concat(cheques)
+                var listingHistory = paymentTransactions.Concat(cheques).Concat(listing)
                     .OrderByDescending(l => l.CreatedDate)
                     .ToList();
 
