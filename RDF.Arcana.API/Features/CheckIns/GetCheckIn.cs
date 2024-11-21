@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Common.Extension;
 using RDF.Arcana.API.Common.Pagination;
@@ -55,6 +56,8 @@ namespace RDF.Arcana.API.Features.CheckIns
         public class GetCheckInQuery : UserParams, IRequest<PagedList<GetCheckInResult>>
         {
             public string Search { get; set; }
+            public DateTime DateFrom { get; set; }
+            public DateTime DateTo { get; set; }
         }
 
         public class GetCheckInResult
@@ -87,10 +90,14 @@ namespace RDF.Arcana.API.Features.CheckIns
 
             public async Task<PagedList<GetCheckInResult>> Handle(GetCheckInQuery request, CancellationToken cancellationToken)
             {
+                var adjustedDateTo = request.DateTo.AddDays(1);
+
                 var checkIn = _context.CheckIns
                     .Include(c => c.Client)
                         .ThenInclude(b => b.BusinessAddress)
                     .Include(u => u.CreatedBy)
+                    .Where(c =>
+                        c.CreatedDate >= request.DateFrom && c.CreatedDate < adjustedDateTo)
                     .AsQueryable();
 
                 if (!string.IsNullOrEmpty(request.Search))
@@ -101,6 +108,7 @@ namespace RDF.Arcana.API.Features.CheckIns
                     );
                 }
 
+                
                 var result = checkIn
                             .OrderByDescending(ck => ck.CreatedDate)
                             .Select(ck => new GetCheckInResult
