@@ -60,7 +60,7 @@ public class ConsolidateApprovedClientsExport : ControllerBase
                 .Include(f => f.FixedDiscounts)
                 .Include(pm => pm.PriceMode)
                 .Include(f => f.Freezer)
-                .Where(a => a.RegistrationStatus == Status.Approved &&
+                .Where(a => a.RegistrationStatus == Status.Approved && a.IsActive &&
                             a.CreatedAt >= request.DateFrom &&
                             a.CreatedAt <= request.DateTo)
                 .AsSplitQuery()

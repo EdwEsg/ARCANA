@@ -172,6 +172,7 @@ public class GetAllClients : ControllerBase
                 .Include(rq => rq.Request)
                 .ThenInclude(ap => ap.CurrentApprover)
                 .AsSplitQuery()
+                .Where(x => x.IsActive)
                 .AsSingleQuery();
 
             if (!string.IsNullOrEmpty(request.Search))

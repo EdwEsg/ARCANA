@@ -96,7 +96,8 @@ public class GetClientsForPOSAsync : ControllerBase
                     .Include(t => t.Transactions)
                     .Include(a => a.BusinessAddress)
                     .Where(x => x.RegistrationStatus == Status.Approved &&
-                                x.ClusterId == userClusters.ClusterId)
+                                x.ClusterId == userClusters.ClusterId && 
+                                x.IsActive)
                     //.Where(x => x.Transactions.Any(ts => ts.Status != Status.Pending))
                     .Select(cl => new GetClientsForPOSAsyncResult
                     {
@@ -130,7 +131,7 @@ public class GetClientsForPOSAsync : ControllerBase
                     .Include(to => to.Term)
                     .Include(t => t.Transactions)
                     .Include(a => a.BusinessAddress)
-                    .Where(x => x.RegistrationStatus == Status.Approved &&
+                    .Where(x => x.RegistrationStatus == Status.Approved && x.IsActive &&
                                 (x.Term.TermsId != 2 || (x.Transactions.Any(ts => ts.Status == Status.Paid) ||
                                 x.Transactions.Count == 0)))
                     //.Where(c => c.RegistrationStatus == Status.Approved) //this is for temporary restraining the 1 up 1 down Logic
