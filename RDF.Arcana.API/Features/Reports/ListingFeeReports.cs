@@ -2,8 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Data;
-using RDF.Arcana.API.Features.Get_Reports;
-using static RDF.Arcana.API.Features.Listing_Fee.GetListingFeeHistoryByClientId.GetListingFeeHistoryByClientIdResult;
+
 
 namespace RDF.Arcana.API.Features.Reports
 {
