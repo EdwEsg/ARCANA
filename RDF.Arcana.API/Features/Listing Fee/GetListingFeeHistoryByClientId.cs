@@ -67,10 +67,10 @@ namespace RDF.Arcana.API.Features.Listing_Fee
                     .Select(c => c.BusinessName)
                     .FirstOrDefaultAsync(cancellationToken);
 
-                if (client == null)
-                {
-                    return ListingFeeErrors.NoClientFound();
-                }
+                //if (client == null)
+                //{
+                //    return ListingFeeErrors.NoClientFound();
+                //}
 
                 var paymentTransactions = await _context.PaymentTransactions
                     .Where(pt => pt.Transaction.ClientId == request.ClientId &&
