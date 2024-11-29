@@ -14,6 +14,7 @@ using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Common.Behaviors;
 using RDF.Arcana.API.Data;
 using RDF.Arcana.API.Features.Storage;
+using RDF.Arcana.API.Models.ExternalDb;
 using RDF.Arcana.API.Services.Messaging;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -47,17 +48,29 @@ builder.Services.AddControllers(
 //builder.Services.AddDatabaseConfiguration(builder.Configuration, builder.Environment.EnvironmentName);
 
 var connectionString = builder.Configuration.GetConnectionString("Testing");
+var moveOrderConnectionString = builder.Configuration.GetConnectionString("MoveOrder");
 
 builder.Services.AddDbContext<ArcanaDbContext>(x =>
 {
-	if (connectionString != null)
-	{
-		x.UseSqlServer(connectionString, options =>
-		{
-			options.EnableRetryOnFailure();
-		}).UseSnakeCaseNamingConvention();
-	}
+    if (connectionString != null)
+    {
+        x.UseSqlServer(connectionString, options =>
+        {
+            options.EnableRetryOnFailure();
+        }).UseSnakeCaseNamingConvention();
+    }
 
+});
+
+builder.Services.AddDbContext<ExternalDbContext>(options =>
+{
+    if (moveOrderConnectionString != null)
+    {
+        options.UseSqlServer(moveOrderConnectionString, sqlOptions =>
+        {
+            sqlOptions.EnableRetryOnFailure();
+        });
+    }
 });
 
 

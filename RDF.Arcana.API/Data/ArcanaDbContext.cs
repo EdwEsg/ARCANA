@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using RDF.Arcana.API.Domain;
+using RDF.Arcana.API.Domain.Inventory;
 
 namespace RDF.Arcana.API.Data;
 
@@ -65,6 +66,7 @@ public class ArcanaDbContext : DbContext
     public virtual DbSet<ApproverByRange> ApproverByRange { get; set; }
     public virtual DbSet<Cheque> Cheque { get; set; }
     public virtual DbSet<CheckIn> CheckIns { get; set; }
+    public virtual DbSet<InventoryReceiving> InventoryReceivings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
