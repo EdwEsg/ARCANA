@@ -66,7 +66,8 @@ public class ArcanaDbContext : DbContext
     public virtual DbSet<ApproverByRange> ApproverByRange { get; set; }
     public virtual DbSet<Cheque> Cheque { get; set; }
     public virtual DbSet<CheckIn> CheckIns { get; set; }
-    public virtual DbSet<InventoryReceiving> InventoryReceivings { get; set; }
+    public virtual DbSet<MoveOrder> MoveOrders { get; set; }
+    public virtual DbSet<MoveOrderItem> MoveOrderItems { get; set; } 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

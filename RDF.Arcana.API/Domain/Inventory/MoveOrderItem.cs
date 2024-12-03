@@ -2,23 +2,22 @@
 
 namespace RDF.Arcana.API.Domain.Inventory
 {
-    public class InventoryReceiving : BaseEntity
+    public class MoveOrderItem : BaseEntity
     {
         public int MoveOrderId { get; set; }
-        public string ItemDescription { get; set; }
         public string ItemCode { get; set; }
-        public string Uom { get; set; }
         public decimal Quantity { get; set; }
-        public decimal? QuantityReceived { get; set; }
-        public string Status { get; set; }
-        public string Reason { get; set; }
-
+        public decimal? ActualQuantity { get; set; }
+        public string ProductionDate { get; set; }
         public bool IsActive { get; set; } = true;
-        public int CreatedById { get; set; }
+        public int ItemId { get; set; }
+        public int UomId { get; set; }
         public int? ModifiedBy { get; set; }
-        public DateTime CreatedDate { get; set; } = DateTime.Now;
         public DateTime? ModifiedDate { get; set; }
 
+        public virtual Uom Uom { get; set; }
+        public virtual Items Item { get; set; }
+        public virtual MoveOrder MoveOrder { get; set; }
         public virtual User CreatedBy { get; set; }
     }
 }
