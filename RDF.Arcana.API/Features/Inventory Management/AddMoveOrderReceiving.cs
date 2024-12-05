@@ -42,10 +42,19 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public int MoveOrderId { get; set; }
             public int CreatedBy { get; set; }
             public List<MoveOrderItemDto> Items { get; set; }
+            public List<WrongDeliverDto> Wrong { get; set; }
             public class MoveOrderItemDto
             {
                 public string ItemCode { get; set; }
                 public decimal? ActualQuantity { get; set; }
+            }
+
+            public class WrongDeliverDto 
+            {
+                public string ItemCode { get; set; }
+                public decimal? Quantity { get; set; }
+                public string Reason { get; set; }
+
             }
         }
 
@@ -118,12 +127,19 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     .Where(i => itemCodes.Contains(i.ItemCode))
                     .ToListAsync(cancellationToken);
 
+                var wrongItemCodes = request.Wrong?.Select(w => w.ItemCode).Distinct() ?? Enumerable.Empty<string>();
+
                 var missingItemCodes = itemCodes.Except(itemsInContext.Select(i => i.ItemCode)).ToList();
                 if (missingItemCodes.Any())
                 {
                     var missingCodes = string.Join(", ", missingItemCodes);
                     return InventoryErrors.CannotSync(missingCodes);
                 }
+
+                var wrongItemsByItemCode = request.Wrong?
+                    .GroupBy(w => w.ItemCode)
+                    .ToDictionary(g => g.Key, g => g.ToList())
+                    ?? new Dictionary<string, List<AddMoveOrderReceivingCommand.WrongDeliverDto>>();
 
 
                 var internalMoveOrder = new Domain.Inventory.MoveOrder
@@ -152,7 +168,27 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     var item = itemsInContext.First(i => i.ItemCode == externalItem.ItemCode);
 
                     var commandItem = request.Items?.FirstOrDefault(i => i.ItemCode == externalItem.ItemCode);
-                    decimal? actualQuantity = commandItem?.ActualQuantity;
+                    decimal? actualQuantity = commandItem?.ActualQuantity ?? externalItem.Quantity;
+
+                    decimal totalWrongQuantity = 0m;
+                    if (wrongItemsByItemCode.TryGetValue(externalItem.ItemCode, out var wrongItems))
+                    {
+                        totalWrongQuantity = wrongItems.Sum(w => w.Quantity ?? 0m);
+                    }
+
+                    if (totalWrongQuantity > externalItem.Quantity || totalWrongQuantity > actualQuantity)
+                    {
+                        _context.MoveOrders.Remove(internalMoveOrder);
+                        await _context.SaveChangesAsync(cancellationToken);
+
+                        return InventoryErrors.WrongDeliver();
+                    }
+
+                    actualQuantity -= totalWrongQuantity;
+                    if (actualQuantity < 0m)
+                    {
+                        actualQuantity = 0m;
+                    }
 
                     var moveOrderItem = new Domain.Inventory.MoveOrderItem
                     {
@@ -164,10 +200,33 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         ItemId = item.Id,
                         UomId = item.UomId,
                         IsActive = true,
-                        CreatedBy = _context.Users.FirstOrDefault(u => u.Id == request.CreatedBy)
+                        CreatedBy = _context.Users.FirstOrDefault(u => u.Id == request.CreatedBy),
+                        Reason = null
                     };
 
                     internalMoveOrderItems.Add(moveOrderItem);
+
+                    if (wrongItems != null)
+                    {
+                        foreach (var wrong in wrongItems)
+                        {
+                            var wrongMoveOrderItem = new Domain.Inventory.MoveOrderItem
+                            {
+                                MoveOrderId = internalMoveOrder.Id,
+                                ItemCode = wrong.ItemCode,
+                                Quantity = wrong.Quantity ?? 0m,
+                                ActualQuantity = 0m, 
+                                ProductionDate = externalItem.ProductionDate,
+                                ItemId = item.Id,
+                                UomId = item.UomId,
+                                IsActive = true,
+                                CreatedBy = _context.Users.FirstOrDefault(u => u.Id == request.CreatedBy),
+                                Reason = wrong.Reason
+                            };
+
+                            internalMoveOrderItems.Add(wrongMoveOrderItem);
+                        }
+                    }
                 }
 
                 

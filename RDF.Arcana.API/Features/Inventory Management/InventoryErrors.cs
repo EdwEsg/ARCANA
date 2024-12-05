@@ -8,5 +8,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         public static Error MoAlreadyExist() => new("AlreadyExist", "Move Order Already Exist in Database");
         public static Error CannotSync(string missingCodes) => new("Missing.Items",$"The following ItemCodes do not exist in the Arcana: {missingCodes}");
         public static Error NotYetTransacted() => new("Not.Transacted", "Move Order is not transacted yet");
+        public static Error WrongDeliver() => new("Wrong.Deliver", "The sum of Wrong Delivers should not exceed the Quantity or Actual Quantity");
     }
 }

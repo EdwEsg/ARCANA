@@ -14,6 +14,7 @@ namespace RDF.Arcana.API.Domain.Inventory
         public int UomId { get; set; }
         public int? ModifiedBy { get; set; }
         public DateTime? ModifiedDate { get; set; }
+        public string Reason { get; set; }
 
         public virtual Uom Uom { get; set; }
         public virtual Items Item { get; set; }
