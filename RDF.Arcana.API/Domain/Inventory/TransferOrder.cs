@@ -15,6 +15,7 @@ namespace RDF.Arcana.API.Domain.Inventory
         public DateTime? ModifiedDate { get; set; }
         public int CreatedById { get; set; }
         public int? ModifiedBy { get; set; }
+        public string Status { get; set; }
 
         public virtual User CreatedBy { get; set; }
         public virtual ICollection<TransferOrderItem> TransferOrderItems { get; set; }

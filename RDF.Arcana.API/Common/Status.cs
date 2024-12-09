@@ -48,6 +48,12 @@ public static class Status
     public const string ForFiling = "For Filing";
     public const string ForClearing = "For Clearing";
     public const string Filed = "Filed";
+
+    //for Transfer
+    public const string TransferIn = "In";
+    public const string TransferOut = "Out";
+    public const string Transfer = "Transfer";
+    public const string ForReceiving = "For Receiving";
 }
 
 //public static class Terms

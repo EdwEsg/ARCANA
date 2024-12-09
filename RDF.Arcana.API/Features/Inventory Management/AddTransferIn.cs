@@ -1,12 +1,179 @@
-﻿using RDF.Arcana.API.Common;
+﻿
+using Microsoft.AspNetCore.Mvc;
+using RDF.Arcana.API.Common;
+using RDF.Arcana.API.Data;
+using RDF.Arcana.API.Domain.Inventory;
+using System.Security.Claims;
 
 namespace RDF.Arcana.API.Features.Inventory_Management
 {
-    public class AddTransferIn
+    [Route("api/add-transfer-in"), ApiController]
+    public class AddTransferIn : ControllerBase
     {
+        private readonly IMediator _mediator;
+        public AddTransferIn(IMediator mediator)
+        {
+            _mediator = mediator;
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Add([FromBody] AddTransferInCommand command)
+        {
+            try
+            {
+                if (User.Identity is ClaimsIdentity identity
+                    && int.TryParse(identity.FindFirst("id")?.Value, out var userId))
+                {
+                    command.AccessBy = userId;
+                }
+                var result = await _mediator.Send(command);
+                return result.IsSuccess ? Ok(result) : BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         public class AddTransferInCommand : IRequest<Result>
         {
-            //public ICollection<> Items { get; set; }
+            public int To { get; set; }
+            public int AccessBy { get; set; }
+            public ICollection<TransferItemDto> TransferItems { get; set; }
+
+            public class TransferItemDto
+            {
+                public string ItemCode { get; set; }
+                public decimal? Quantity { get; set; }
+
+            }
+        }
+
+        public class Handler : IRequestHandler<AddTransferInCommand, Result>
+        {
+            private readonly ArcanaDbContext _context;
+            public Handler(ArcanaDbContext context)
+            {
+                _context = context;
+            }
+
+            public async Task<Result> Handle(AddTransferInCommand request, CancellationToken cancellationToken)
+            {
+                if (request.To == request.AccessBy)
+                {
+                    return InventoryErrors.Self();
+                }
+
+                var isCdo = await _context.Users
+                    .Where(u => u.Id == request.To) 
+                    .Select(u => u.UserRolesId)
+                    .FirstOrDefaultAsync(cancellationToken) == 6; //CDO 
+
+                if (!isCdo)
+                {
+                    return InventoryErrors.NotCdo();
+                }
+
+
+                var requestedItems = request.TransferItems
+                    .GroupBy(i => i.ItemCode)
+                    .Select(g => new
+                    {
+                        ItemCode = g.Key,
+                        RequestedQuantity = g.Sum(x => x.Quantity ?? 0)
+                    })
+                    .ToList();
+
+                var userMoveOrderItems = await _context.MoveOrderItems
+                    .Where(m => m.CreatedBy.Id == request.AccessBy)
+                    .GroupBy(m => m.ItemCode)
+                    .Select(g => new
+                    {
+                        ItemCode = g.Key,
+                        AvailableQuantity = g.Sum(x => x.ActualQuantity ?? 0)
+                    })
+                    .ToListAsync(cancellationToken);
+
+                foreach (var reqItem in requestedItems)
+                {
+                    var matchingUserItem = userMoveOrderItems.FirstOrDefault(u => u.ItemCode == reqItem.ItemCode);
+
+                    if (matchingUserItem == null)
+                    {
+                        return InventoryErrors.ItemNotFound(reqItem.ItemCode);
+                    }
+
+                    if (reqItem.RequestedQuantity > matchingUserItem.AvailableQuantity)
+                    {
+                        return InventoryErrors.InsufficientQuantity(
+                            reqItem.ItemCode,
+                            reqItem.RequestedQuantity,
+                            matchingUserItem.AvailableQuantity
+                        );
+                    }
+                }
+
+
+                var transferOrder = new TransferOrder
+                {
+                    To = request.To,
+                    TransactionType = Status.Transfer,
+                    TotalQuantity = request.TransferItems.Sum(i => i.Quantity ?? 0),
+                    TransactionDate = DateTime.Now,
+                    TransferType = Status.TransferIn,
+                    CreatedById = request.AccessBy,
+                    Status = Status.ForReceiving,
+                };
+
+                _context.TransferOrders.Add(transferOrder);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                var itemCodes = requestedItems.Select(i => i.ItemCode).Distinct().ToList();
+                var itemsInContext = await _context.Items
+                    .Where(i => itemCodes.Contains(i.ItemCode))
+                    .Select(i => new
+                    {
+                        i.ItemCode,
+                        i.ItemDescription,
+                        UomDescription = i.Uom.UomDescription
+                    })
+                    .ToListAsync(cancellationToken);
+
+                var userFullMoveOrderItems = await _context.MoveOrderItems
+                    .Where(m => m.CreatedBy.Id == request.AccessBy && itemCodes.Contains(m.ItemCode))
+                    .Select(mo => new
+                    {
+                        mo.ItemCode,
+                        mo.ProductionDate,
+                        MoveOrderExternal = mo.MoveOrder.MoveOrderIdExternal
+                    })
+                    .ToListAsync(cancellationToken);
+
+                var transferOrderItems = request.TransferItems.Select(i =>
+                {
+                    var matchedItem = itemsInContext.FirstOrDefault(x => x.ItemCode == i.ItemCode);
+                    var matchedMoveOrderItem = userFullMoveOrderItems.FirstOrDefault(x => x.ItemCode == i.ItemCode);
+
+                    return new TransferOrderItem
+                    {
+                        ItemCode = i.ItemCode,
+                        ItemDescription = matchedItem?.ItemDescription,
+                        Uom = matchedItem?.UomDescription,
+                        Quantity = i.Quantity,
+                        ProductionDate = matchedMoveOrderItem?.ProductionDate,
+                        MoveId = matchedMoveOrderItem?.MoveOrderExternal,
+                        TransferOrderId = transferOrder.Id,
+                        CreatedById = request.AccessBy
+                    };
+                }).ToList();
+
+
+
+                _context.TransferOrderItems.AddRange(transferOrderItems);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                return Result.Success();
+            }
         }
     }
 }
