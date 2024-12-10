@@ -60,6 +60,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         }
         public class GetMoveOrderFromArcanaQuery : UserParams, IRequest<PagedList<GetMoveOrderFromArcanaResult>>
         {
+            public int? MoveOrderId { get; set; }
             public int AccessBy { get; set; }
         }
 
@@ -70,6 +71,15 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public string Cluster { get; set; }
             public DateTime? TransactionDate { get; set; }
             public DateTime? DateReceived { get; set; }
+            public ICollection<GetMoveItemsDto> MoveItems { get; set; }
+            public class GetMoveItemsDto
+            {
+                public string ItemCode { get; set; }
+                public string ItemDescription { get; set; }
+                public string Uom { get; set; }
+                public decimal? ActualQuantity { get; set; }
+                public string ProductionDate { get; set; }
+            }
         }
 
         public class Handler : IRequestHandler<GetMoveOrderFromArcanaQuery, PagedList<GetMoveOrderFromArcanaResult>>
@@ -82,11 +92,19 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
             public async Task<PagedList<GetMoveOrderFromArcanaResult>> Handle(GetMoveOrderFromArcanaQuery request, CancellationToken cancellationToken)
             {
-                var moveOrders = _context.MoveOrders.AsQueryable();
+                var moveOrders = _context.MoveOrders
+                    .Include(moi => moi.MoveOrderItems)
+                    .Where(mo => mo.MoveOrderItems.All(moi => moi.Reason == null))
+                    .AsQueryable();
 
                 if (request.AccessBy != 1)
                 {
                     moveOrders = moveOrders.Where(mo => mo.CreatedById == request.AccessBy);
+                }
+
+                if (request.MoveOrderId != null)
+                {
+                    moveOrders = moveOrders.Where(x => x.MoveOrderIdExternal == request.MoveOrderId);
                 }
 
                 var result = moveOrders
@@ -96,7 +114,16 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         CustomerName = mo.CustomerName,
                         Cluster = mo.CreatedBy.CdoCluster.Cluster.ClusterType,
                         TransactionDate = mo.TransactionDate,
-                        DateReceived = mo.CreatedDate
+                        DateReceived = mo.CreatedDate,
+                        MoveItems = mo.MoveOrderItems.Select(x => new GetMoveOrderFromArcanaResult.GetMoveItemsDto
+                        {
+                            ItemCode = x.ItemCode,
+                            ItemDescription = x.Item.ItemDescription,
+                            Uom = x.Uom.UomDescription,
+                            ActualQuantity = x.ActualQuantity,
+                            ProductionDate = x.ProductionDate
+
+                        }).ToList()
                     }).OrderByDescending(x => x.DateReceived);
 
                 return await PagedList<GetMoveOrderFromArcanaResult>.CreateAsync(result, request.PageNumber, request.PageSize);

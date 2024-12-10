@@ -7,7 +7,8 @@ using System.Security.Claims;
 
 namespace RDF.Arcana.API.Features.Inventory_Management
 {
-    [Route("api/add-transfer-in"), ApiController]
+    //THIS IS TRANSFER OUT
+    [Route("api/add-transfer-out"), ApiController]
     public class AddTransferIn : ControllerBase
     {
         private readonly IMediator _mediator;
