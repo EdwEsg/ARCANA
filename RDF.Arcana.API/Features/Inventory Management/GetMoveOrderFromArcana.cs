@@ -71,6 +71,9 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public string Cluster { get; set; }
             public DateTime? TransactionDate { get; set; }
             public DateTime? DateReceived { get; set; }
+            public string Route { get; set; }
+            public string Details { get; set; }
+            public string Area { get; set; }
             public ICollection<GetMoveItemsDto> MoveItems { get; set; }
             public class GetMoveItemsDto
             {
@@ -115,6 +118,9 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         Cluster = mo.CreatedBy.CdoCluster.Cluster.ClusterType,
                         TransactionDate = mo.TransactionDate,
                         DateReceived = mo.CreatedDate,
+                        Route = mo.Route,
+                        Details = mo.Details,
+                        Area = mo.Area,
                         MoveItems = mo.MoveOrderItems.Select(x => new GetMoveOrderFromArcanaResult.GetMoveItemsDto
                         {
                             ItemCode = x.ItemCode,
