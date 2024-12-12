@@ -74,7 +74,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public string Route { get; set; }
             public string Details { get; set; }
             public string Area { get; set; }
-            public ICollection<GetMoveItemsDto> MoveItems { get; set; }
+            public IEnumerable<GetMoveItemsDto> MoveItems { get; set; }
             public class GetMoveItemsDto
             {
                 public string ItemCode { get; set; }
@@ -82,6 +82,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 public string Uom { get; set; }
                 public decimal? ActualQuantity { get; set; }
                 public string ProductionDate { get; set; }
+                public string Reason { get; set; }
             }
         }
 
@@ -96,8 +97,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public async Task<PagedList<GetMoveOrderFromArcanaResult>> Handle(GetMoveOrderFromArcanaQuery request, CancellationToken cancellationToken)
             {
                 var moveOrders = _context.MoveOrders
+                    .AsNoTracking()
                     .Include(moi => moi.MoveOrderItems)
-                    .Where(mo => mo.MoveOrderItems.All(moi => moi.Reason == null))
                     .AsQueryable();
 
                 if (request.AccessBy != 1)
@@ -127,9 +128,9 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             ItemDescription = x.Item.ItemDescription,
                             Uom = x.Uom.UomDescription,
                             ActualQuantity = x.ActualQuantity,
-                            ProductionDate = x.ProductionDate
-
-                        }).ToList()
+                            ProductionDate = x.ProductionDate,
+                            Reason = x.Reason
+                        })
                     }).OrderByDescending(x => x.DateReceived);
 
                 return await PagedList<GetMoveOrderFromArcanaResult>.CreateAsync(result, request.PageNumber, request.PageSize);

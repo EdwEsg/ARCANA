@@ -9,10 +9,10 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 {
     //THIS IS TRANSFER OUT
     [Route("api/add-transfer-out"), ApiController]
-    public class AddTransferIn : ControllerBase
+    public class AddTransferOut : ControllerBase
     {
         private readonly IMediator _mediator;
-        public AddTransferIn(IMediator mediator)
+        public AddTransferOut(IMediator mediator)
         {
             _mediator = mediator;
         }

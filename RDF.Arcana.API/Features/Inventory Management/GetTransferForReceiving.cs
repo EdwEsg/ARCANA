@@ -48,7 +48,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         //            .Select(x => new
         //            {
         //                x,
-        //                ItemCode = x.TransferOrderItems.
+        //                ItemCode = x.TransferOrderItems
         //            })
         //    }
         //}
