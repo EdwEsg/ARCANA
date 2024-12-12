@@ -1,10 +1,64 @@
-﻿using RDF.Arcana.API.Common.Pagination;
+﻿
+using Microsoft.AspNetCore.Mvc;
+using RDF.Arcana.API.Common;
+using RDF.Arcana.API.Common.Extension;
+using RDF.Arcana.API.Common.Helpers;
+using RDF.Arcana.API.Common.Pagination;
 using RDF.Arcana.API.Data;
+using System.Security.Claims;
 
 namespace RDF.Arcana.API.Features.Inventory_Management
 {
-    public class GetTransfer
+    [Route("api/get-transfer"), ApiController]
+    public class GetTransfer : ControllerBase
     {
+        private readonly IMediator _mediator;
+        public GetTransfer(IMediator mediator)
+        {
+            _mediator = mediator;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Get([FromQuery] GetTransferForReceivingQuery query)
+        {
+            if (User.Identity is ClaimsIdentity identity
+                && IdentityHelper.TryGetUserId(identity, out var userId))
+            {
+                query.AccessBy = userId;
+            }
+
+            try
+            {
+                var to = await _mediator.Send(query);
+
+                Response.AddPaginationHeader(
+                    to.CurrentPage,
+                    to.PageSize,
+                    to.TotalCount,
+                    to.TotalPages,
+                    to.HasNextPage,
+                    to.HasPreviousPage);
+                var result = new
+                {
+                    to,
+                    to.CurrentPage,
+                    to.PageSize,
+                    to.TotalCount,
+                    to.TotalPages,
+                    to.HasNextPage,
+                    to.HasPreviousPage
+                };
+
+                var successResult = Result.Success(result);
+
+                return Ok(successResult);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
         public class GetTransferForReceivingQuery : UserParams, IRequest<PagedList<GetTransferResult>>
         {
             public int? TransferOrderId { get; set; }
@@ -15,7 +69,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
         public class GetTransferResult
         {
-            public string To { get; set; }
+            public int Id { get; set; }
+            public string Requestor { get; set; }
             public string TransactionType { get; set; }
             public decimal TotalQuantity { get; set; }
             public DateTime TransactionDate { get; set; }
@@ -27,41 +82,71 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 public string ItemCode { get; set; }
                 public string ItemDescription { get; set; }
                 public string Uom { get; set; }
-                public decimal Quantity { get; set; }
+                public decimal? Quantity { get; set; }
                 public string ProductionDate { get; set; }
-                public string MoveOrderId { get; set; }
+                public int? MoveOrderId { get; set; }
             }
 
         }
 
-        //public class Handler : IRequestHandler<GetTransferForReceivingQuery, PagedList<GetTransferResult>>
-        //{
-        //    private readonly ArcanaDbContext _context;
-        //    public Handler(ArcanaDbContext context)
-        //    {
-        //        _context = context;
-        //    }
+        public class Handler : IRequestHandler<GetTransferForReceivingQuery, PagedList<GetTransferResult>>
+        {
+            private readonly ArcanaDbContext _context;
+            public Handler(ArcanaDbContext context)
+            {
+                _context = context;
+            }
 
-        //    public async Task<PagedList<GetTransferResult>> Handle(GetTransferForReceivingQuery request, CancellationToken cancellationToken)
-        //    {
-        //        var transferOrders = _context.TransferOrders
-        //            .AsNoTracking()
-        //            .Include(toi => toi.TransferOrderItems)
-        //            .AsQueryable();
+            public async Task<PagedList<GetTransferResult>> Handle(GetTransferForReceivingQuery request, CancellationToken cancellationToken)
+            {
+                var transferOrders = _context.TransferOrders
+                    .AsNoTracking()
+                    .AsQueryable();
 
-        //        if (request.AccessBy != 1)
-        //        {
-        //            transferOrders = transferOrders.Where(to => to.CreatedById == request.AccessBy);
-        //        }
+                if (request.AccessBy != 1)
+                {
+                    transferOrders = transferOrders.Where(to => to.CreatedById == request.AccessBy || to.To == request.AccessBy);
+                }
 
-        //        if (request.TransferOrderId != null) 
-        //        {
-        //            transferOrders = transferOrders.Where(to => to.Id == request.TransferOrderId);
-        //        }
+                if (request.TransferOrderId != null)
+                {
+                    transferOrders = transferOrders.Where(to => to.Id == request.TransferOrderId);
+                }
 
-                
+                if (request.TransferType != null)
+                {
+                    transferOrders = transferOrders.Where(to => to.TransferType == request.TransferType);
+                }
 
-        //    }
-        //}
+                if (request.Status != null)
+                {
+                    transferOrders = transferOrders.Where(to => to.Status == request.Status && to.To == request.AccessBy);
+                }
+
+                var result = transferOrders
+                    .Select(to => new GetTransferResult
+                    {
+                        Id = to.Id,
+                        Requestor = to.CreatedBy.Fullname,
+                        TransactionType = to.TransactionType,
+                        TotalQuantity = to.TotalQuantity,
+                        TransactionDate = to.TransactionDate,
+                        TransferType = to.TransferType,
+                        Status = to.Status,
+                        TransferItems = to.TransferOrderItems.Select(x => new GetTransferResult.TransferItemsDto
+                        {
+                            ItemCode = x.ItemCode,
+                            ItemDescription = x.ItemDescription,
+                            Uom = x.Uom,
+                            Quantity = x.Quantity,
+                            ProductionDate = x.ProductionDate,
+                            MoveOrderId = x.MoveId
+                        })
+                    }).OrderByDescending(x => x.TransactionDate);
+
+                return await PagedList<GetTransferResult>.CreateAsync(result, request.PageNumber, request.PageSize);
+
+            }
+        }
     }
 }
