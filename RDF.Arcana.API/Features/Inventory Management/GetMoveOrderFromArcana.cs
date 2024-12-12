@@ -83,6 +83,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 public decimal? ActualQuantity { get; set; }
                 public string ProductionDate { get; set; }
                 public string Reason { get; set; }
+                public decimal? Quantity { get; set; }
             }
         }
 
@@ -129,7 +130,9 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             Uom = x.Uom.UomDescription,
                             ActualQuantity = x.ActualQuantity,
                             ProductionDate = x.ProductionDate,
-                            Reason = x.Reason
+                            Reason = x.Reason,
+                            Quantity = x.Quantity
+                            
                         })
                     }).OrderByDescending(x => x.DateReceived);
 

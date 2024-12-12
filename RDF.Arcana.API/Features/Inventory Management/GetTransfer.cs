@@ -3,7 +3,7 @@ using RDF.Arcana.API.Data;
 
 namespace RDF.Arcana.API.Features.Inventory_Management
 {
-    public class GetTransferForReceiving
+    public class GetTransfer
     {
         public class GetTransferForReceivingQuery : UserParams, IRequest<PagedList<GetTransferResult>>
         {
@@ -21,7 +21,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public DateTime TransactionDate { get; set; }
             public string TransferType { get; set; }
             public string Status { get; set; }
-            public ICollection<TransferItemsDto> TransferItems { get; set; }
+            public IEnumerable<TransferItemsDto> TransferItems { get; set; }
             public class TransferItemsDto
             {
                 public string ItemCode { get; set; }
@@ -45,11 +45,22 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         //    public async Task<PagedList<GetTransferResult>> Handle(GetTransferForReceivingQuery request, CancellationToken cancellationToken)
         //    {
         //        var transferOrders = _context.TransferOrders
-        //            .Select(x => new
-        //            {
-        //                x,
-        //                ItemCode = x.TransferOrderItems
-        //            })
+        //            .AsNoTracking()
+        //            .Include(toi => toi.TransferOrderItems)
+        //            .AsQueryable();
+
+        //        if (request.AccessBy != 1)
+        //        {
+        //            transferOrders = transferOrders.Where(to => to.CreatedById == request.AccessBy);
+        //        }
+
+        //        if (request.TransferOrderId != null) 
+        //        {
+        //            transferOrders = transferOrders.Where(to => to.Id == request.TransferOrderId);
+        //        }
+
+                
+
         //    }
         //}
     }

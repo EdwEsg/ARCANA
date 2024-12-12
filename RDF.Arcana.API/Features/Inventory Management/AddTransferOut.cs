@@ -60,6 +60,17 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
             public async Task<Result> Handle(AddTransferInCommand request, CancellationToken cancellationToken)
             {
+                var isUserCdo = await _context.Users
+                    .Where(u => u.Id == request.AccessBy)
+                    .Select(u => u.UserRolesId)
+                    .FirstOrDefaultAsync(cancellationToken) == 6; //CDO 
+
+                if (!isUserCdo)
+                {
+                    return InventoryErrors.NotUserCdo();
+                }
+
+
                 if (request.To == request.AccessBy)
                 {
                     return InventoryErrors.Self();
@@ -121,7 +132,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     TransactionType = Status.Transfer,
                     TotalQuantity = request.TransferItems.Sum(i => i.Quantity ?? 0),
                     TransactionDate = DateTime.Now,
-                    TransferType = Status.TransferIn,
+                    TransferType = Status.TransferOut,
                     CreatedById = request.AccessBy,
                     Status = Status.ForReceiving,
                 };
