@@ -60,6 +60,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         }
         public class GetMoveOrderFromArcanaQuery : UserParams, IRequest<PagedList<GetMoveOrderFromArcanaResult>>
         {
+            public DateTime DateFrom { get; set; }
+            public DateTime DateTo { get; set; }
             public int? MoveOrderId { get; set; }
             public int AccessBy { get; set; }
         }
@@ -97,6 +99,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
             public async Task<PagedList<GetMoveOrderFromArcanaResult>> Handle(GetMoveOrderFromArcanaQuery request, CancellationToken cancellationToken)
             {
+                var adjustedDateTo = request.DateTo.AddDays(1);
+
                 var moveOrders = _context.MoveOrders
                     .AsNoTracking()
                     .Include(moi => moi.MoveOrderItems)
@@ -106,6 +110,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 {
                     moveOrders = moveOrders.Where(mo => mo.CreatedById == request.AccessBy);
                 }
+
+                moveOrders = moveOrders.Where(t => t.TransactionDate >= request.DateFrom && t.TransactionDate < adjustedDateTo);
 
                 if (request.MoveOrderId != null)
                 {

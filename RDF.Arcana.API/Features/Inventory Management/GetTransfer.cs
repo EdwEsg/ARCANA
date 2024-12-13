@@ -61,6 +61,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
         public class GetTransferForReceivingQuery : UserParams, IRequest<PagedList<GetTransferResult>>
         {
+            public DateTime DateFrom { get; set; }
+            public DateTime DateTo { get; set; }
             public int? TransferOrderId { get; set; }
             public string TransferType { get; set; }
             public string Status { get; set; }
@@ -71,6 +73,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         {
             public int Id { get; set; }
             public string Requestor { get; set; }
+            public string Cluster { get; set; }
             public string TransactionType { get; set; }
             public decimal TotalQuantity { get; set; }
             public DateTime TransactionDate { get; set; }
@@ -99,6 +102,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
             public async Task<PagedList<GetTransferResult>> Handle(GetTransferForReceivingQuery request, CancellationToken cancellationToken)
             {
+                var adjustedDateTo = request.DateTo.AddDays(1);
+
                 var transferOrders = _context.TransferOrders
                     .AsNoTracking()
                     .AsQueryable();
@@ -107,6 +112,9 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 {
                     transferOrders = transferOrders.Where(to => to.CreatedById == request.AccessBy || to.To == request.AccessBy);
                 }
+
+                transferOrders = transferOrders.Where(t => t.TransactionDate >= request.DateFrom && t.TransactionDate < adjustedDateTo);
+                
 
                 if (request.TransferOrderId != null)
                 {
@@ -128,6 +136,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     {
                         Id = to.Id,
                         Requestor = to.CreatedBy.Fullname,
+                        Cluster = to.CreatedBy.CdoCluster.Cluster.ClusterType,
                         TransactionType = to.TransactionType,
                         TotalQuantity = to.TotalQuantity,
                         TransactionDate = to.TransactionDate,
