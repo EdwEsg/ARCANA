@@ -73,6 +73,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         {
             public int Id { get; set; }
             public string Requestor { get; set; }
+            public string TransferTo { get; set; }
             public string Cluster { get; set; }
             public string TransactionType { get; set; }
             public decimal TotalQuantity { get; set; }
