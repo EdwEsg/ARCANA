@@ -4,7 +4,7 @@ namespace RDF.Arcana.API.Domain.Inventory
 {
     public class TransferOrder : BaseEntity
     {
-        public int To { get; set; }
+        public int TransferToId { get; set; }
         public string TransactionType { get; set; }
         public decimal TotalQuantity { get; set; }
         public DateTime TransactionDate { get; set; }
@@ -17,6 +17,7 @@ namespace RDF.Arcana.API.Domain.Inventory
         public int? ModifiedBy { get; set; }
         public string Status { get; set; }
 
+        public virtual User TransferTo { get; set; }
         public virtual User CreatedBy { get; set; }
         public virtual ICollection<TransferOrderItem> TransferOrderItems { get; set; }
     }

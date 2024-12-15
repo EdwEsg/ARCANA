@@ -61,10 +61,10 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
         public class GetTransferForReceivingQuery : UserParams, IRequest<PagedList<GetTransferResult>>
         {
+            public string Search { get; set; }
             public DateTime DateFrom { get; set; }
             public DateTime DateTo { get; set; }
             public int? TransferOrderId { get; set; }
-            public string TransferType { get; set; }
             public string Status { get; set; }
             public int AccessBy { get; set; }
         }
@@ -72,9 +72,10 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         public class GetTransferResult
         {
             public int Id { get; set; }
-            public string Requestor { get; set; }
+            public string CreatedBy { get; set; }            
+            public string CreatedByCluster { get; set; }
             public string TransferTo { get; set; }
-            public string Cluster { get; set; }
+            public string TransferToCluster { get; set; }
             public string TransactionType { get; set; }
             public decimal TotalQuantity { get; set; }
             public DateTime TransactionDate { get; set; }
@@ -109,12 +110,17 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     .AsNoTracking()
                     .AsQueryable();
 
+
                 if (request.AccessBy != 1)
                 {
-                    transferOrders = transferOrders.Where(to => to.CreatedById == request.AccessBy || to.To == request.AccessBy);
+                    transferOrders = transferOrders.Where(to => to.CreatedById == request.AccessBy || to.TransferToId == request.AccessBy);
                 }
 
-                transferOrders = transferOrders.Where(t => t.TransactionDate >= request.DateFrom && t.TransactionDate < adjustedDateTo);
+                if (request.TransferOrderId == null)
+                {
+                    transferOrders = transferOrders.Where(t => t.TransactionDate >= request.DateFrom && t.TransactionDate < adjustedDateTo);
+                }
+                
                 
 
                 if (request.TransferOrderId != null)
@@ -122,22 +128,27 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     transferOrders = transferOrders.Where(to => to.Id == request.TransferOrderId);
                 }
 
-                if (request.TransferType != null)
-                {
-                    transferOrders = transferOrders.Where(to => to.TransferType == request.TransferType);
-                }
 
                 if (request.Status != null)
                 {
-                    transferOrders = transferOrders.Where(to => to.Status == request.Status && to.To == request.AccessBy);
+                    transferOrders = transferOrders.Where(to => to.Status == request.Status && (to.TransferToId == request.AccessBy || to.CreatedById == request.AccessBy));                   
+                }
+
+
+                if (!string.IsNullOrEmpty(request.Search))
+                {
+                    transferOrders = transferOrders.Where(to =>    
+                        to.TransferTo.Fullname.Contains(request.Search));               
                 }
 
                 var result = transferOrders
                     .Select(to => new GetTransferResult
                     {
                         Id = to.Id,
-                        Requestor = to.CreatedBy.Fullname,
-                        Cluster = to.CreatedBy.CdoCluster.Cluster.ClusterType,
+                        CreatedBy = to.CreatedBy.Fullname,
+                        CreatedByCluster = to.CreatedBy.CdoCluster.Cluster.ClusterType,
+                        TransferTo = to.TransferTo.Fullname,
+                        TransferToCluster = to.TransferTo.CdoCluster.Cluster.ClusterType,
                         TransactionType = to.TransactionType,
                         TotalQuantity = to.TotalQuantity,
                         TransactionDate = to.TransactionDate,

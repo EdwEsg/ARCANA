@@ -1,25 +1,27 @@
-﻿
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Data;
+using RDF.Arcana.API.Domain.Inventory;
 using System.Security.Claims;
 
 namespace RDF.Arcana.API.Features.Inventory_Management
 {
-    [Route("api/add-transfer-in"), ApiController]
-    public class AddTransferIn : ControllerBase
+    [Route("api/reject-transfer"), ApiController]
+    public class RejectTransfer : ControllerBase
     {
         private readonly IMediator _mediator;
-        public AddTransferIn(IMediator mediator)
+        public RejectTransfer(IMediator mediator)
         {
             _mediator = mediator;
         }
 
-        [HttpPatch]
-        public async Task<IActionResult> Patch([FromBody] AddTransferInCommand2 command)
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> Patch(int id, [FromBody] RejectTransferCommand command)
         {
             try
             {
+                command.TransferId = id;
+
                 if (User.Identity is ClaimsIdentity identity
                     && int.TryParse(identity.FindFirst("id")?.Value, out var userId))
                 {
@@ -34,34 +36,34 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             }
         }
 
-        public class AddTransferInCommand2 : IRequest<Result>
+        public class RejectTransferCommand : IRequest<Result>
         {
             public int TransferId { get; set; }
             public int AccessBy { get; set; }
         }
 
-        public class Handler : IRequestHandler<AddTransferInCommand2, Result>
+        public class RejectTransferHandler : IRequestHandler<RejectTransferCommand, Result>
         {
             private readonly ArcanaDbContext _context;
-            public Handler(ArcanaDbContext context)
+            public RejectTransferHandler(ArcanaDbContext context)
             {
                 _context = context;
             }
 
-            public async Task<Result> Handle(AddTransferInCommand2 request, CancellationToken cancellationToken)
+            public async Task<Result> Handle(RejectTransferCommand request, CancellationToken cancellationToken)
             {
-                var transferOrders = await _context.TransferOrders
-                    .Where(to => to.Id == request.TransferId && 
-                        to.To == request.AccessBy &&
-                        to.Status != Status.Received)
-                    .FirstOrDefaultAsync(cancellationToken);
+                var transferOrder = await _context.TransferOrders
+                    .FirstOrDefaultAsync(to => to.Id == request.TransferId, cancellationToken);
 
-                if (transferOrders == null)
+                if (transferOrder == null)
                 {
                     return InventoryErrors.ToNotFound();
                 }
 
-                transferOrders.Status = Status.Received;
+                transferOrder.Status = Status.Rejected;
+                transferOrder.ModifiedBy = request.AccessBy;
+                transferOrder.ModifiedDate = DateTime.Now;
+
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return Result.Success();

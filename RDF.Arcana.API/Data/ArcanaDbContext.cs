@@ -506,6 +506,11 @@ public class ArcanaDbContext : DbContext
             .WithMany()
             .HasForeignKey(x => x.AddedBy);
 
+        modelBuilder.Entity<TransferOrder>()
+            .HasOne(t => t.TransferTo)
+            .WithMany() 
+            .HasForeignKey(t => t.TransferToId); 
+    
 
-    }
+}
 }

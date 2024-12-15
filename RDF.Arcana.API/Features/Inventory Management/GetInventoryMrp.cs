@@ -61,6 +61,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         public class GetInventoryMrpQuery : UserParams, IRequest<PagedList<GetInventoryMrpResult>>
         {
             public int AccessBy { get; set; }
+            public string Search { get; set; }
         }
 
         public class GetInventoryMrpResult
@@ -68,8 +69,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public string ItemCode { get; set; }
             public string ItemDescription { get; set; }
             public decimal? Receiving { get; set; }
-            public decimal? In { get; set; }
-            public decimal? Out { get; set; }
+            public decimal? TransferIn { get; set; }
+            public decimal? TransferOut { get; set; }
             public decimal? Freebie { get; set; }
             public decimal? Sampling { get; set; }
             public decimal? Issue { get; set; }
@@ -88,15 +89,10 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
             public async Task<PagedList<GetInventoryMrpResult>> Handle(GetInventoryMrpQuery request, CancellationToken cancellationToken)
             {
-                var moveOrderItems = _context.MoveOrderItems.AsQueryable();
 
-                if (request.AccessBy != 1)
-                {
-                    moveOrderItems = moveOrderItems.Where(s => s.CreatedBy.Id == request.AccessBy);
-                }
-
-                var groupReceiving = moveOrderItems
-                    .Where(x => x.Reason == null)
+                //Add --moveOrders
+                var groupReceiving = _context.MoveOrderItems
+                    .Where(mo => mo.Reason == null && mo.CreatedBy.Id == request.AccessBy)
                     .GroupBy(x => new
                     {
                         x.ItemCode
@@ -104,28 +100,81 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     .Select(x => new
                     {
                         ItemCode = x.Key.ItemCode,
-                        ReceivingActualQuantity = x.Sum(x => x.ActualQuantity)
+                        Quantity = x.Sum(x => x.ActualQuantity)
                     });
 
 
-                var result = moveOrderItems
-                    .Where(x => x.Reason == null)
-                    .GroupBy(x => new
+                //Subtract
+                var groupTransferOut = _context.TransferOrders
+                    .Where(to => to.Status == Status.Received &&
+                        to.CreatedById == request.AccessBy)
+                    .SelectMany(to => to.TransferOrderItems)
+                    .GroupBy(toi => toi.ItemCode)
+                    .Select(g => new
                     {
-                        x.ItemCode
-                    })
-                    .Select(x => new GetInventoryMrpResult
+                        ItemCode = g.Key,
+                        Quantity = g.Sum(x => x.Quantity)
+                    });
+
+
+                //Add
+                var groupTransferIn = _context.TransferOrders
+                    .Where(to => to.Status == Status.Received &&
+                        to.TransferToId == request.AccessBy)
+                    .SelectMany(to => to.TransferOrderItems)
+                    .GroupBy(toi => toi.ItemCode)
+                    .Select(g => new
                     {
-                        ItemCode = x.Key.ItemCode,
-                        ItemDescription = x.Select(g => g.Item.ItemDescription).FirstOrDefault(),
-                        Receiving = groupReceiving.Where(gr => gr.ItemCode == x.Key.ItemCode)
-                            .Select(gr => gr.ReceivingActualQuantity).FirstOrDefault(),
-                        Soh = groupReceiving.Where(gr => gr.ItemCode == x.Key.ItemCode)
-                            .Select(gr => gr.ReceivingActualQuantity).FirstOrDefault()
+                        ItemCode = g.Key,
+                        Quantity = g.Sum(x => x.Quantity)
+                    });
+
+
+                var consolidateGroups = _context.Items
+                        .Where(i => string.IsNullOrEmpty(request.Search) || 
+                            i.ItemCode.Contains(request.Search) ||  
+                            i.ItemDescription.Contains(request.Search))
+                    .Select(i => new GetInventoryMrpResult
+                    {
+                        ItemCode = i.ItemCode,
+                        ItemDescription = i.ItemDescription,
+                        Receiving = groupReceiving
+                            .Where(r => r.ItemCode == i.ItemCode)
+                            .Select(r => r.Quantity)
+                            .FirstOrDefault() ?? 0,
+                        TransferIn = groupTransferIn
+                            .Where(ti => ti.ItemCode == i.ItemCode)
+                            .Select(ti => ti.Quantity)
+                            .FirstOrDefault() ?? 0,
+                        TransferOut = groupTransferOut
+                            .Where(to => to.ItemCode == i.ItemCode)
+                            .Select(to => to.Quantity)
+                            .FirstOrDefault() ?? 0,
+                        Freebie = 0,
+                        Sampling = 0,
+                        Issue = 0,
+                        Replace = 0,
+                        Return = 0,
+                        Soh = ((groupReceiving
+                            .Where(r => r.ItemCode == i.ItemCode)
+                            .Select(r => r.Quantity)
+                            .FirstOrDefault() ?? 0) +
+                            (groupTransferIn
+                            .Where(ti => ti.ItemCode == i.ItemCode)
+                            .Select(ti => ti.Quantity)
+                            .FirstOrDefault() ?? 0)) -
+                            (groupTransferOut
+                            .Where(to => to.ItemCode == i.ItemCode)
+                            .Select(to => to.Quantity)
+                            .FirstOrDefault() ?? 0)
                     })
                     .OrderBy(x => x.ItemCode);
 
-                return await PagedList<GetInventoryMrpResult>.CreateAsync(result, request.PageNumber, request.PageSize);
+
+
+
+                return await PagedList<GetInventoryMrpResult>.CreateAsync(consolidateGroups, request.PageNumber, request.PageSize);
+
             }
         }
     }

@@ -3,6 +3,7 @@ using RDF.Arcana.API.Common.Extension;
 using RDF.Arcana.API.Common.Pagination;
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Data;
+using static RDF.Arcana.API.Features.Sales_Management.Payment_Transaction.AddNewPaymentTransaction.AddNewPaymentTransactionCommand;
 
 namespace Arcana.API.Features.Sales_Management.Clearing.Transaction
 {
@@ -58,11 +59,17 @@ namespace Arcana.API.Features.Sales_Management.Clearing.Transaction
         public string Status { get; set; }
         public string InvoiceNo { get; set; }
         public string InvoiceType { get; set; }
-        public ICollection<PaymentTran> Payments { get; set; }
+        public IEnumerable<PaymentTran> Payments { get; set; }
         public class PaymentTran
         {
             public decimal Payment { get; set; }
             public string PaymentMethod { get; set; }
+        }
+        public IEnumerable<ClearedPaymentDto> Cleared { get; set; }
+        public class ClearedPaymentDto
+        {
+            public string Status { get; set; }
+            public string Atag { get; set; }
         }
     }
 
@@ -74,34 +81,33 @@ namespace Arcana.API.Features.Sales_Management.Clearing.Transaction
             _context = context;
         }
 
-        public async Task<PagedList<GetAllRemittanceResult>> Handle(GetAllRemittanceQuery request, CancellationToken cancellationToken)
+public async Task<PagedList<GetAllRemittanceResult>> Handle(GetAllRemittanceQuery request, CancellationToken cancellationToken)
+{
+    var query2 = _context.Transactions
+        .AsNoTracking()
+        .Where(t => t.Status == Status.Paid)
+        .Select(t => new GetAllRemittanceResult
         {
-            //var query = from transact in _context.Transactions
-            //            where transact.Status == Status.Paid
-            //            select new GetAllRemittanceResult
-            //            {
-            //                BusinessName = transact.Client.BusinessName,
-            //                Status = transact.Status,
-            //                InvoiceNo = transact.InvoiceNo,
-            //                InvoiceType = transact.InvoiceType,
-            //            };
+            BusinessName = t.Client.BusinessName,
+            Status = t.Status,
+            InvoiceNo = t.InvoiceNo,
+            InvoiceType = t.InvoiceType,
+            Payments = t.PaymentTransactions.Select(pt => new GetAllRemittanceResult.PaymentTran
+            {
+                Payment = pt.TotalAmountReceived,
+                PaymentMethod = pt.PaymentMethod,
+            }),
+            Cleared = t.PaymentTransactions
+                .Where(pt => pt.ClearedPayment != null)
+                .Select(pt => new GetAllRemittanceResult.ClearedPaymentDto
+                {
+                    Status = pt.ClearedPayment.Status,
+                    Atag = pt.ClearedPayment.ATag,
+                })
+        });
 
-            var query2 =  _context.Transactions
-                         .Where(t => t.Status == Status.Paid)
-                         .Select(t => new GetAllRemittanceResult
-                         {
-                             BusinessName = t.Client.BusinessName,
-                             Status = t.Status,
-                             InvoiceNo = t.InvoiceNo,
-                             InvoiceType = t.InvoiceType,
-                             Payments = t.PaymentTransactions.Select(pt => new GetAllRemittanceResult.PaymentTran
-                             {
-                                 Payment = pt.TotalAmountReceived,
-                                 PaymentMethod = pt.PaymentMethod,
-                             }).ToList()
-                         });
+    return await PagedList<GetAllRemittanceResult>.CreateAsync(query2, request.PageNumber, request.PageSize);
+}
 
-            return await PagedList<GetAllRemittanceResult>.CreateAsync(query2, request.PageNumber, request.PageSize);
-        }
     }
 }

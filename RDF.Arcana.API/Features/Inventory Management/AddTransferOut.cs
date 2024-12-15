@@ -125,10 +125,49 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     }
                 }
 
+                var itemCodes = requestedItems.Select(i => i.ItemCode).ToList();
+                var moveOrderItemsForUser = await _context.MoveOrderItems
+                    .Where(m => m.CreatedBy.Id == request.AccessBy && itemCodes.Contains(m.ItemCode))
+                    .OrderBy(m => m.ItemCode) 
+                    .ToListAsync(cancellationToken);
+
+                
+                foreach (var reqItem in requestedItems)
+                {
+                    
+                    var matchedMoveOrderItems = moveOrderItemsForUser
+                        .Where(m => m.ItemCode == reqItem.ItemCode)
+                        .ToList();
+
+                    var quantityToDeduct = reqItem.RequestedQuantity;
+
+                    foreach (var moItem in matchedMoveOrderItems)
+                    {
+                        if (quantityToDeduct <= 0) break;
+
+                        var available = moItem.ActualQuantity ?? 0;
+                        if (available >= quantityToDeduct)
+                        {
+                            moItem.ActualQuantity = available - quantityToDeduct;
+                            quantityToDeduct = 0;
+                        }
+                        else
+                        {
+                            moItem.ActualQuantity = 0;
+                            quantityToDeduct -= available;
+                        }
+                    }
+                    if (quantityToDeduct > 0)
+                    {
+                        throw new InvalidOperationException($"Unable to fully deduct quantity for ItemCode '{reqItem.ItemCode}'. Remaining: {quantityToDeduct}");
+                    }
+                }
+                
+                await _context.SaveChangesAsync(cancellationToken);
 
                 var transferOrder = new TransferOrder
                 {
-                    To = request.To,
+                    TransferToId = request.To,
                     TransactionType = Status.Transfer,
                     TotalQuantity = request.TransferItems.Sum(i => i.Quantity ?? 0),
                     TransactionDate = DateTime.Now,
@@ -140,7 +179,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 _context.TransferOrders.Add(transferOrder);
                 await _context.SaveChangesAsync(cancellationToken);
 
-                var itemCodes = requestedItems.Select(i => i.ItemCode).Distinct().ToList();
                 var itemsInContext = await _context.Items
                     .Where(i => itemCodes.Contains(i.ItemCode))
                     .Select(i => new

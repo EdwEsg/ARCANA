@@ -60,6 +60,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         }
         public class GetMoveOrderFromArcanaQuery : UserParams, IRequest<PagedList<GetMoveOrderFromArcanaResult>>
         {
+            public string Search { get; set; }
             public DateTime DateFrom { get; set; }
             public DateTime DateTo { get; set; }
             public int? MoveOrderId { get; set; }
@@ -111,11 +112,22 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     moveOrders = moveOrders.Where(mo => mo.CreatedById == request.AccessBy);
                 }
 
-                moveOrders = moveOrders.Where(t => t.TransactionDate >= request.DateFrom && t.TransactionDate < adjustedDateTo);
+                if (request.MoveOrderId == null)
+                {
+                    moveOrders = moveOrders.Where(t => t.TransactionDate >= request.DateFrom && t.TransactionDate < adjustedDateTo);
+                }
+
 
                 if (request.MoveOrderId != null)
                 {
                     moveOrders = moveOrders.Where(x => x.MoveOrderIdExternal == request.MoveOrderId);
+                }
+
+                if (!string.IsNullOrEmpty(request.Search))
+                {
+                    moveOrders = moveOrders.Where(mo =>
+                        mo.CustomerName.Contains(request.Search) ||
+                        mo.MoveOrderIdExternal.ToString().Contains(request.Search));
                 }
 
                 var result = moveOrders
