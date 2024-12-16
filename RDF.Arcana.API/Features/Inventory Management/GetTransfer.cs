@@ -111,41 +111,54 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     .AsQueryable();
 
 
-                if (request.AccessBy != 1)
+                if (request.Status != null)
                 {
-                    transferOrders = transferOrders.Where(to => to.CreatedById == request.AccessBy || to.TransferToId == request.AccessBy);
-
-                    if ((transferOrders.Any(to => (to.Status == Status.ForReceiving || to.Status == Status.Received) &&
-                        to.TransferToId == request.AccessBy)) && request.Status == null)
+                    //Transfer Out 
+                    if (_context.TransferOrders.Any(to => to.CreatedById == request.AccessBy))
                     {
-                        transferOrders = transferOrders.Where(to => !(to.Status == Status.ForReceiving && to.TransferToId == request.AccessBy));
+                        transferOrders = transferOrders.Where(to => to.CreatedById == request.AccessBy);
+
+                        if (request.Status == Status.ForReceiving)
+                        {
+                            transferOrders = transferOrders.Where(to => to.Status == Status.ForReceiving);
+                        }
+                        else if (request.Status == Status.Received)
+                        {
+                            transferOrders = transferOrders.Where(to => to.Status == Status.Received);
+                        }
+                        else if (request.Status == Status.Rejected)
+                        {
+                            transferOrders = transferOrders.Where(to => to.Status == Status.Rejected);
+                        }
                     }
 
-                    ////ongoing
-                    //else if ((transferOrders.Any(to => to.Status == Status.ForReceiving && to.TransferToId != request.AccessBy)) && request.Status == Status.ForReceiving)
-                    //{
-                    //    transferOrders = transferOrders.Where(to => !(to.Status == Status.ForReceiving && to.CreatedById == request.AccessBy));
-                    //}
+                    //Transfer In 
+                    else if (_context.TransferOrders.Any(to => to.TransferToId == request.AccessBy))
+                    {
+                        transferOrders = transferOrders.Where(to => to.TransferToId == request.AccessBy);
 
+                        if (request.Status == Status.ForReceiving)
+                        {
+                            transferOrders = transferOrders.Where(to => to.Status == Status.ForReceiving);
+                        }
+                        else if (request.Status == Status.Received)
+                        {
+                            transferOrders = transferOrders.Where(to => to.Status == Status.Received);
+                        }
+                        else if (request.Status == Status.Rejected)
+                        {
+                            transferOrders = transferOrders.Where(to => to.Status == Status.Rejected);
+                        }
+                    }
                 }
 
-                if (request.TransferOrderId == null)
-                {
-                    transferOrders = transferOrders.Where(t => t.TransactionDate >= request.DateFrom && t.TransactionDate < adjustedDateTo);
-                }
-                
-                
+                transferOrders = transferOrders.Where(t => t.TransactionDate >= request.DateFrom && t.TransactionDate < adjustedDateTo);
 
                 if (request.TransferOrderId != null)
                 {
                     transferOrders = transferOrders.Where(to => to.Id == request.TransferOrderId);
                 }
 
-
-                if (request.Status != null)
-                {
-                    transferOrders = transferOrders.Where(to => to.Status == request.Status && (to.TransferToId == request.AccessBy || to.CreatedById == request.AccessBy));                   
-                }
 
 
                 if (!string.IsNullOrEmpty(request.Search))
