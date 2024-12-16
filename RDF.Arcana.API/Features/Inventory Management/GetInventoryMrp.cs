@@ -75,7 +75,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public decimal? Sampling { get; set; }
             public decimal? Issue { get; set; }
             public decimal? Replace { get; set; }
-            public decimal? Return { get; set; }
+            public decimal? ReturnByCdo { get; set; }
+            public decimal? ReturnByClient { get; set; }
             public decimal? Soh { get; set; }
         }
 
@@ -105,7 +106,21 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     });
 
 
-                
+                var moReturnByCdo = _context.MoveOrderItems
+                    .Where(mo => mo.Reason != null && mo.CreatedBy.Id == request.AccessBy)
+                    .GroupBy(x => new
+                    {
+                        x.ItemCode
+                    })
+                    .Select(x => new
+                    {
+                        ItemCode = x.Key.ItemCode,
+                        Quantity = x.Sum(x => x.Quantity),
+                        
+                    });
+
+
+
                 var groupTransferOut = _context.TransferOrders
                     .Where(to => (to.Status == Status.Received &&
                         to.CreatedById == request.AccessBy) ||
@@ -175,7 +190,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         Sampling = 0,
                         Issue = 0,
                         Replace = 0,
-                        Return = 0,
+                        ReturnByCdo = moReturnByCdo
+                            .Where(to => to.ItemCode == i.ItemCode)
+                            .Select(to => to.Quantity)
+                            .FirstOrDefault(),
+                        ReturnByClient = 0,
                         Soh = ((groupReceiving
                             .Where(r => r.ItemCode == i.ItemCode)
                             .Select(r => r.ActualQuantity)
