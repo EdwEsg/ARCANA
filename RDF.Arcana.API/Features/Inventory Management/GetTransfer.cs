@@ -114,6 +114,18 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 if (request.AccessBy != 1)
                 {
                     transferOrders = transferOrders.Where(to => to.CreatedById == request.AccessBy || to.TransferToId == request.AccessBy);
+
+                    if ((transferOrders.Any(to => to.Status == Status.ForReceiving && to.TransferToId == request.AccessBy)) && request.Status == null)
+                    {
+                        transferOrders = transferOrders.Where(to => !(to.Status == Status.ForReceiving && to.TransferToId == request.AccessBy));
+                    }
+
+                    ////ongoing
+                    //else if ((transferOrders.Any(to => to.Status == Status.ForReceiving && to.TransferToId != request.AccessBy)) && request.Status == Status.ForReceiving)
+                    //{
+                    //    transferOrders = transferOrders.Where(to => !(to.Status == Status.ForReceiving && to.CreatedById == request.AccessBy));
+                    //}
+
                 }
 
                 if (request.TransferOrderId == null)
