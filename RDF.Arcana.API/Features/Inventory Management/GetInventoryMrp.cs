@@ -100,13 +100,16 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     .Select(x => new
                     {
                         ItemCode = x.Key.ItemCode,
-                        Quantity = x.Sum(x => x.ActualQuantity)
+                        Quantity = x.Sum(x => x.Quantity),
+                        ActualQuantity = x.Sum(x => x.ActualQuantity)
                     });
 
 
-                //Subtract
+                
                 var groupTransferOut = _context.TransferOrders
-                    .Where(to => to.Status == Status.Received &&
+                    .Where(to => (to.Status == Status.Received &&
+                        to.CreatedById == request.AccessBy) ||
+                        to.Status == Status.ForReceiving &&
                         to.CreatedById == request.AccessBy)
                     .SelectMany(to => to.TransferOrderItems)
                     .GroupBy(toi => toi.ItemCode)
@@ -114,6 +117,24 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     {
                         ItemCode = g.Key,
                         Quantity = g.Sum(x => x.Quantity)
+                    });
+
+                //Subtract
+                var groupTransferOutforSoh = _context.TransferOrders
+                    .Where(to =>
+                        (to.Status == Status.Received && to.CreatedById == request.AccessBy) ||
+                        (to.Status == Status.ForReceiving && to.CreatedById == request.AccessBy))
+                    .SelectMany(to => to.TransferOrderItems.Select(toi => new
+                    {
+                        Status = to.Status,
+                        toi.ItemCode,
+                        toi.Quantity
+                    }))
+                    .GroupBy(x => x.ItemCode)
+                    .Select(g => new
+                    {
+                        ItemCode = g.Key,
+                        Quantity = g.Sum(x => x.Status == Status.ForReceiving ? 0 : x.Quantity)
                     });
 
 
@@ -141,7 +162,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         Receiving = groupReceiving
                             .Where(r => r.ItemCode == i.ItemCode)
                             .Select(r => r.Quantity)
-                            .FirstOrDefault() ?? 0,
+                            .FirstOrDefault(),
                         TransferIn = groupTransferIn
                             .Where(ti => ti.ItemCode == i.ItemCode)
                             .Select(ti => ti.Quantity)
@@ -157,13 +178,13 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         Return = 0,
                         Soh = ((groupReceiving
                             .Where(r => r.ItemCode == i.ItemCode)
-                            .Select(r => r.Quantity)
+                            .Select(r => r.ActualQuantity)
                             .FirstOrDefault() ?? 0) +
                             (groupTransferIn
                             .Where(ti => ti.ItemCode == i.ItemCode)
                             .Select(ti => ti.Quantity)
                             .FirstOrDefault() ?? 0)) -
-                            (groupTransferOut
+                            (groupTransferOutforSoh
                             .Where(to => to.ItemCode == i.ItemCode)
                             .Select(to => to.Quantity)
                             .FirstOrDefault() ?? 0)

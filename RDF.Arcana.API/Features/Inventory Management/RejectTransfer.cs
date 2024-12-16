@@ -60,6 +60,76 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     return InventoryErrors.ToNotFound();
                 }
 
+                var transferOrderItems = await _context.TransferOrderItems
+                    .Where(toi => toi.TransferOrderId == request.TransferId)
+                    .ToListAsync(cancellationToken);
+
+                if (!transferOrderItems.Any())
+                {
+                    return InventoryErrors.ToNotFound();
+                }
+
+                var groupedItems = transferOrderItems
+                    .GroupBy(i => i.ItemCode)
+                    .Select(g => new
+                    {
+                        ItemCode = g.Key,
+                        QuantityToRestore = g.Sum(x => x.Quantity ?? 0)
+                    })
+                    .ToList();
+
+                var moveOrderItemsCreator = transferOrder.CreatedById;
+
+                var itemCodes = groupedItems.Select(i => i.ItemCode).ToList();
+                var userMoveOrderItems = await _context.MoveOrderItems
+                    .Where(m => m.CreatedBy.Id == moveOrderItemsCreator && itemCodes.Contains(m.ItemCode))
+                    .OrderBy(m => m.ItemCode)
+                    .ToListAsync(cancellationToken);
+
+                foreach (var item in groupedItems)
+                {
+                    var quantityToRestore = item.QuantityToRestore;
+
+                    var matchedMoveOrderItems = userMoveOrderItems
+                        .Where(m => m.ItemCode == item.ItemCode)
+                        .ToList();
+
+                    foreach (var moItem in matchedMoveOrderItems)
+                    {
+                        if (quantityToRestore <= 0)
+                            break;
+
+                        var currentQuantity = moItem.ActualQuantity ?? 0;
+                        var maxAllowed = moItem.Quantity; 
+                        var availableSpace = maxAllowed - currentQuantity;
+
+                        if (availableSpace <= 0)
+                        {
+                            continue;
+                        }
+
+                        if (quantityToRestore <= availableSpace)
+                        {
+                            moItem.ActualQuantity = currentQuantity + quantityToRestore;
+                            quantityToRestore = 0;
+                        }
+                        else
+                        {
+                            moItem.ActualQuantity = currentQuantity + availableSpace;
+                            quantityToRestore -= availableSpace;
+                        }
+                    }
+
+                    if (quantityToRestore > 0)
+                    {
+                        throw new InvalidOperationException(
+                            $"Unable to restore full quantity for ItemCode '{item.ItemCode}'. Missing {quantityToRestore} units."
+                        );
+                    }
+                }
+
+                await _context.SaveChangesAsync(cancellationToken);
+
                 transferOrder.Status = Status.Rejected;
                 transferOrder.ModifiedBy = request.AccessBy;
                 transferOrder.ModifiedDate = DateTime.Now;
