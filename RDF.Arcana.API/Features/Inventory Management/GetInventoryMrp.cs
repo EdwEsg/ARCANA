@@ -195,7 +195,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             .Select(to => to.Quantity)
                             .FirstOrDefault(),
                         ReturnByClient = 0,
-                        Soh = ((groupReceiving
+                        Soh = Math.Max(
+                            ((groupReceiving
                             .Where(r => r.ItemCode == i.ItemCode)
                             .Select(r => r.ActualQuantity)
                             .FirstOrDefault() ?? 0) +
@@ -206,7 +207,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             (groupTransferOutforSoh
                             .Where(to => to.ItemCode == i.ItemCode)
                             .Select(to => to.Quantity)
-                            .FirstOrDefault() ?? 0)
+                            .FirstOrDefault() ?? 0),
+                        0)
                     })
                     .OrderBy(x => x.ItemCode);
 

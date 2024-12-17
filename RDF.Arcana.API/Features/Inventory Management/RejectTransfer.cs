@@ -82,7 +82,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                 var itemCodes = groupedItems.Select(i => i.ItemCode).ToList();
                 var userMoveOrderItems = await _context.MoveOrderItems
-                    .Where(m => m.CreatedBy.Id == moveOrderItemsCreator && itemCodes.Contains(m.ItemCode))
+                    .Where(m => m.CreatedBy.Id == moveOrderItemsCreator && itemCodes.Contains(m.ItemCode) 
+                        && m.Reason == null)
                     .OrderBy(m => m.ItemCode)
                     .ToListAsync(cancellationToken);
 
@@ -91,7 +92,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     var quantityToRestore = item.QuantityToRestore;
 
                     var matchedMoveOrderItems = userMoveOrderItems
-                        .Where(m => m.ItemCode == item.ItemCode)
+                        .Where(m => m.ItemCode == item.ItemCode && m.Reason == null)
                         .ToList();
 
                     foreach (var moItem in matchedMoveOrderItems)
