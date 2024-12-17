@@ -65,6 +65,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public DateTime DateFrom { get; set; }
             public DateTime DateTo { get; set; }
             public int? TransferOrderId { get; set; }
+            public string TransferType { get; set; }
             public string Status { get; set; }
             public int AccessBy { get; set; }
         }
@@ -111,48 +112,42 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     .AsQueryable();
 
 
-                if (request.Status != null)
+                if (!string.IsNullOrEmpty(request.TransferType))
                 {
-                    //Transfer Out 
-                    if (_context.TransferOrders.Any(to => to.CreatedById == request.AccessBy))
+                    //Transfer Out
+                    if (request.TransferType == Status.TransferOut)
                     {
                         transferOrders = transferOrders.Where(to => to.CreatedById == request.AccessBy);
 
-                        if (request.Status == Status.ForReceiving)
+                        if (!string.IsNullOrEmpty(request.Status))
                         {
-                            transferOrders = transferOrders.Where(to => to.Status == Status.ForReceiving);
-                        }
-                        else if (request.Status == Status.Received)
-                        {
-                            transferOrders = transferOrders.Where(to => to.Status == Status.Received);
-                        }
-                        else if (request.Status == Status.Rejected)
-                        {
-                            transferOrders = transferOrders.Where(to => to.Status == Status.Rejected);
+                            if (request.Status == Status.ForReceiving)
+                                transferOrders = transferOrders.Where(to => to.Status == Status.ForReceiving);
+                            else if (request.Status == Status.Received)
+                                transferOrders = transferOrders.Where(to => to.Status == Status.Received);
+                            else if (request.Status == Status.Rejected)
+                                transferOrders = transferOrders.Where(to => to.Status == Status.Rejected);
                         }
                     }
-
                     //Transfer In 
-                    else if (_context.TransferOrders.Any(to => to.TransferToId == request.AccessBy))
+                    else if (request.TransferType == Status.TransferIn)
                     {
                         transferOrders = transferOrders.Where(to => to.TransferToId == request.AccessBy);
 
-                        if (request.Status == Status.ForReceiving)
+                        if (!string.IsNullOrEmpty(request.Status))
                         {
-                            transferOrders = transferOrders.Where(to => to.Status == Status.ForReceiving);
-                        }
-                        else if (request.Status == Status.Received)
-                        {
-                            transferOrders = transferOrders.Where(to => to.Status == Status.Received);
-                        }
-                        else if (request.Status == Status.Rejected)
-                        {
-                            transferOrders = transferOrders.Where(to => to.Status == Status.Rejected);
+                            if (request.Status == Status.ForReceiving)
+                                transferOrders = transferOrders.Where(to => to.Status == Status.ForReceiving);
+                            else if (request.Status == Status.Received)
+                                transferOrders = transferOrders.Where(to => to.Status == Status.Received);
+                            else if (request.Status == Status.Rejected)
+                                transferOrders = transferOrders.Where(to => to.Status == Status.Rejected);
                         }
                     }
                 }
 
                 transferOrders = transferOrders.Where(t => t.TransactionDate >= request.DateFrom && t.TransactionDate < adjustedDateTo);
+
 
                 if (request.TransferOrderId != null)
                 {
