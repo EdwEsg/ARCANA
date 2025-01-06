@@ -105,6 +105,19 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         RemainingQuantity = x.Sum(x => x.RemainingQuantity)
                     });
 
+                //Subtract
+                var groupFreebie = _context.FreebieOrderItems
+                    .Where(f => f.FreebieOrder.CreatedById == request.AccessBy)
+                    .GroupBy(f => new
+                    {
+                        f.Item.ItemCode
+                    })
+                    .Select(g => new
+                    {
+                        ItemCode = g.Key.ItemCode,
+                        Quantity = g.Sum(g => g.Quantity),
+                    });
+
 
                 var moReturnByCdo = _context.MoveOrderItems
                     .Where(mo => mo.Reason != null && mo.CreatedBy.Id == request.AccessBy)
@@ -186,7 +199,10 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             .Where(to => to.ItemCode == i.ItemCode)
                             .Select(to => to.Quantity)
                             .FirstOrDefault() ?? 0,
-                        Freebie = 0,
+                        Freebie = groupFreebie
+                            .Where(f => f.ItemCode == i.ItemCode)
+                            .Select(f => f.Quantity)
+                            .FirstOrDefault(),
                         Sampling = 0,
                         Issue = 0,
                         Replace = 0,
@@ -207,7 +223,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             (groupTransferOutforSoh
                             .Where(to => to.ItemCode == i.ItemCode)
                             .Select(to => to.Quantity)
-                            .FirstOrDefault() ?? 0),
+                            .FirstOrDefault() ?? 0) -
+                            (groupFreebie
+                            .Where(f => f.ItemCode == i.ItemCode)
+                            .Select(f => f.Quantity)
+                            .FirstOrDefault()),
                         0)
                     })
                     .OrderBy(x => x.ItemCode);
