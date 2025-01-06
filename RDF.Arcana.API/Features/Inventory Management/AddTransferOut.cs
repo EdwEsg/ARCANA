@@ -44,6 +44,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
             public class TransferItemDto
             {
+                public int ItemId { get; set; }
                 public string ItemCode { get; set; }
                 public decimal? Quantity { get; set; }
 
@@ -102,9 +103,29 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     .Select(g => new
                     {
                         ItemCode = g.Key,
-                        AvailableQuantity = g.Sum(x => x.ActualQuantity ?? 0)
+                        AvailableQuantity = g.Sum(x => x.RemainingQuantity ?? 0)
                     })
                     .ToListAsync(cancellationToken);
+
+                //var userTransferInItems = await _context.TransferOrderItems
+                //    .Where(t => t.TransferOrder.TransferToId == request.AccessBy)
+                //    .GroupBy(t => t.ItemCode)
+                //    .Select(g => new
+                //    {
+                //        ItemCode = g.Key,
+                //        AvailableQuantity = g.Sum(x => x.RemainingQuantity ?? 0)
+                //    })
+                //    .ToListAsync(cancellationToken);
+
+                //var totalAvailableQuantity = userMoveOrderItems
+                //    .Concat(userTransferInItems)
+                //    .GroupBy(x => x.ItemCode)
+                //    .Select(g => new
+                //    {
+                //        ItemCode = g.Key,
+                //        AvailableQuantity = g.Sum(i => i.AvailableQuantity)
+                //    })
+                //    .ToList();
 
                 foreach (var reqItem in requestedItems)
                 {
@@ -126,12 +147,18 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 }
 
                 var itemCodes = requestedItems.Select(i => i.ItemCode).ToList();
+
                 var moveOrderItemsForUser = await _context.MoveOrderItems
                     .Where(m => m.CreatedBy.Id == request.AccessBy && itemCodes.Contains(m.ItemCode))
                     .OrderBy(m => m.ItemCode) 
                     .ToListAsync(cancellationToken);
 
-                
+                //var transferInItemsForUser = await _context.TransferOrderItems
+                //    .Where(t => itemCodes.Contains(t.ItemCode))
+                //    .OrderBy(t => t.ItemCode)
+                //    .ToListAsync(cancellationToken);
+
+
                 foreach (var reqItem in requestedItems)
                 {
                     
@@ -145,18 +172,43 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     {
                         if (quantityToDeduct <= 0) break;
 
-                        var available = moItem.ActualQuantity ?? 0;
+                        var available = moItem.RemainingQuantity ?? 0;
                         if (available >= quantityToDeduct)
                         {
-                            moItem.ActualQuantity = available - quantityToDeduct;
+                            moItem.RemainingQuantity = available - quantityToDeduct;
                             quantityToDeduct = 0;
                         }
                         else
                         {
-                            moItem.ActualQuantity = 0;
+                            moItem.RemainingQuantity = 0;
                             quantityToDeduct -= available;
                         }
                     }
+
+                    //if (quantityToDeduct > 0)
+                    //{
+                    //    var matchedTransferInItems = transferInItemsForUser
+                    //        .Where(t => t.ItemCode == reqItem.ItemCode)
+                    //        .ToList();
+
+                    //    foreach (var tiItem in matchedTransferInItems)
+                    //    {
+                    //        if (quantityToDeduct <= 0) break;
+
+                    //        var available = tiItem.RemainingQuantity ?? 0;
+                    //        if (available >= quantityToDeduct)
+                    //        {
+                    //            tiItem.RemainingQuantity = available - quantityToDeduct;
+                    //            quantityToDeduct = 0;
+                    //        }
+                    //        else
+                    //        {
+                    //            tiItem.RemainingQuantity = 0;
+                    //            quantityToDeduct -= available;
+                    //        }
+                    //    }
+                    //}
+
                     if (quantityToDeduct > 0)
                     {
                         throw new InvalidOperationException($"Unable to fully deduct quantity for ItemCode '{reqItem.ItemCode}'. Remaining: {quantityToDeduct}");
@@ -213,7 +265,9 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         ProductionDate = matchedMoveOrderItem?.ProductionDate,
                         MoveId = matchedMoveOrderItem?.MoveOrderExternal,
                         TransferOrderId = transferOrder.Id,
-                        CreatedById = request.AccessBy
+                        CreatedById = request.AccessBy,
+                        RemainingQuantity = i.Quantity,
+                        ItemId = i.ItemId
                     };
                 }).ToList();
 

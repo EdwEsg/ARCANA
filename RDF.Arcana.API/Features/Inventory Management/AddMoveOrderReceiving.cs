@@ -201,7 +201,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         UomId = item.UomId,
                         IsActive = true,
                         CreatedBy = _context.Users.FirstOrDefault(u => u.Id == request.CreatedBy),
-                        Reason = null
+                        Reason = null,
+                        RemainingQuantity = actualQuantity,
                     };
 
                     internalMoveOrderItems.Add(moveOrderItem);
@@ -215,7 +216,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 MoveOrderId = internalMoveOrder.Id,
                                 ItemCode = wrong.ItemCode,
                                 Quantity = wrong.Quantity ?? 0m,
-                                ActualQuantity = 0m, 
+                                ActualQuantity = 0m,
                                 ProductionDate = externalItem.ProductionDate,
                                 ItemId = item.Id,
                                 UomId = item.UomId,

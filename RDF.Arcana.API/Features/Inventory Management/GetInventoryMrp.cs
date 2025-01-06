@@ -102,7 +102,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     {
                         ItemCode = x.Key.ItemCode,
                         Quantity = x.Sum(x => x.Quantity),
-                        ActualQuantity = x.Sum(x => x.ActualQuantity)
+                        RemainingQuantity = x.Sum(x => x.RemainingQuantity)
                     });
 
 
@@ -149,7 +149,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     .Select(g => new
                     {
                         ItemCode = g.Key,
-                        Quantity = g.Sum(x => x.Status == Status.ForReceiving ? 0 : x.Quantity)
+                        Quantity = g.Sum(x => (x.Status == Status.ForReceiving || x.Status == Status.Received) ? 0 : x.Quantity)
                     });
 
 
@@ -198,7 +198,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         Soh = Math.Max(
                             ((groupReceiving
                             .Where(r => r.ItemCode == i.ItemCode)
-                            .Select(r => r.ActualQuantity)
+                            .Select(r => r.RemainingQuantity)
                             .FirstOrDefault() ?? 0) +
                             (groupTransferIn
                             .Where(ti => ti.ItemCode == i.ItemCode)

@@ -114,7 +114,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                 if (request.MoveOrderId == null)
                 {
-                    moveOrders = moveOrders.Where(t => t.TransactionDate >= request.DateFrom && t.TransactionDate < adjustedDateTo);
+                    moveOrders = moveOrders.Where(t => t.CreatedDate >= request.DateFrom && t.CreatedDate < adjustedDateTo);
                 }
 
 

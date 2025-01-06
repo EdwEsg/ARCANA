@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RDF.Arcana.API.Data;
 
@@ -11,9 +12,11 @@ using RDF.Arcana.API.Data;
 namespace RDF.Arcana.API.Migrations
 {
     [DbContext(typeof(ArcanaDbContext))]
-    partial class ArcanaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250102023426_AddRemainingBalanceInMOItems")]
+    partial class AddRemainingBalanceInMOItems
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -302,45 +305,45 @@ namespace RDF.Arcana.API.Migrations
                             Id = 1,
                             AddedBy = 1,
                             BookingCoverage = "F1",
-                            CreatedAt = new DateTime(2025, 1, 6, 15, 37, 58, 177, DateTimeKind.Local).AddTicks(1082),
+                            CreatedAt = new DateTime(2025, 1, 2, 10, 34, 21, 150, DateTimeKind.Local).AddTicks(9422),
                             IsActive = true,
-                            UpdatedAt = new DateTime(2025, 1, 6, 15, 37, 58, 177, DateTimeKind.Local).AddTicks(1083)
+                            UpdatedAt = new DateTime(2025, 1, 2, 10, 34, 21, 150, DateTimeKind.Local).AddTicks(9423)
                         },
                         new
                         {
                             Id = 2,
                             AddedBy = 1,
                             BookingCoverage = "F2",
-                            CreatedAt = new DateTime(2025, 1, 6, 15, 37, 58, 177, DateTimeKind.Local).AddTicks(1086),
+                            CreatedAt = new DateTime(2025, 1, 2, 10, 34, 21, 150, DateTimeKind.Local).AddTicks(9427),
                             IsActive = true,
-                            UpdatedAt = new DateTime(2025, 1, 6, 15, 37, 58, 177, DateTimeKind.Local).AddTicks(1087)
+                            UpdatedAt = new DateTime(2025, 1, 2, 10, 34, 21, 150, DateTimeKind.Local).AddTicks(9427)
                         },
                         new
                         {
                             Id = 3,
                             AddedBy = 1,
                             BookingCoverage = "F3",
-                            CreatedAt = new DateTime(2025, 1, 6, 15, 37, 58, 177, DateTimeKind.Local).AddTicks(1088),
+                            CreatedAt = new DateTime(2025, 1, 2, 10, 34, 21, 150, DateTimeKind.Local).AddTicks(9429),
                             IsActive = true,
-                            UpdatedAt = new DateTime(2025, 1, 6, 15, 37, 58, 177, DateTimeKind.Local).AddTicks(1088)
+                            UpdatedAt = new DateTime(2025, 1, 2, 10, 34, 21, 150, DateTimeKind.Local).AddTicks(9446)
                         },
                         new
                         {
                             Id = 4,
                             AddedBy = 1,
                             BookingCoverage = "F4",
-                            CreatedAt = new DateTime(2025, 1, 6, 15, 37, 58, 177, DateTimeKind.Local).AddTicks(1089),
+                            CreatedAt = new DateTime(2025, 1, 2, 10, 34, 21, 150, DateTimeKind.Local).AddTicks(9447),
                             IsActive = true,
-                            UpdatedAt = new DateTime(2025, 1, 6, 15, 37, 58, 177, DateTimeKind.Local).AddTicks(1089)
+                            UpdatedAt = new DateTime(2025, 1, 2, 10, 34, 21, 150, DateTimeKind.Local).AddTicks(9448)
                         },
                         new
                         {
                             Id = 5,
                             AddedBy = 1,
                             BookingCoverage = "F5",
-                            CreatedAt = new DateTime(2025, 1, 6, 15, 37, 58, 177, DateTimeKind.Local).AddTicks(1090),
+                            CreatedAt = new DateTime(2025, 1, 2, 10, 34, 21, 150, DateTimeKind.Local).AddTicks(9450),
                             IsActive = true,
-                            UpdatedAt = new DateTime(2025, 1, 6, 15, 37, 58, 177, DateTimeKind.Local).AddTicks(1091)
+                            UpdatedAt = new DateTime(2025, 1, 2, 10, 34, 21, 150, DateTimeKind.Local).AddTicks(9451)
                         });
                 });
 
@@ -1312,114 +1315,6 @@ namespace RDF.Arcana.API.Migrations
                     b.ToTable("freezers", (string)null);
                 });
 
-            modelBuilder.Entity("RDF.Arcana.API.Domain.Inventory.FreebieOrder", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ClientId")
-                        .HasColumnType("int")
-                        .HasColumnName("client_id");
-
-                    b.Property<int>("CreatedById")
-                        .HasColumnType("int")
-                        .HasColumnName("created_by_id");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_date");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_active");
-
-                    b.Property<int?>("ModifiedBy")
-                        .HasColumnType("int")
-                        .HasColumnName("modified_by");
-
-                    b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("modified_date");
-
-                    b.Property<decimal>("TotalQuantity")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("total_quantity");
-
-                    b.Property<string>("TransactionType")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("transaction_type");
-
-                    b.HasKey("Id")
-                        .HasName("pk_freebie_orders");
-
-                    b.HasIndex("ClientId")
-                        .HasDatabaseName("ix_freebie_orders_client_id");
-
-                    b.HasIndex("CreatedById")
-                        .HasDatabaseName("ix_freebie_orders_created_by_id");
-
-                    b.ToTable("freebie_orders", (string)null);
-                });
-
-            modelBuilder.Entity("RDF.Arcana.API.Domain.Inventory.FreebieOrderItems", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Bbd")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("bbd");
-
-                    b.Property<int>("FreebieOrderId")
-                        .HasColumnType("int")
-                        .HasColumnName("freebie_order_id");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_active");
-
-                    b.Property<int>("ItemId")
-                        .HasColumnType("int")
-                        .HasColumnName("item_id");
-
-                    b.Property<int?>("MoveOrderId")
-                        .HasColumnType("int")
-                        .HasColumnName("move_order_id");
-
-                    b.Property<decimal>("Quantity")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("quantity");
-
-                    b.Property<int?>("TransferOrderId")
-                        .HasColumnType("int")
-                        .HasColumnName("transfer_order_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_freebie_order_items");
-
-                    b.HasIndex("FreebieOrderId")
-                        .HasDatabaseName("ix_freebie_order_items_freebie_order_id");
-
-                    b.HasIndex("ItemId")
-                        .HasDatabaseName("ix_freebie_order_items_item_id");
-
-                    b.HasIndex("MoveOrderId")
-                        .HasDatabaseName("ix_freebie_order_items_move_order_id");
-
-                    b.HasIndex("TransferOrderId")
-                        .HasDatabaseName("ix_freebie_order_items_transfer_order_id");
-
-                    b.ToTable("freebie_order_items", (string)null);
-                });
-
             modelBuilder.Entity("RDF.Arcana.API.Domain.Inventory.MoveOrder", b =>
                 {
                     b.Property<int>("Id")
@@ -1655,10 +1550,6 @@ namespace RDF.Arcana.API.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("item_description");
 
-                    b.Property<int>("ItemId")
-                        .HasColumnType("int")
-                        .HasColumnName("item_id");
-
                     b.Property<int?>("MoveId")
                         .HasColumnType("int")
                         .HasColumnName("move_id");
@@ -1670,10 +1561,6 @@ namespace RDF.Arcana.API.Migrations
                     b.Property<decimal?>("Quantity")
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("quantity");
-
-                    b.Property<decimal?>("RemainingQuantity")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("remaining_quantity");
 
                     b.Property<int>("TransferOrderId")
                         .HasColumnType("int")
@@ -1688,9 +1575,6 @@ namespace RDF.Arcana.API.Migrations
 
                     b.HasIndex("CreatedById")
                         .HasDatabaseName("ix_transfer_order_items_created_by_id");
-
-                    b.HasIndex("ItemId")
-                        .HasDatabaseName("ix_transfer_order_items_item_id");
 
                     b.HasIndex("TransferOrderId")
                         .HasDatabaseName("ix_transfer_order_items_transfer_order_id");
@@ -2050,7 +1934,7 @@ namespace RDF.Arcana.API.Migrations
                         {
                             Id = 1,
                             AddedBy = 1,
-                            CreatedAt = new DateTime(2025, 1, 6, 15, 37, 58, 177, DateTimeKind.Local).AddTicks(1146),
+                            CreatedAt = new DateTime(2025, 1, 2, 10, 34, 21, 150, DateTimeKind.Local).AddTicks(9580),
                             IsActive = true,
                             Payment = "Cash",
                             UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
@@ -2059,7 +1943,7 @@ namespace RDF.Arcana.API.Migrations
                         {
                             Id = 2,
                             AddedBy = 1,
-                            CreatedAt = new DateTime(2025, 1, 6, 15, 37, 58, 177, DateTimeKind.Local).AddTicks(1149),
+                            CreatedAt = new DateTime(2025, 1, 2, 10, 34, 21, 150, DateTimeKind.Local).AddTicks(9589),
                             IsActive = true,
                             Payment = "Online/Check",
                             UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
@@ -2945,7 +2829,7 @@ namespace RDF.Arcana.API.Migrations
                         {
                             Id = 1,
                             AddedBy = 1,
-                            CreatedAt = new DateTime(2025, 1, 6, 15, 37, 58, 177, DateTimeKind.Local).AddTicks(1119),
+                            CreatedAt = new DateTime(2025, 1, 2, 10, 34, 21, 150, DateTimeKind.Local).AddTicks(9486),
                             IsActive = true,
                             TermType = "COD",
                             UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
@@ -2954,7 +2838,7 @@ namespace RDF.Arcana.API.Migrations
                         {
                             Id = 2,
                             AddedBy = 1,
-                            CreatedAt = new DateTime(2025, 1, 6, 15, 37, 58, 177, DateTimeKind.Local).AddTicks(1121),
+                            CreatedAt = new DateTime(2025, 1, 2, 10, 34, 21, 150, DateTimeKind.Local).AddTicks(9510),
                             IsActive = true,
                             TermType = "1 Up 1 Down",
                             UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
@@ -2963,7 +2847,7 @@ namespace RDF.Arcana.API.Migrations
                         {
                             Id = 3,
                             AddedBy = 1,
-                            CreatedAt = new DateTime(2025, 1, 6, 15, 37, 58, 177, DateTimeKind.Local).AddTicks(1123),
+                            CreatedAt = new DateTime(2025, 1, 2, 10, 34, 21, 150, DateTimeKind.Local).AddTicks(9512),
                             IsActive = true,
                             TermType = "Credit Type",
                             UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
@@ -3376,12 +3260,12 @@ namespace RDF.Arcana.API.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2025, 1, 6, 15, 37, 58, 22, DateTimeKind.Local).AddTicks(4547),
+                            CreatedAt = new DateTime(2025, 1, 2, 10, 34, 20, 819, DateTimeKind.Local).AddTicks(8214),
                             Fullname = "Admin",
                             IsActive = true,
                             IsPasswordChanged = false,
-                            Password = "$2a$11$fMKlinmVZgPcMaojtbM5je.l9AdPdxeRC.KvEMpQnSqLl4/SztvGe",
-                            UpdatedAt = new DateTime(2025, 1, 6, 15, 37, 58, 22, DateTimeKind.Local).AddTicks(4561),
+                            Password = "$2a$11$sGZHFN64E5.X2erDaMPk1uEgp2lSVuBbh2D85NVodu4ngBCQdag6q",
+                            UpdatedAt = new DateTime(2025, 1, 2, 10, 34, 20, 819, DateTimeKind.Local).AddTicks(8240),
                             UserRolesId = 1,
                             Username = "admin"
                         });
@@ -3436,7 +3320,7 @@ namespace RDF.Arcana.API.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2025, 1, 6, 15, 37, 58, 177, DateTimeKind.Local).AddTicks(977),
+                            CreatedAt = new DateTime(2025, 1, 2, 10, 34, 21, 150, DateTimeKind.Local).AddTicks(9328),
                             IsActive = true,
                             Permissions = "[\"User Management\",\"User Account\",\"User Role\",\"Company\",\"Department\",\"Location\",\"Masterlist\",\"Products\",\"Meat Type\",\"UOM\",\"Discount Type\",\"Terms\",\"Customer Registration\",\"Prospect\",\"Direct\",\"Freebies\",\"Inventory\",\"Setup\",\"Product Category\",\"Product Sub Category\",\"Unit of Measurements\",\"Store Type\",\"Discount\",\"Term Days\",\"Approval\",\"Freebie Approval\",\"Direct Approval\",\"Admin Dashboard\",\"Direct Registration\",\"Listing Fee\",\"Registration Approval\",\"Sp. Discount Approval\",\"Listing Fee Approval\",\"Business Type\",\"Registration\",\"Customer Management\",\"Product Setup\",\"Variable Discount\"]",
                             UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
@@ -3947,62 +3831,6 @@ namespace RDF.Arcana.API.Migrations
                     b.Navigation("RequestedByUser");
                 });
 
-            modelBuilder.Entity("RDF.Arcana.API.Domain.Inventory.FreebieOrder", b =>
-                {
-                    b.HasOne("RDF.Arcana.API.Domain.Clients", "Client")
-                        .WithMany()
-                        .HasForeignKey("ClientId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_freebie_orders_clients_client_id");
-
-                    b.HasOne("RDF.Arcana.API.Domain.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_freebie_orders_users_created_by_id");
-
-                    b.Navigation("Client");
-
-                    b.Navigation("CreatedBy");
-                });
-
-            modelBuilder.Entity("RDF.Arcana.API.Domain.Inventory.FreebieOrderItems", b =>
-                {
-                    b.HasOne("RDF.Arcana.API.Domain.Inventory.FreebieOrder", "FreebieOrder")
-                        .WithMany("FreebieOrderItems")
-                        .HasForeignKey("FreebieOrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_freebie_order_items_freebie_orders_freebie_order_id");
-
-                    b.HasOne("RDF.Arcana.API.Domain.Items", "Item")
-                        .WithMany()
-                        .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_freebie_order_items_items_item_id");
-
-                    b.HasOne("RDF.Arcana.API.Domain.Inventory.MoveOrder", "MoveOrder")
-                        .WithMany()
-                        .HasForeignKey("MoveOrderId")
-                        .HasConstraintName("fk_freebie_order_items_move_orders_move_order_id");
-
-                    b.HasOne("RDF.Arcana.API.Domain.Inventory.TransferOrder", "TransferOrder")
-                        .WithMany()
-                        .HasForeignKey("TransferOrderId")
-                        .HasConstraintName("fk_freebie_order_items_transfer_orders_transfer_order_id");
-
-                    b.Navigation("FreebieOrder");
-
-                    b.Navigation("Item");
-
-                    b.Navigation("MoveOrder");
-
-                    b.Navigation("TransferOrder");
-                });
-
             modelBuilder.Entity("RDF.Arcana.API.Domain.Inventory.MoveOrder", b =>
                 {
                     b.HasOne("RDF.Arcana.API.Domain.User", "CreatedBy")
@@ -4082,13 +3910,6 @@ namespace RDF.Arcana.API.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_transfer_order_items_users_created_by_id");
 
-                    b.HasOne("RDF.Arcana.API.Domain.Items", "Item")
-                        .WithMany()
-                        .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_transfer_order_items_items_item_id");
-
                     b.HasOne("RDF.Arcana.API.Domain.Inventory.TransferOrder", "TransferOrder")
                         .WithMany("TransferOrderItems")
                         .HasForeignKey("TransferOrderId")
@@ -4097,8 +3918,6 @@ namespace RDF.Arcana.API.Migrations
                         .HasConstraintName("fk_transfer_order_items_transfer_orders_transfer_order_id");
 
                     b.Navigation("CreatedBy");
-
-                    b.Navigation("Item");
 
                     b.Navigation("TransferOrder");
                 });
@@ -4778,11 +4597,6 @@ namespace RDF.Arcana.API.Migrations
             modelBuilder.Entity("RDF.Arcana.API.Domain.FreebieRequest", b =>
                 {
                     b.Navigation("FreebieItems");
-                });
-
-            modelBuilder.Entity("RDF.Arcana.API.Domain.Inventory.FreebieOrder", b =>
-                {
-                    b.Navigation("FreebieOrderItems");
                 });
 
             modelBuilder.Entity("RDF.Arcana.API.Domain.Inventory.MoveOrder", b =>

@@ -100,7 +100,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         if (quantityToRestore <= 0)
                             break;
 
-                        var currentQuantity = moItem.ActualQuantity ?? 0;
+                        var currentQuantity = moItem.RemainingQuantity ?? 0;
                         var maxAllowed = moItem.Quantity; 
                         var availableSpace = maxAllowed - currentQuantity;
 
@@ -111,12 +111,12 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                         if (quantityToRestore <= availableSpace)
                         {
-                            moItem.ActualQuantity = currentQuantity + quantityToRestore;
+                            moItem.RemainingQuantity = currentQuantity + quantityToRestore;
                             quantityToRestore = 0;
                         }
                         else
                         {
-                            moItem.ActualQuantity = currentQuantity + availableSpace;
+                            moItem.RemainingQuantity = currentQuantity + availableSpace;
                             quantityToRestore -= availableSpace;
                         }
                     }

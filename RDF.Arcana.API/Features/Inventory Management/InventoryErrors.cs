@@ -16,5 +16,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             => new("Insufficient.Quantity", $"Insufficient quantity for ItemCode '{itemCode}'. Requested: {requested}, Available: {available}.");
         public static Error Self() => new("Not.Self", "Cannot Transfer to self");
         public static Error NotUserCdo() => new("Not.Cdo", "User is not CDO");
+        public static Error NoClientFound() => new("NotFound", "No Client Found");
     }
 }

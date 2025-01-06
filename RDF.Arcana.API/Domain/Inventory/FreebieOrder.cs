@@ -7,7 +7,6 @@ namespace RDF.Arcana.API.Domain.Inventory
         public int ClientId { get; set; }
         public string TransactionType { get; set; }
         public decimal TotalQuantity { get; set; }
-        //also the transactionDate
         public DateTime CreatedDate { get; set; } = DateTime.Now;
         public int CreatedById { get; set; }
         public DateTime? ModifiedDate { get; set; }
