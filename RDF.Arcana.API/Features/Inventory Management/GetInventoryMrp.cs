@@ -105,9 +105,22 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         RemainingQuantity = x.Sum(x => x.RemainingQuantity)
                     });
 
-                //Subtract
                 var groupFreebie = _context.FreebieOrderItems
-                    .Where(f => f.FreebieOrder.CreatedById == request.AccessBy)
+                    .Where(f => f.FreebieOrder.CreatedById == request.AccessBy &&
+                        f.FreebieOrder.TransactionType == Status.Freebie)
+                    .GroupBy(f => new
+                    {
+                        f.Item.ItemCode
+                    })
+                    .Select(g => new
+                    {
+                        ItemCode = g.Key.ItemCode,
+                        Quantity = g.Sum(g => g.Quantity),
+                    });
+
+                var groupSampling = _context.FreebieOrderItems
+                    .Where(f => f.FreebieOrder.CreatedById == request.AccessBy &&
+                        f.FreebieOrder.TransactionType == Status.Sampling)
                     .GroupBy(f => new
                     {
                         f.Item.ItemCode
@@ -148,7 +161,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     });
 
                 
-                //Add
                 var groupTransferIn = _context.TransferOrders
                     .Where(to => to.Status == Status.Received &&
                         to.TransferToId == request.AccessBy)
@@ -186,7 +198,10 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             .Where(f => f.ItemCode == i.ItemCode)
                             .Select(f => f.Quantity)
                             .FirstOrDefault(),
-                        Sampling = 0,
+                        Sampling = groupSampling
+                            .Where(f => f.ItemCode == i.ItemCode)
+                            .Select(f => f.Quantity)
+                            .FirstOrDefault(),
                         Issue = 0,
                         Replace = 0,
                         ReturnByCdo = moReturnByCdo

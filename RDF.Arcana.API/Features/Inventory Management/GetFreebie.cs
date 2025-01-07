@@ -100,8 +100,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 var adjustedDateTo = request.DateTo.AddDays(1);
 
                 var freebieOrder = _context.FreebieOrders
+                    .Where(fo => fo.TransactionType == request.TransactionType)
                     .AsNoTracking()
                     .AsQueryable();
+
+
 
                 freebieOrder = freebieOrder.Where(f => f.CreatedDate >= request.DateFrom && f.CreatedDate < adjustedDateTo);
 
