@@ -37,6 +37,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         public class AddFreebieOrderCommand : IRequest<Result>
         {
             public int ClientId { get; set; }
+            public string TransactionType { get; set; }
             public int AccessBy { get; set; }
             public ICollection<FreebieOrderItemDto> FreebieOrderItems { get; set; }
             public class FreebieOrderItemDto
@@ -93,7 +94,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     }).ToListAsync(cancellationToken);
 
                 var cdoTransferOrderItems = await _context.TransferOrderItems
-                    .Where(t => t.TransferOrder.TransferToId == request.AccessBy)
+                    .Where(t => t.TransferOrder.TransferToId == request.AccessBy && 
+                        t.TransferOrder.Status == Status.Received)
                     .GroupBy(i => i.ItemId)
                     .Select(g => new
                     {
@@ -142,6 +144,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     var transferOrderItems = await _context.TransferOrderItems
                         .Where(t =>
                             t.TransferOrder.TransferToId == request.AccessBy &&
+                            t.TransferOrder.Status == Status.Received &&
                             t.ItemId == reqItem.ItemId &&
                             t.IsActive &&
                             t.RemainingQuantity > 0
@@ -204,10 +207,17 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     }
                 }
 
+                bool isTranTypeValid = request.TransactionType == Status.Freebie || request.TransactionType == Status.Sampling;
+
+                if (!isTranTypeValid)
+                {
+                    return InventoryErrors.InvalidTranType();
+                }
+
                 var freebieOrder = new FreebieOrder
                 {
                     ClientId = request.ClientId,
-                    TransactionType = Status.Freebie,
+                    TransactionType = request.TransactionType,
                     TotalQuantity = requestedItems.Sum(i => i.RequestedQuantity),
                     CreatedById = request.AccessBy,
                     CreatedDate = DateTime.Now

@@ -44,7 +44,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
             public class TransferItemDto
             {
-                public int ItemId { get; set; }
                 public string ItemCode { get; set; }
                 public decimal? Quantity { get; set; }
 
@@ -235,6 +234,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     .Where(i => itemCodes.Contains(i.ItemCode))
                     .Select(i => new
                     {
+                        i.Id,
                         i.ItemCode,
                         i.ItemDescription,
                         UomDescription = i.Uom.UomDescription
@@ -267,7 +267,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         TransferOrderId = transferOrder.Id,
                         CreatedById = request.AccessBy,
                         RemainingQuantity = i.Quantity,
-                        ItemId = i.ItemId
+                        ItemId = matchedItem?.Id ?? 0
                     };
                 }).ToList();
 

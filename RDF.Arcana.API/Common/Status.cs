@@ -55,6 +55,7 @@ public static class Status
     public const string Transfer = "Transfer";
     public const string ForReceiving = "For Receiving";
     public const string Freebie = "Freebie";
+    public const string Sampling = "Sampling";
 }
 
 //public static class Terms

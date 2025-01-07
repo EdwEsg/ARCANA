@@ -17,5 +17,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         public static Error Self() => new("Not.Self", "Cannot Transfer to self");
         public static Error NotUserCdo() => new("Not.Cdo", "User is not CDO");
         public static Error NoClientFound() => new("NotFound", "No Client Found");
+        public static Error InvalidTranType() => new("InvalidTranType", "Invalid Transaction Type (Freebie/Sampling) only");
     }
 }

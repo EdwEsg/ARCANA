@@ -147,25 +147,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         Quantity = g.Sum(x => x.Quantity)
                     });
 
-                //Subtract
-                var groupTransferOutforSoh = _context.TransferOrders
-                    .Where(to =>
-                        (to.Status == Status.Received && to.CreatedById == request.AccessBy) ||
-                        (to.Status == Status.ForReceiving && to.CreatedById == request.AccessBy))
-                    .SelectMany(to => to.TransferOrderItems.Select(toi => new
-                    {
-                        Status = to.Status,
-                        toi.ItemCode,
-                        toi.Quantity
-                    }))
-                    .GroupBy(x => x.ItemCode)
-                    .Select(g => new
-                    {
-                        ItemCode = g.Key,
-                        Quantity = g.Sum(x => (x.Status == Status.ForReceiving || x.Status == Status.Received) ? 0 : x.Quantity)
-                    });
-
-
+                
                 //Add
                 var groupTransferIn = _context.TransferOrders
                     .Where(to => to.Status == Status.Received &&
@@ -175,7 +157,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     .Select(g => new
                     {
                         ItemCode = g.Key,
-                        Quantity = g.Sum(x => x.Quantity)
+                        Quantity = g.Sum(x => x.Quantity),
+                        RemainingQuantity = g.Sum(x => x.RemainingQuantity)
                     });
 
 
@@ -218,16 +201,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             .FirstOrDefault() ?? 0) +
                             (groupTransferIn
                             .Where(ti => ti.ItemCode == i.ItemCode)
-                            .Select(ti => ti.Quantity)
-                            .FirstOrDefault() ?? 0)) -
-                            (groupTransferOutforSoh
-                            .Where(to => to.ItemCode == i.ItemCode)
-                            .Select(to => to.Quantity)
-                            .FirstOrDefault() ?? 0) -
-                            (groupFreebie
-                            .Where(f => f.ItemCode == i.ItemCode)
-                            .Select(f => f.Quantity)
-                            .FirstOrDefault()),
+                            .Select(ti => ti.RemainingQuantity)
+                            .FirstOrDefault() ?? 0)),
                         0)
                     })
                     .OrderBy(x => x.ItemCode);
