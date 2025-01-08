@@ -72,6 +72,9 @@ public class ArcanaDbContext : DbContext
     public virtual DbSet<TransferOrderItem> TransferOrderItems { get; set; }
     public virtual DbSet<FreebieOrder> FreebieOrders { get; set; }
     public virtual DbSet<FreebieOrderItems> FreebieOrderItems { get; set; }
+    public virtual DbSet<ReturnedOrder> ReturnedOrders { get; set; }
+    public virtual DbSet<ReturnOrderItem> ReturnOrderItems { get; set; }
+    public virtual DbSet<ReplaceOrderItem> ReplaceOrderItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

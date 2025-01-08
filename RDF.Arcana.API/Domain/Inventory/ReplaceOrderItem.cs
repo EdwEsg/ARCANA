@@ -2,7 +2,7 @@
 
 namespace RDF.Arcana.API.Domain.Inventory
 {
-    public class ReturnOrderItem : BaseEntity
+    public class ReplaceOrderItem : BaseEntity
     {
         public int ReturnOrderId { get; set; }
         public int ItemId { get; set; }
@@ -13,7 +13,5 @@ namespace RDF.Arcana.API.Domain.Inventory
 
         public virtual Items Item { get; set; }
         public virtual ReturnedOrder ReturnOrder { get; set; }
-
-
     }
 }

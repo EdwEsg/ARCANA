@@ -14,7 +14,9 @@ namespace RDF.Arcana.API.Domain.Inventory
 
         public virtual Clients Client { get; set; }
         public virtual User CreatedBy { get; set; }
-        //returnedItems and replace
+
+        public ICollection<ReturnOrderItem> ReturnOrderItems { get; set; }
+        public ICollection<ReplaceOrderItem> ReplaceOrderItems { get; set; }
 
     }
 }
