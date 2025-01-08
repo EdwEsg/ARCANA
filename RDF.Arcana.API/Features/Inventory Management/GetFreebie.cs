@@ -71,6 +71,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         public class GetFreebieResult
         {
             public int  Id { get; set; }
+            public int ClientId { get; set; }
             public string ClientName { get; set; }
             public string BusinessName { get; set; }
             public string TransactionType { get; set; }
@@ -125,6 +126,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     .Select(f => new GetFreebieResult
                     {
                         Id = f.Id,
+                        ClientId = f.Client.Id,
                         ClientName = f.Client.Fullname,
                         BusinessName = f.Client.BusinessName,
                         TransactionType = f.TransactionType,
