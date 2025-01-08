@@ -65,6 +65,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public DateTime DateTo { get; set; }
             public int AccessBy { get; set; }
             public string TransactionType { get; set; }
+            public int? FreebieId { get; set; }
         }
 
         public class GetFreebieResult
@@ -107,6 +108,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
 
                 freebieOrder = freebieOrder.Where(f => f.CreatedDate >= request.DateFrom && f.CreatedDate < adjustedDateTo);
+
+                if (request.FreebieId != null)
+                {
+                    freebieOrder = freebieOrder.Where(f => f.Id == request.FreebieId);
+                }
 
                 if (!string.IsNullOrEmpty(request.Search))
                 {
