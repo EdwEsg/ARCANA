@@ -173,6 +173,24 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         RemainingQuantity = g.Sum(x => x.RemainingQuantity)
                     });
 
+                var groupReturn = _context.ReturnOrderItems
+                    .Where(r => r.ReturnOrder.CreatedbyId == request.AccessBy)
+                    .GroupBy(i => i.Item.ItemCode)
+                    .Select(g => new
+                    {
+                        ItemCode = g.Key,
+                        Quantity = g.Sum(x => x.Quantity)
+                    });
+
+                var groupReplace = _context.ReplaceOrderItems
+                    .Where(r => r.ReturnOrder.CreatedbyId == request.AccessBy)
+                    .GroupBy(i => i.Item.ItemCode)
+                    .Select(g => new
+                    {
+                        ItemCode = g.Key,
+                        Quantity = g.Sum(x => x.Quantity)
+                    });
+
 
                 var consolidateGroups = _context.Items
                         .Where(i => string.IsNullOrEmpty(request.Search) || 
@@ -202,13 +220,18 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             .Where(f => f.ItemCode == i.ItemCode)
                             .Select(f => f.Quantity)
                             .FirstOrDefault(),
-                        Issue = 0,
-                        Replace = 0,
                         ReturnByCdo = moReturnByCdo
                             .Where(to => to.ItemCode == i.ItemCode)
                             .Select(to => to.Quantity)
                             .FirstOrDefault(),
-                        ReturnByClient = 0,
+                        ReturnByClient = groupReturn
+                            .Where(ti => ti.ItemCode == i.ItemCode)
+                            .Select(ti => ti.Quantity)
+                            .FirstOrDefault(),
+                        Replace = groupReplace
+                            .Where(ti => ti.ItemCode == i.ItemCode)
+                            .Select(ti => ti.Quantity)
+                            .FirstOrDefault(),
                         Soh = Math.Max(
                             ((groupReceiving
                             .Where(r => r.ItemCode == i.ItemCode)
@@ -217,7 +240,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             (groupTransferIn
                             .Where(ti => ti.ItemCode == i.ItemCode)
                             .Select(ti => ti.RemainingQuantity)
-                            .FirstOrDefault() ?? 0)),
+                            .FirstOrDefault() ?? 0) +
+                            (groupReturn
+                            .Where(ti => ti.ItemCode == i.ItemCode)
+                            .Select(ti => ti.Quantity)
+                            .FirstOrDefault())),
                         0)
                     })
                     .OrderBy(x => x.ItemCode);
