@@ -59,6 +59,7 @@ public class GetUsersAsync : ControllerBase
         public string Search { get; set; }
         public int UserRoleId { get; set; }
         public bool? Status { get; set; }
+        public bool? IsDepot { get; set; }
     }
 
     public class GetUserAsyncQueryResult
@@ -116,6 +117,22 @@ public class GetUsersAsync : ControllerBase
             {
                 users = users.Where(role => role.UserRolesId == request.UserRoleId);
             }
+
+            if (request.UserRoleId != 0 && request.IsDepot == true)
+            {
+                var depotUsers = _context.Users
+                    .Include(co => co.CdoCluster)
+                        .ThenInclude(x => x.Cluster)
+                    .Include(a => a.AddedByUser)
+                    .Include(u => u.UserRoles)
+                    .Include(d => d.Department)
+                    .Include(c => c.Company)
+                    .Include(l => l.Location)
+                    .Where(u => u.UserRolesId == 12);
+
+                users = users.Union(depotUsers);
+            }
+
 
             var result = users.Select(x => x.ToGetUserAsyncQueryResult());
 

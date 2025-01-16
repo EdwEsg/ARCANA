@@ -17,4 +17,4 @@ namespace RDF.Arcana.API.Domain.Inventory
         public virtual MoveOrder MoveOrder { get; set; }
         public virtual TransferOrder TransferOrder { get; set; }
     }
-}
+} 
