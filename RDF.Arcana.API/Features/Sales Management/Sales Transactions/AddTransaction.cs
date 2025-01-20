@@ -177,7 +177,6 @@ public class AddTransaction : ControllerBase
                 Amount = items.UnitPrice * items.Quantity,
             });
 
-            // Calculate the subtotal for the items purchased
             var subTotal = items.Sum(x => x.Amount);
 
             if (existingClient.Term.Terms.TermType == Common.Terms.CreditLimit)
@@ -192,7 +191,6 @@ public class AddTransaction : ControllerBase
 
             }
 
-            //Add new transaction
             var transaction = new Transactions
             {
                 ClientId = request.ClientId,
@@ -203,7 +201,6 @@ public class AddTransaction : ControllerBase
                 InvoiceAttachDateReceived = DateTime.Now
             };
 
-            //Add and save to database
             await _context.Transactions.AddAsync(transaction, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
@@ -215,8 +212,75 @@ public class AddTransaction : ControllerBase
                 {
                     return ItemErrors.NotFound(item.ItemId);
                 }
+                var neededQty = item.Quantity;
 
-                //Add items
+                var transferStocks = await _context.TransferOrderItems
+                    .Where(t =>
+                        t.RemainingQuantity > 0 &&
+                        t.TransferOrder.CreatedById == request.AddedBy &&
+                        t.ItemCode == exisitngitems.ItemCode
+                    )
+                    .OrderBy(t => t.Id) 
+                    .ToListAsync(cancellationToken);
+
+                foreach (var tr in transferStocks)
+                {
+                    if (neededQty <= 0) break;
+
+                    var canTake = Math.Min(neededQty, tr.RemainingQuantity ?? 0);
+                    tr.RemainingQuantity -= canTake;
+                    neededQty -= canTake;
+                }
+
+                if (neededQty > 0)
+                {
+                    var returnStocks = await _context.ReturnOrderItems
+                        .Where(r =>
+                            r.RemainingQuantity > 0 &&
+                            r.ReturnOrder.CreatedbyId == request.AddedBy &&
+                            r.Item.ItemCode == exisitngitems.ItemCode
+                        )
+                        .OrderBy(r => r.Id)
+                        .ToListAsync(cancellationToken);
+
+                    foreach (var ro in returnStocks)
+                    {
+                        if (neededQty <= 0) break;
+
+                        var canTake = Math.Min(neededQty, ro.RemainingQuantity);
+                        ro.RemainingQuantity -= canTake;
+                        neededQty -= canTake;
+                    }
+                }
+
+                if (neededQty > 0)
+                {
+                    var moveStocks = await _context.MoveOrderItems
+                        .Where(mo =>
+                            mo.RemainingQuantity > 0 &&
+                            mo.MoveOrder.CreatedById == request.AddedBy &&
+                            mo.ItemCode == exisitngitems.ItemCode
+                        )
+                        .OrderBy(mo => mo.Id)
+                        .ToListAsync(cancellationToken);
+
+                    foreach (var ms in moveStocks)
+                    {
+                        if (neededQty <= 0) break;
+
+                        var canTake = Math.Min(neededQty, ms.RemainingQuantity ?? 0);
+                        ms.RemainingQuantity -= canTake;
+                        neededQty -= canTake;
+                    }
+                }
+
+                if (neededQty > 0)
+                {
+                    return TransactionErrors.CreditLimitExceeded();
+                }
+
+                await _context.SaveChangesAsync(cancellationToken);
+
                 var transactionItems = new TransactionItems
                 {
                     TransactionId = transaction.Id,
@@ -228,7 +292,6 @@ public class AddTransaction : ControllerBase
                     PriceModeId = existingClient.PriceModeId
                 };
 
-                //Get the item details inserted by Item Id
                 var itemDetails = await _context.Items
                     .Include(x => x.Uom)
                     .Where(i => i.Id == item.ItemId)
@@ -246,55 +309,36 @@ public class AddTransaction : ControllerBase
                     Amount = transactionItems.Amount
                 });
 
-                //Add and save to database
                 await _context.TransactionItems.AddAsync(transactionItems, cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
-
-
             }
 
-            //Calculate sales
-            
-
-            // Get the total discount percentage
             var totalDiscount = request.Discount + request.SpecialDiscount;
-
-            // Calculate the discount amount based on the total discount percentage
             var discountAmount = subTotal * (totalDiscount / 100);
-
             var specialDiscountAmount = subTotal * (request.SpecialDiscount / 100);
-
             var userDiscount = subTotal * (request.Discount / 100);
-
             var totalSales = subTotal - discountAmount;
 
-            // Calculate the vatable sales (total sales before VAT)
             var vatableSales = (subTotal - discountAmount) / VATCalculations.VAT;
             vatableSales = Math.Round(vatableSales, 2);
 
-            // Calculate the VAT amount based on the vatable sales and the VAT rate
             var vatAmount = totalSales - vatableSales;
             vatAmount = Math.Round(vatAmount, 2);
 
             var amountDue = totalSales - vatAmount;
-
-            // Calculate the total amount due (total sales including VAT)
             var totalAmountDue = vatableSales + vatAmount;
             totalAmountDue = Math.Round(totalAmountDue, 2);
 
-            // AddVat is the same as the VAT amount
             var addVat = vatAmount;
 
+            var specialDiscount = await _context.SpecialDiscounts
+                .FirstOrDefaultAsync(sp => sp.Id == request.SpecialDiscountId && sp.IsActive, cancellationToken);
 
-            var specialDiscount = await _context.SpecialDiscounts.FirstOrDefaultAsync(sp => sp.Id == request.SpecialDiscountId && sp.IsActive, cancellationToken);
             if (specialDiscount != null && specialDiscount.IsOneTime == true)
             {
-               
-                    specialDiscount.IsActive = false;
-                
+                specialDiscount.IsActive = false;
             }
 
-            // Create and save the transaction sales record
             var newTransactionSales = new TransactionSales
             {
                 TransactionId = transaction.Id,
@@ -317,7 +361,6 @@ public class AddTransaction : ControllerBase
 
             await _context.TransactionSales.AddAsync(newTransactionSales, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
-
 
             var result = new AddNewTransactionResult
             {
