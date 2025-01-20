@@ -75,7 +75,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public decimal? Sampling { get; set; }
             public decimal? Issue { get; set; }
             public decimal? Replace { get; set; }
-            public decimal? ReturnByCdo { get; set; }
             public decimal? ReturnByClient { get; set; }
             public decimal? Soh { get; set; }
         }
@@ -90,169 +89,199 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
             public async Task<PagedList<GetInventoryMrpResult>> Handle(GetInventoryMrpQuery request, CancellationToken cancellationToken)
             {
+                if (request.AccessBy == 25) // Depot-specific logic
+                {
+                    var moReturnByCdo = _context.MoveOrderItems
+                        .Where(mo => mo.Reason != null)
+                        .GroupBy(x => new { x.ItemCode })
+                        .Select(x => new
+                        {
+                            ItemCode = x.Key.ItemCode,
+                            Quantity = x.Sum(x => x.Quantity)
+                        });
 
-                //Add --moveOrders
-                var groupReceiving = _context.MoveOrderItems
-                    .Where(mo => mo.Reason == null && mo.CreatedBy.Id == request.AccessBy)
-                    .GroupBy(x => new
-                    {
-                        x.ItemCode
-                    })
-                    .Select(x => new
-                    {
-                        ItemCode = x.Key.ItemCode,
-                        Quantity = x.Sum(x => x.Quantity),
-                        RemainingQuantity = x.Sum(x => x.RemainingQuantity)
-                    });
+                    var groupTransferIn = _context.TransferOrders
+                        .Where(to => to.Status == Status.Received && to.TransferToId == request.AccessBy)
+                        .SelectMany(to => to.TransferOrderItems)
+                        .GroupBy(toi => toi.ItemCode)
+                        .Select(g => new
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(x => x.Quantity)
+                        });
 
-                var groupFreebie = _context.FreebieOrderItems
-                    .Where(f => f.FreebieOrder.CreatedById == request.AccessBy &&
-                        f.FreebieOrder.TransactionType == Status.Freebie)
-                    .GroupBy(f => new
-                    {
-                        f.Item.ItemCode
-                    })
-                    .Select(g => new
-                    {
-                        ItemCode = g.Key.ItemCode,
-                        Quantity = g.Sum(g => g.Quantity),
-                    });
+                    var consolidateDepotGroups = _context.Items
+                        .Where(i => string.IsNullOrEmpty(request.Search) ||
+                                    i.ItemCode.Contains(request.Search) ||
+                                    i.ItemDescription.Contains(request.Search))
+                        .Select(i => new GetInventoryMrpResult
+                        {
+                            ItemCode = i.ItemCode,
+                            ItemDescription = i.ItemDescription,
+                            TransferIn = groupTransferIn
+                                .Where(ti => ti.ItemCode == i.ItemCode)
+                                .Select(ti => ti.Quantity)
+                                .FirstOrDefault() ?? 0,
+                            Soh = (moReturnByCdo
+                                .Where(to => to.ItemCode == i.ItemCode)
+                                .Select(to => to.Quantity)
+                                .FirstOrDefault()) +
+                                  (groupTransferIn
+                                .Where(ti => ti.ItemCode == i.ItemCode)
+                                .Select(ti => ti.Quantity)
+                                .FirstOrDefault() ?? 0)
+                        })
+                        .OrderBy(x => x.ItemCode);
 
-                var groupSampling = _context.FreebieOrderItems
-                    .Where(f => f.FreebieOrder.CreatedById == request.AccessBy &&
-                        f.FreebieOrder.TransactionType == Status.Sampling)
-                    .GroupBy(f => new
-                    {
-                        f.Item.ItemCode
-                    })
-                    .Select(g => new
-                    {
-                        ItemCode = g.Key.ItemCode,
-                        Quantity = g.Sum(g => g.Quantity),
-                    });
-
-
-                var moReturnByCdo = _context.MoveOrderItems
-                    .Where(mo => mo.Reason != null && mo.CreatedBy.Id == request.AccessBy)
-                    .GroupBy(x => new
-                    {
-                        x.ItemCode
-                    })
-                    .Select(x => new
-                    {
-                        ItemCode = x.Key.ItemCode,
-                        Quantity = x.Sum(x => x.Quantity),
-                        
-                    });
+                    return await PagedList<GetInventoryMrpResult>.CreateAsync(consolidateDepotGroups, request.PageNumber, request.PageSize);
+                }
 
 
+                else
+                {
 
-                var groupTransferOut = _context.TransferOrders
-                    .Where(to => (to.Status == Status.Received &&
-                        to.CreatedById == request.AccessBy) ||
-                        to.Status == Status.ForReceiving &&
-                        to.CreatedById == request.AccessBy)
-                    .SelectMany(to => to.TransferOrderItems)
-                    .GroupBy(toi => toi.ItemCode)
-                    .Select(g => new
-                    {
-                        ItemCode = g.Key,
-                        Quantity = g.Sum(x => x.Quantity)
-                    });
+                    var groupReceiving = _context.MoveOrderItems
+                        .Where(mo => mo.CreatedBy.Id == request.AccessBy)
+                        .GroupBy(x => new { x.ItemCode })
+                        .Select(x => new
+                        {
+                            ItemCode = x.Key.ItemCode,
+                            Quantity = x.Sum(x => x.Quantity),
+                            RemainingQuantity = x.Sum(x => x.RemainingQuantity),
+                            ActualQuantity = x.Sum(x => x.ActualQuantity)
+                        });
 
+                    var groupFreebie = _context.FreebieOrderItems
+                        .Where(f => f.FreebieOrder.CreatedById == request.AccessBy &&
+                                    f.FreebieOrder.TransactionType == Status.Freebie)
+                        .GroupBy(f => f.Item.ItemCode)
+                        .Select(g => new
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(g => g.Quantity),
+                        });
+
+                    var groupSampling = _context.FreebieOrderItems
+                        .Where(f => f.FreebieOrder.CreatedById == request.AccessBy &&
+                                    f.FreebieOrder.TransactionType == Status.Sampling)
+                        .GroupBy(f => f.Item.ItemCode)
+                        .Select(g => new
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(g => g.Quantity),
+                        });
+
+                    var groupTransferOut = _context.TransferOrders
+                        .Where(to => (to.Status == Status.Received && to.CreatedById == request.AccessBy) ||
+                                     (to.Status == Status.ForReceiving && to.CreatedById == request.AccessBy))
+                        .SelectMany(to => to.TransferOrderItems)
+                        .GroupBy(toi => toi.ItemCode)
+                        .Select(g => new
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(x => x.Quantity)
+                        });
+
+                    var groupTransferIn = _context.TransferOrders
+                        .Where(to => to.Status == Status.Received &&
+                                     to.TransferToId == request.AccessBy)
+                        .SelectMany(to => to.TransferOrderItems)
+                        .GroupBy(toi => toi.ItemCode)
+                        .Select(g => new
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(x => x.Quantity),
+                            RemainingQuantity = g.Sum(x => x.RemainingQuantity)
+                        });
+
+                    var groupReturn = _context.ReturnOrderItems
+                        .Where(r => r.ReturnOrder.CreatedbyId == request.AccessBy)
+                        .GroupBy(i => i.Item.ItemCode)
+                        .Select(g => new
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(x => x.Quantity)
+                        });
+
+                    var groupReplace = _context.ReplaceOrderItems
+                        .Where(r => r.ReturnOrder.CreatedbyId == request.AccessBy)
+                        .GroupBy(i => i.Item.ItemCode)
+                        .Select(g => new
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(x => x.Quantity)
+                        });
+
+
+                    var consolidateGroups = _context.Items
+                        .Where(i => string.IsNullOrEmpty(request.Search) ||
+                                    i.ItemCode.Contains(request.Search) ||
+                                    i.ItemDescription.Contains(request.Search))
+                        .Select(i => new GetInventoryMrpResult
+                        {
+                            ItemCode = i.ItemCode,
+                            ItemDescription = i.ItemDescription,
+
+                            Receiving = groupReceiving
+                                .Where(r => r.ItemCode == i.ItemCode)
+                                .Select(r => r.ActualQuantity)
+                                .FirstOrDefault() ?? 0,
+
+                            TransferIn = groupTransferIn
+                                .Where(ti => ti.ItemCode == i.ItemCode)
+                                .Select(ti => ti.Quantity)
+                                .FirstOrDefault() ?? 0,
+
+                            TransferOut = groupTransferOut
+                                .Where(to => to.ItemCode == i.ItemCode)
+                                .Select(to => to.Quantity)
+                                .FirstOrDefault() ?? 0,
+
+                            Freebie = groupFreebie
+                                .Where(f => f.ItemCode == i.ItemCode)
+                                .Select(f => f.Quantity)
+                                .FirstOrDefault(),
+
+                            Sampling = groupSampling
+                                .Where(f => f.ItemCode == i.ItemCode)
+                                .Select(f => f.Quantity)
+                                .FirstOrDefault(),
+
+                            ReturnByClient = groupReturn
+                                .Where(ti => ti.ItemCode == i.ItemCode)
+                                .Select(ti => ti.Quantity)
+                                .FirstOrDefault(),
+
+                            Replace = groupReplace
+                                .Where(ti => ti.ItemCode == i.ItemCode)
+                                .Select(ti => ti.Quantity)
+                                .FirstOrDefault(),
+
+                            Soh = Math.Max(
+                                ((groupReceiving
+                                    .Where(r => r.ItemCode == i.ItemCode)
+                                    .Select(r => r.RemainingQuantity)
+                                    .FirstOrDefault() ?? 0)
+                                 +
+                                 (groupTransferIn
+                                    .Where(ti => ti.ItemCode == i.ItemCode)
+                                    .Select(ti => ti.RemainingQuantity)
+                                    .FirstOrDefault() ?? 0)
+                                 +
+                                 (groupReturn
+                                    .Where(ti => ti.ItemCode == i.ItemCode)
+                                    .Select(ti => ti.Quantity)
+                                    .FirstOrDefault())
+                                ), 0)
+                        })
+                        .OrderBy(x => x.ItemCode);
+
+                    return await PagedList<GetInventoryMrpResult>.CreateAsync(
+                        consolidateGroups,
+                        request.PageNumber,
+                        request.PageSize);
+                }
                 
-                var groupTransferIn = _context.TransferOrders
-                    .Where(to => to.Status == Status.Received &&
-                        to.TransferToId == request.AccessBy)
-                    .SelectMany(to => to.TransferOrderItems)
-                    .GroupBy(toi => toi.ItemCode)
-                    .Select(g => new
-                    {
-                        ItemCode = g.Key,
-                        Quantity = g.Sum(x => x.Quantity),
-                        RemainingQuantity = g.Sum(x => x.RemainingQuantity)
-                    });
-
-                var groupReturn = _context.ReturnOrderItems
-                    .Where(r => r.ReturnOrder.CreatedbyId == request.AccessBy)
-                    .GroupBy(i => i.Item.ItemCode)
-                    .Select(g => new
-                    {
-                        ItemCode = g.Key,
-                        Quantity = g.Sum(x => x.Quantity)
-                    });
-
-                var groupReplace = _context.ReplaceOrderItems
-                    .Where(r => r.ReturnOrder.CreatedbyId == request.AccessBy)
-                    .GroupBy(i => i.Item.ItemCode)
-                    .Select(g => new
-                    {
-                        ItemCode = g.Key,
-                        Quantity = g.Sum(x => x.Quantity)
-                    });
-
-
-                var consolidateGroups = _context.Items
-                        .Where(i => string.IsNullOrEmpty(request.Search) || 
-                            i.ItemCode.Contains(request.Search) ||  
-                            i.ItemDescription.Contains(request.Search))
-                    .Select(i => new GetInventoryMrpResult
-                    {
-                        ItemCode = i.ItemCode,
-                        ItemDescription = i.ItemDescription,
-                        Receiving = groupReceiving
-                            .Where(r => r.ItemCode == i.ItemCode)
-                            .Select(r => r.Quantity)
-                            .FirstOrDefault(),
-                        TransferIn = groupTransferIn
-                            .Where(ti => ti.ItemCode == i.ItemCode)
-                            .Select(ti => ti.Quantity)
-                            .FirstOrDefault() ?? 0,
-                        TransferOut = groupTransferOut
-                            .Where(to => to.ItemCode == i.ItemCode)
-                            .Select(to => to.Quantity)
-                            .FirstOrDefault() ?? 0,
-                        Freebie = groupFreebie
-                            .Where(f => f.ItemCode == i.ItemCode)
-                            .Select(f => f.Quantity)
-                            .FirstOrDefault(),
-                        Sampling = groupSampling
-                            .Where(f => f.ItemCode == i.ItemCode)
-                            .Select(f => f.Quantity)
-                            .FirstOrDefault(),
-                        ReturnByCdo = moReturnByCdo
-                            .Where(to => to.ItemCode == i.ItemCode)
-                            .Select(to => to.Quantity)
-                            .FirstOrDefault(),
-                        ReturnByClient = groupReturn
-                            .Where(ti => ti.ItemCode == i.ItemCode)
-                            .Select(ti => ti.Quantity)
-                            .FirstOrDefault(),
-                        Replace = groupReplace
-                            .Where(ti => ti.ItemCode == i.ItemCode)
-                            .Select(ti => ti.Quantity)
-                            .FirstOrDefault(),
-                        Soh = Math.Max(
-                            ((groupReceiving
-                            .Where(r => r.ItemCode == i.ItemCode)
-                            .Select(r => r.RemainingQuantity)
-                            .FirstOrDefault() ?? 0) +
-                            (groupTransferIn
-                            .Where(ti => ti.ItemCode == i.ItemCode)
-                            .Select(ti => ti.RemainingQuantity)
-                            .FirstOrDefault() ?? 0) +
-                            (groupReturn
-                            .Where(ti => ti.ItemCode == i.ItemCode)
-                            .Select(ti => ti.Quantity)
-                            .FirstOrDefault())),
-                        0)
-                    })
-                    .OrderBy(x => x.ItemCode);
-
-
-
-
-                return await PagedList<GetInventoryMrpResult>.CreateAsync(consolidateGroups, request.PageNumber, request.PageSize);
 
             }
         }

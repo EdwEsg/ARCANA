@@ -236,7 +236,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     ItemId = r.ItemId,
                     Quantity = r.Quantity,
                     Price = r.Price,
-                    Bbd = r.Bbd
+                    Bbd = r.Bbd,
+                    RemainingQuantity = r.Quantity
                 }).ToList();
 
                 _context.ReturnOrderItems.AddRange(returnOrderItems);

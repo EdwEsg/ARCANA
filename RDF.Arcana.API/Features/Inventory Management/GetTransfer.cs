@@ -91,6 +91,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 public decimal? Quantity { get; set; }
                 public string ProductionDate { get; set; }
                 public int? MoveOrderId { get; set; }
+                public string Reason { get; set; }
             }
 
         }
@@ -182,7 +183,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             Uom = x.Uom,
                             Quantity = x.Quantity,
                             ProductionDate = x.ProductionDate,
-                            MoveOrderId = x.MoveId
+                            MoveOrderId = x.MoveId,
+                            Reason = x.Reason,
                         })
                     }).OrderByDescending(x => x.TransactionDate);
 

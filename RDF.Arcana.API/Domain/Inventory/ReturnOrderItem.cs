@@ -10,6 +10,7 @@ namespace RDF.Arcana.API.Domain.Inventory
         public decimal Price { get; set; }
         public string Bbd { get; set; }
         public bool IsActive { get; set; } = true;
+        public decimal RemainingQuantity { get; set; }
 
         public virtual Items Item { get; set; }
         public virtual ReturnedOrder ReturnOrder { get; set; }

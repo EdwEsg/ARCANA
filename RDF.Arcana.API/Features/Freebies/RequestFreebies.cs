@@ -110,7 +110,6 @@ public class RequestFreebies : ControllerBase
         public async Task<Result> Handle(RequestFreebiesCommand request,
             CancellationToken cancellationToken)
         {
-            //Validate if the client is exist
             var client = await _context.Clients
                              .Include(storeType => storeType.StoreType)
                              .Include(x => x.OwnersAddress)
@@ -120,25 +119,21 @@ public class RequestFreebies : ControllerBase
             var clientFreebies = new List<RequestFreebiesResult.FreebieItemForDirectClient>();
 
             var freebieResult = new List<RequestFreebiesResult.FreebieCollection>();
-            // Check if client has previously requested for freebies
             var previousRequestCount =
                 await _context.FreebieRequests.CountAsync(f => f.ClientId == request.ClientId && f.Status != Status.Rejected,
                     cancellationToken);
 
-            // Check if the client has recent request. Succeeding request will subject to approval
             var withRecentRequest = await _context.FreebieRequests.FirstOrDefaultAsync(
                 x => x.ClientId == request.ClientId &&
                      (x.Status == Status.ForReleasing || x.Status == Status.ApproverApproval),
                 cancellationToken);
 
-            /*var freebiesResult = IList<RequestFreebiesResult.FreebieCollection>(); */
 
             if (withRecentRequest != null)
             {
                 return FreebieErrors.WithRecentRequest(withRecentRequest.Status);
             }
 
-            // This will be true if client is requesting freebies for the first time, and will be false for any subsequent requests
             var isFirstRequest = previousRequestCount == 0;
 
             var status = isFirstRequest ? Status.ForReleasing : Status.UnderReview;
@@ -153,7 +148,6 @@ public class RequestFreebies : ControllerBase
                return FreebieErrors.CannotBeRepeated();
             }
 
-            //Validate if the Item is already requested | 1 item per client
             foreach (var item in request.Freebies)
             {
                 var existingRequest = await _context.FreebieItems
@@ -169,11 +163,9 @@ public class RequestFreebies : ControllerBase
                 }
             }
 
-            // Create new freebie request
             var freebieRequest = new FreebieRequest
             {
                 ClientId = request.ClientId,
-                /*ApprovalsId = newApproval.Id,*/
                 Status = status,
                 IsDelivered = false,
                 RequestedBy = request.AddedBy
@@ -181,7 +173,6 @@ public class RequestFreebies : ControllerBase
             _context.FreebieRequests.Add(freebieRequest);
 
             
-            //Get the approver for Freebies module
 
             if (isFirstRequest == false)
             {
@@ -220,7 +211,6 @@ public class RequestFreebies : ControllerBase
             }
 
             
-            // Add the items requested
             foreach (var freebieItem in request.Freebies.Select(freebie => new FreebieItems
                      {
                          FreebieRequestId = freebieRequest.Id,
@@ -230,15 +220,12 @@ public class RequestFreebies : ControllerBase
             {
                 await _context.FreebieItems.AddAsync(freebieItem, cancellationToken);
 
-                //Get the items details that has been requested
-                //Get the item details inserted by Item Id
                 var itemDetails = await _context.Items
                     .Include(x => x.Uom)
                     .Where(i => i.Id == freebieItem.ItemId)
                     .Select(i => new { i.ItemCode, i.ItemDescription, i.Uom.UomCode })
                     .FirstOrDefaultAsync(cancellationToken);
                         
-                //Add the item details to be return
                 clientFreebies.Add(new RequestFreebiesResult.FreebieItemForDirectClient
                 {
                     Id = freebieItem.Id,
@@ -250,7 +237,6 @@ public class RequestFreebies : ControllerBase
                 });
             }
             
-            //Result for the added freebies
 
             freebieResult.Add( new RequestFreebiesResult.FreebieCollection
             {
@@ -269,7 +255,6 @@ public class RequestFreebies : ControllerBase
             await _context.Notifications.AddAsync(notification, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
-            //Return the result on the client info including the request.
             var result =  new RequestFreebiesResult
             {
                 Id = client.Id,

@@ -46,6 +46,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             {
                 public string ItemCode { get; set; }
                 public decimal? Quantity { get; set; }
+                public string Reason { get; set; }
 
             }
         }
@@ -63,9 +64,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 var isUserCdo = await _context.Users
                     .Where(u => u.Id == request.AccessBy)
                     .Select(u => u.UserRolesId)
-                    .FirstOrDefaultAsync(cancellationToken) == 6; //CDO 
+                    .FirstOrDefaultAsync(cancellationToken);
 
-                if (!isUserCdo)
+                bool isCdoOrDepotUser = isUserCdo == 6 || isUserCdo == 25; //CDO & Depot
+
+                if (!isCdoOrDepotUser)
                 {
                     return InventoryErrors.NotUserCdo();
                 }
@@ -76,12 +79,14 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     return InventoryErrors.Self();
                 }
 
-                var isCdo = await _context.Users
-                    .Where(u => u.Id == request.To) 
+                var isReceiverCdo = await _context.Users
+                    .Where(u => u.Id == request.AccessBy)
                     .Select(u => u.UserRolesId)
-                    .FirstOrDefaultAsync(cancellationToken) == 6; //CDO 
+                    .FirstOrDefaultAsync(cancellationToken);
 
-                if (!isCdo)
+                bool isCdoOrDepotReceiver = isUserCdo == 6 || isUserCdo == 25; //CDO & Depot 
+
+                if (!isCdoOrDepotReceiver)
                 {
                     return InventoryErrors.NotCdo();
                 }
@@ -267,7 +272,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         TransferOrderId = transferOrder.Id,
                         CreatedById = request.AccessBy,
                         RemainingQuantity = i.Quantity,
-                        ItemId = matchedItem?.Id ?? 0
+                        ItemId = matchedItem?.Id ?? 0,
+                        Reason = i.Reason
                     };
                 }).ToList();
 
