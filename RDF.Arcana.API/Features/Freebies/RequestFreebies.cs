@@ -55,6 +55,7 @@ public class RequestFreebies : ControllerBase
         public class Freebie
         {
             public int ItemId { get; set; }
+            public int Quantity { get; set; }
         }
     }
 
@@ -210,35 +211,136 @@ public class RequestFreebies : ControllerBase
                 freebieRequest.RequestId = newRequest.Id;
             }
 
-            
-            foreach (var freebieItem in request.Freebies.Select(freebie => new FreebieItems
-                     {
-                         FreebieRequestId = freebieRequest.Id,
-                         ItemId = freebie.ItemId,
-                         Quantity = 1
-                     }))
+            //Inventory
+            foreach (var freebie in request.Freebies)
             {
+                int quantityToSubtract = freebie.Quantity;
+
+                var dbItem = await _context.Items
+                    .Include(u => u.Uom)
+                    .Where(i => i.Id == freebie.ItemId)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                var totalAvailable = 0;
+
+                totalAvailable += (int)await _context.TransferOrderItems
+                    .Where(t =>
+                        t.RemainingQuantity > 0 &&
+                        t.TransferOrder.CreatedById == request.AddedBy &&
+                        t.ItemCode == dbItem.ItemCode
+                    )
+                    .SumAsync(t => t.RemainingQuantity ?? 0, cancellationToken);
+
+                totalAvailable += (int)await _context.ReturnOrderItems
+                    .Where(r =>
+                        r.RemainingQuantity > 0 &&
+                        r.ReturnOrder.CreatedbyId == request.AddedBy &&
+                        r.Item.ItemCode == dbItem.ItemCode
+                    )
+                    .SumAsync(r => r.RemainingQuantity, cancellationToken);
+
+                totalAvailable += (int)await _context.MoveOrderItems
+                    .Where(mo =>
+                        mo.RemainingQuantity > 0 &&
+                        mo.MoveOrder.CreatedById == request.AddedBy &&
+                        mo.ItemCode == dbItem.ItemCode
+                    )
+                    .SumAsync(mo => mo.RemainingQuantity ?? 0, cancellationToken);
+
+                if (totalAvailable < quantityToSubtract)
+                {
+                    return FreebieErrors.AlreadyRequested(
+                        $"Not enough FIFO stock for {dbItem.ItemDescription} (needed {quantityToSubtract}, only {totalAvailable} available)."
+                    );
+                }
+
+                var transferStocks = await _context.TransferOrderItems
+                    .Where(t =>
+                        t.RemainingQuantity > 0 &&
+                        t.TransferOrder.CreatedById == request.AddedBy &&
+                        t.ItemCode == dbItem.ItemCode
+                    )
+                    .OrderBy(t => t.Id)
+                    .ToListAsync(cancellationToken);
+
+                foreach (var tr in transferStocks)
+                {
+                    if (quantityToSubtract <= 0) break;
+
+                    var canTake = (int)Math.Min((decimal)quantityToSubtract, tr.RemainingQuantity ?? 0);
+                    tr.RemainingQuantity -= canTake;
+                    quantityToSubtract -= canTake;
+                }
+
+                if (quantityToSubtract > 0)
+                {
+                    var returnStocks = await _context.ReturnOrderItems
+                        .Where(r =>
+                            r.RemainingQuantity > 0 &&
+                            r.ReturnOrder.CreatedbyId == request.AddedBy &&
+                            r.Item.ItemCode == dbItem.ItemCode
+                        )
+                        .OrderBy(r => r.Id)
+                        .ToListAsync(cancellationToken);
+
+                    foreach (var ro in returnStocks)
+                    {
+                        if (quantityToSubtract <= 0) break;
+
+                        var canTake = (int)Math.Min((decimal)quantityToSubtract, ro.RemainingQuantity);
+                        ro.RemainingQuantity -= canTake;
+                        quantityToSubtract -= canTake;
+                    }
+                }
+
+                if (quantityToSubtract > 0)
+                {
+                    var moveStocks = await _context.MoveOrderItems
+                        .Where(mo =>
+                            mo.RemainingQuantity > 0 &&
+                            mo.MoveOrder.CreatedById == request.AddedBy &&
+                            mo.ItemCode == dbItem.ItemCode
+                        )
+                        .OrderBy(mo => mo.Id)
+                        .ToListAsync(cancellationToken);
+
+                    foreach (var ms in moveStocks)
+                    {
+                        if (quantityToSubtract <= 0) break;
+
+                        var canTake = (int)Math.Min((decimal)quantityToSubtract, ms.RemainingQuantity ?? 0);
+                        ms.RemainingQuantity -= canTake;
+                        quantityToSubtract -= canTake;
+                    }
+                }
+
+                if (quantityToSubtract > 0)
+                {
+                    return FreebieErrors.AlreadyRequested(
+                        $"Not enough FIFO stock for {dbItem.ItemDescription}"
+                    );
+                }
+
+                var freebieItem = new FreebieItems
+                {
+                    FreebieRequestId = freebieRequest.Id,
+                    ItemId = freebie.ItemId,
+                    Quantity = freebie.Quantity
+                };
                 await _context.FreebieItems.AddAsync(freebieItem, cancellationToken);
 
-                var itemDetails = await _context.Items
-                    .Include(x => x.Uom)
-                    .Where(i => i.Id == freebieItem.ItemId)
-                    .Select(i => new { i.ItemCode, i.ItemDescription, i.Uom.UomCode })
-                    .FirstOrDefaultAsync(cancellationToken);
-                        
                 clientFreebies.Add(new RequestFreebiesResult.FreebieItemForDirectClient
                 {
                     Id = freebieItem.Id,
                     ItemId = freebieItem.ItemId,
-                    ItemCode = itemDetails.ItemCode,
-                    ItemDescription = itemDetails.ItemDescription,
-                    UOM = itemDetails.UomCode,
+                    ItemCode = dbItem.ItemCode,
+                    ItemDescription = dbItem.ItemDescription,
+                    UOM = dbItem.Uom.UomCode,
                     Quantity = freebieItem.Quantity
                 });
             }
-            
 
-            freebieResult.Add( new RequestFreebiesResult.FreebieCollection
+            freebieResult.Add(new RequestFreebiesResult.FreebieCollection
             {
                 FreebieRequestId = freebieRequest.Id,
                 Status = freebieRequest.Status,
@@ -253,9 +355,10 @@ public class RequestFreebies : ControllerBase
             };
 
             await _context.Notifications.AddAsync(notification, cancellationToken);
+
             await _context.SaveChangesAsync(cancellationToken);
 
-            var result =  new RequestFreebiesResult
+            var result = new RequestFreebiesResult
             {
                 Id = client.Id,
                 OwnersName = client.Fullname,
@@ -277,5 +380,13 @@ public class RequestFreebies : ControllerBase
 
             return Result.Success(result);
         }
+
+        public class GetAllItemsInInventoryResult
+        {
+            public string ItemCode { get; set; }
+            public string ItemDescription { get; set; }
+            public decimal? AvailQuantity { get; set; }
+        }
     }
-}                                                                        
+}
+                                                                        
