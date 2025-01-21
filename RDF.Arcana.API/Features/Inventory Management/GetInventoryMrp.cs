@@ -77,6 +77,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public decimal? Replace { get; set; }
             public decimal? ReturnByClient { get; set; }
             public decimal? Soh { get; set; }
+            public decimal? Sales { get; set; }
         }
 
         public class FreebieGroup
@@ -157,7 +158,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             ActualQuantity = x.Sum(x => x.ActualQuantity)
                         });
 
-                    //-----------------------------------------------------------------
+                    //Freebies-----------------------------------------------------------------
 
                     var groupFreebieInventory = _context.FreebieOrderItems
                         .Where(f => f.FreebieOrder.CreatedById == request.AccessBy &&
@@ -170,7 +171,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         });
 
                     var groupFreebieRegistration = _context.FreebieItems
-                        .Where(f => f.FreebieRequest.RequestedBy == request.AccessBy)
+                        .Where(f => f.FreebieRequest.RequestedBy == request.AccessBy &&
+                            f.FreebieRequest.Status == Status.Released)
                         .GroupBy(f => f.Items.ItemCode)
                         .Select(g => new FreebieGroup
                         {
@@ -188,6 +190,15 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         });
 
                     //-------------------------------------------------------------------
+
+                    var groupSales = _context.TransactionItems
+                        .Where(t => t.CreatedAt > DateTime.Parse("2025-01-22"))
+                        .GroupBy(t => t.Item.ItemCode)
+                        .Select(g => new
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(t => t.Quantity)
+                        });
 
                     var groupSampling = _context.FreebieOrderItems
                         .Where(f => f.FreebieOrder.CreatedById == request.AccessBy &&
@@ -249,6 +260,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         {
                             ItemCode = i.ItemCode,
                             ItemDescription = i.ItemDescription,
+
+                            Sales = groupSales
+                                .Where(s => s.ItemCode == i.ItemCode)
+                                .Select(s => s.Quantity)
+                                .FirstOrDefault(),
 
                             Receiving = groupReceiving
                                 .Where(r => r.ItemCode == i.ItemCode)
