@@ -248,8 +248,12 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
                         InvoiceNo = result.InvoiceNo,
                         InvoiceType = result.InvoiceType,
                         AddedBy = result.AddedByUser.Fullname,
-                        RemainingBalance = result.TransactionSales.RemainingBalance,
-                        TotalAmountDue = result.TransactionSales.TotalAmountDue,
+                        RemainingBalance = result.TransactionSales != null
+                        ? result.TransactionSales.RemainingBalance
+                        : 0m,
+                            TotalAmountDue = result.TransactionSales != null
+                        ? result.TransactionSales.TotalAmountDue
+                        : 0m,
                         CIAttachment = result.InvoiceAttach,
                         Remarks = result.TransactionSales.Remarks,
                         VoidReason = result.PaymentTransactions.FirstOrDefault(pt => pt.Status == Status.Voided).Reason
@@ -273,7 +277,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
                     RemainingBalance = result.TransactionSales != null
                     ? result.TransactionSales.RemainingBalance
                     : 0m,
-                                    TotalAmountDue = result.TransactionSales != null
+                    TotalAmountDue = result.TransactionSales != null
                     ? result.TransactionSales.TotalAmountDue
                     : 0m,
 
