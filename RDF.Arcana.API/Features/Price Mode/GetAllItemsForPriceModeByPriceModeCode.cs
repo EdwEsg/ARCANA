@@ -113,7 +113,7 @@ namespace RDF.Arcana.API.Features.Price_Mode
                     });
 
                 var transferInItems = _context.TransferOrderItems
-                    .Where(rq => rq.RemainingQuantity > 0 && rq.TransferOrder.CreatedById == request.AccessBy)
+                    .Where(rq => rq.RemainingQuantity > 0 && rq.TransferOrder.TransferToId == request.AccessBy && rq.TransferOrder.Status == Status.Received)
                     .Select(x => new
                     {
                         x.Item.ItemCode,
