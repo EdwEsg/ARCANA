@@ -73,7 +73,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public decimal? TransferOut { get; set; }
             public decimal? Freebie { get; set; }
             public decimal? Sampling { get; set; }
-            public decimal? Issue { get; set; }
             public decimal? Replace { get; set; }
             public decimal? ReturnByClient { get; set; }
             public decimal? Soh { get; set; }
