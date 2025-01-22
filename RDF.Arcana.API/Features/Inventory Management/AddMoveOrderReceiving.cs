@@ -43,6 +43,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public int CreatedBy { get; set; }
             public List<MoveOrderItemDto> Items { get; set; }
             public List<AdditionalDeliverDto> Additional { get; set; }
+            public List<WrongDeliverDto> Wrong { get; set; }
             public class MoveOrderItemDto
             {
                 public string ItemCode { get; set; }
@@ -55,6 +56,13 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 public decimal? Quantity { get; set; }
                 public string Reason { get; set; }
 
+            }
+
+            public class WrongDeliverDto
+            {
+                public string ItemCode { get; set; }
+                public decimal? Quantity { get; set; }
+                public string Reason { get; set; }
             }
         }
 
@@ -222,6 +230,31 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             RemainingQuantity = addQuantity
                         };
                         internalMoveOrderItems.Add(additionalMoveOrderItem);
+                    }
+                }
+
+                if (request.Wrong != null && request.Wrong.Any())
+                {
+                    foreach (var wrongItem in request.Wrong)
+                    {
+                        
+                        var item = itemsInContext.First(i => i.ItemCode == wrongItem.ItemCode);
+
+                        var wrongMoveOrderItem = new Domain.Inventory.MoveOrderItem
+                        {
+                            MoveOrderId = internalMoveOrder.Id,
+                            ItemCode = wrongItem.ItemCode,
+                            Quantity = wrongItem.Quantity ?? 0m,
+                            ActualQuantity = null,
+                            ProductionDate = null,
+                            ItemId = item.Id,
+                            UomId = item.UomId,
+                            IsActive = true,
+                            CreatedBy = _context.Users.FirstOrDefault(u => u.Id == request.CreatedBy),
+                            Reason = wrongItem.Reason,
+                            RemainingQuantity = null
+                        };
+                        internalMoveOrderItems.Add(wrongMoveOrderItem);
                     }
                 }
 

@@ -147,7 +147,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 {
 
                     var groupReceiving = _context.MoveOrderItems
-                        .Where(mo => mo.CreatedBy.Id == request.AccessBy)
+                        .Where(mo => mo.CreatedBy.Id == request.AccessBy && (mo.ActualQuantity != null && mo.RemainingQuantity != null))
                         .GroupBy(x => new { x.ItemCode })
                         .Select(x => new
                         {
