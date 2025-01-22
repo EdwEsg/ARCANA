@@ -77,6 +77,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public decimal? ReturnByClient { get; set; }
             public decimal? Soh { get; set; }
             public decimal? Sales { get; set; }
+            public decimal? ReturnCdo { get; set; }
         }
 
         public class FreebieGroup
@@ -190,8 +191,17 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                     //-------------------------------------------------------------------
 
+                    var groupReturnCdo = _context.MoveOrderItems
+                        .Where(mo => mo.CreatedBy.Id == request.AccessBy && (mo.ActualQuantity == null && mo.RemainingQuantity == null))
+                        .GroupBy(x => new { x.ItemCode })
+                        .Select(x => new
+                        {
+                            ItemCode = x.Key.ItemCode,
+                            Quantity = x.Sum(x => x.Quantity)
+                        });
+
                     var groupSales = _context.TransactionItems
-                        .Where(t => t.CreatedAt > DateTime.Parse("2025-01-22"))
+                        .Where(t => t.CreatedAt > DateTime.Parse("2025-01-22") && t.AddedBy == request.AccessBy)
                         .GroupBy(t => t.Item.ItemCode)
                         .Select(g => new
                         {
@@ -295,13 +305,18 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 .Select(ti => ti.Quantity)
                                 .FirstOrDefault(),
 
+                            ReturnCdo = groupReturnCdo
+                                .Where(r => r.ItemCode == i.ItemCode)
+                                .Select(r => r.Quantity)
+                                .FirstOrDefault(),
+
                             Replace = groupReplace
                                 .Where(ti => ti.ItemCode == i.ItemCode)
                                 .Select(ti => ti.Quantity)
                                 .FirstOrDefault(),
 
                             Soh = Math.Max(
-                                ((groupReceiving
+                                (((groupReceiving
                                     .Where(r => r.ItemCode == i.ItemCode)
                                     .Select(r => r.RemainingQuantity)
                                     .FirstOrDefault() ?? 0)
@@ -315,7 +330,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                     .Where(ti => ti.ItemCode == i.ItemCode)
                                     .Select(ti => ti.Quantity)
                                     .FirstOrDefault())
-                                ), 0)
+                                )), 0)
                         })
                         .OrderBy(x => x.ItemCode);
 

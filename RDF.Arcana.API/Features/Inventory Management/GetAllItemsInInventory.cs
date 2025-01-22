@@ -85,6 +85,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 var groupedResult = await priceModeItems
                     .GroupBy(pmi => new
                     {
+                        pmi.Item.Id,
                         pmi.Item.ItemCode,
                         pmi.Item.ItemDescription,
                         pmi.Item.ItemImageLink,
@@ -101,7 +102,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         Uom = group.Key.UomCode,
                         MeatType = group.Key.MeatTypeName,
                         ProductSubCategoryName = group.Key.ProductSubCategoryName,
-
+                        ItemId = group.Key.Id,
                         
                         PriceModeItemId = group.FirstOrDefault().Id, 
                         PriceModeId = group.FirstOrDefault().PriceModeId,

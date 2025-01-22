@@ -202,6 +202,22 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         Reason = null,                          
                         RemainingQuantity = actualQuantity      
                     };
+
+                    if (request.Wrong != null && request.Wrong.Any())
+                    {
+                        
+                        var totalWrongForItem = request.Wrong
+                            .Where(w => w.ItemCode == externalItem.ItemCode)
+                            .Sum(w => w.Quantity ?? 0m);
+
+                        
+                        moveOrderItem.RemainingQuantity -= totalWrongForItem;
+                        if (moveOrderItem.RemainingQuantity < 0m)
+                        {
+                            moveOrderItem.RemainingQuantity = 0m; 
+                        }
+                    }
+
                     internalMoveOrderItems.Add(moveOrderItem);
                 }
 
