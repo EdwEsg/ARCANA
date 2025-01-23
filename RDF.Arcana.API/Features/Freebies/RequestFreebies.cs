@@ -211,113 +211,16 @@ public class RequestFreebies : ControllerBase
                 freebieRequest.RequestId = newRequest.Id;
             }
 
-            //Inventory
             foreach (var freebie in request.Freebies)
             {
-                int quantityToSubtract = freebie.Quantity;
-
                 var dbItem = await _context.Items
                     .Include(u => u.Uom)
-                    .Where(i => i.Id == freebie.ItemId)
-                    .FirstOrDefaultAsync(cancellationToken);
+                    .FirstOrDefaultAsync(i => i.Id == freebie.ItemId, cancellationToken);
 
-                var totalAvailable = 0;
-
-                totalAvailable += (int)await _context.TransferOrderItems
-                    .Where(t =>
-                        t.RemainingQuantity > 0 &&
-                        t.TransferOrder.CreatedById == request.AddedBy &&
-                        t.ItemCode == dbItem.ItemCode
-                    )
-                    .SumAsync(t => t.RemainingQuantity ?? 0, cancellationToken);
-
-                totalAvailable += (int)await _context.ReturnOrderItems
-                    .Where(r =>
-                        r.RemainingQuantity > 0 &&
-                        r.ReturnOrder.CreatedbyId == request.AddedBy &&
-                        r.Item.ItemCode == dbItem.ItemCode
-                    )
-                    .SumAsync(r => r.RemainingQuantity, cancellationToken);
-
-                totalAvailable += (int)await _context.MoveOrderItems
-                    .Where(mo =>
-                        mo.RemainingQuantity > 0 &&
-                        mo.MoveOrder.CreatedById == request.AddedBy &&
-                        mo.ItemCode == dbItem.ItemCode
-                    )
-                    .SumAsync(mo => mo.RemainingQuantity ?? 0, cancellationToken);
-
-                if (totalAvailable < quantityToSubtract)
+                if (dbItem == null)
                 {
                     return FreebieErrors.AlreadyRequested(
-                        $"Not enough FIFO stock for {dbItem.ItemDescription} (needed {quantityToSubtract}, only {totalAvailable} available)."
-                    );
-                }
-
-                var transferStocks = await _context.TransferOrderItems
-                    .Where(t =>
-                        t.RemainingQuantity > 0 &&
-                        t.TransferOrder.CreatedById == request.AddedBy &&
-                        t.ItemCode == dbItem.ItemCode
-                    )
-                    .OrderBy(t => t.Id)
-                    .ToListAsync(cancellationToken);
-
-                foreach (var tr in transferStocks)
-                {
-                    if (quantityToSubtract <= 0) break;
-
-                    var canTake = (int)Math.Min((decimal)quantityToSubtract, tr.RemainingQuantity ?? 0);
-                    tr.RemainingQuantity -= canTake;
-                    quantityToSubtract -= canTake;
-                }
-
-                if (quantityToSubtract > 0)
-                {
-                    var returnStocks = await _context.ReturnOrderItems
-                        .Where(r =>
-                            r.RemainingQuantity > 0 &&
-                            r.ReturnOrder.CreatedbyId == request.AddedBy &&
-                            r.Item.ItemCode == dbItem.ItemCode
-                        )
-                        .OrderBy(r => r.Id)
-                        .ToListAsync(cancellationToken);
-
-                    foreach (var ro in returnStocks)
-                    {
-                        if (quantityToSubtract <= 0) break;
-
-                        var canTake = (int)Math.Min((decimal)quantityToSubtract, ro.RemainingQuantity);
-                        ro.RemainingQuantity -= canTake;
-                        quantityToSubtract -= canTake;
-                    }
-                }
-
-                if (quantityToSubtract > 0)
-                {
-                    var moveStocks = await _context.MoveOrderItems
-                        .Where(mo =>
-                            mo.RemainingQuantity > 0 &&
-                            mo.MoveOrder.CreatedById == request.AddedBy &&
-                            mo.ItemCode == dbItem.ItemCode
-                        )
-                        .OrderBy(mo => mo.Id)
-                        .ToListAsync(cancellationToken);
-
-                    foreach (var ms in moveStocks)
-                    {
-                        if (quantityToSubtract <= 0) break;
-
-                        var canTake = (int)Math.Min((decimal)quantityToSubtract, ms.RemainingQuantity ?? 0);
-                        ms.RemainingQuantity -= canTake;
-                        quantityToSubtract -= canTake;
-                    }
-                }
-
-                if (quantityToSubtract > 0)
-                {
-                    return FreebieErrors.AlreadyRequested(
-                        $"Not enough FIFO stock for {dbItem.ItemDescription}"
+                        $"Item with ID {freebie.ItemId} does not exist in the database."
                     );
                 }
 
@@ -327,6 +230,7 @@ public class RequestFreebies : ControllerBase
                     ItemId = freebie.ItemId,
                     Quantity = freebie.Quantity
                 };
+
                 await _context.FreebieItems.AddAsync(freebieItem, cancellationToken);
 
                 clientFreebies.Add(new RequestFreebiesResult.FreebieItemForDirectClient
@@ -345,15 +249,14 @@ public class RequestFreebies : ControllerBase
                 FreebieRequestId = freebieRequest.Id,
                 Status = freebieRequest.Status,
                 TransactionNumber = freebieRequest.Id,
-                FreebieItems = clientFreebies,
+                FreebieItems = clientFreebies
             });
 
             var notification = new Domain.Notification
             {
                 UserId = request.AddedBy,
-                Status = Status.ForReleasing
+                Status = status
             };
-
             await _context.Notifications.AddAsync(notification, cancellationToken);
 
             await _context.SaveChangesAsync(cancellationToken);
@@ -375,18 +278,12 @@ public class RequestFreebies : ControllerBase
                 PhoneNumber = client.PhoneNumber,
                 BusinessName = client.BusinessName,
                 Freebies = freebieResult,
-                AddedBy = client.AddedBy,
+                AddedBy = client.AddedBy
             };
 
             return Result.Success(result);
         }
 
-        public class GetAllItemsInInventoryResult
-        {
-            public string ItemCode { get; set; }
-            public string ItemDescription { get; set; }
-            public decimal? AvailQuantity { get; set; }
-        }
     }
 }
                                                                         

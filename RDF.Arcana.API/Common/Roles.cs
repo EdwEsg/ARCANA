@@ -13,4 +13,5 @@ public class Roles
     public const string Accounting = "accounting";
 
     public const string Finanace = "finance";
+    public const string Depot = "Depot";
 }

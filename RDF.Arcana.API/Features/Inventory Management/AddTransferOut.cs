@@ -61,14 +61,17 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
             public async Task<Result> Handle(AddTransferInCommand request, CancellationToken cancellationToken)
             {
-                var isUserCdo = await _context.Users
+                var user = await _context.Users
+                    .Include(u => u.UserRoles)
                     .Where(u => u.Id == request.AccessBy)
-                    .Select(u => u.UserRolesId)
                     .FirstOrDefaultAsync(cancellationToken);
 
-                bool isCdoOrDepotUser = isUserCdo == 6 || isUserCdo == 25; //CDO & Depot
+                var userTo = await _context.Users
+                    .Include(u => u.UserRoles)
+                    .Where(u => u.Id == request.To)
+                    .FirstOrDefaultAsync(cancellationToken);
 
-                if (!isCdoOrDepotUser)
+                if (user.UserRoles.UserRoleName != Roles.Cdo) //CDO 
                 {
                     return InventoryErrors.NotUserCdo();
                 }
@@ -79,14 +82,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     return InventoryErrors.Self();
                 }
 
-                var isReceiverCdo = await _context.Users
-                    .Where(u => u.Id == request.AccessBy)
-                    .Select(u => u.UserRolesId)
-                    .FirstOrDefaultAsync(cancellationToken);
 
-                bool isCdoOrDepotReceiver = isUserCdo == 6 || isUserCdo == 25; //CDO & Depot 
-
-                if (!isCdoOrDepotReceiver)
+                if (userTo.UserRoles.UserRoleName != Roles.Cdo && userTo.UserRoles.UserRoleName != Roles.Depot) //CDO and Depot
                 {
                     return InventoryErrors.NotCdo();
                 }
