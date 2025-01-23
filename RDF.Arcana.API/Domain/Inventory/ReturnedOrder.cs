@@ -11,6 +11,7 @@ namespace RDF.Arcana.API.Domain.Inventory
         public bool IsActive { get; set; } = true;
         public int CreatedbyId { get; set; }
         public DateTime CreatedDate { get; set; } = DateTime.Now;
+        public string Status { get; set; }
 
         public virtual Clients Client { get; set; }
         public virtual User CreatedBy { get; set; }
