@@ -108,8 +108,19 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         AvailableQuantity = g.Sum(i => i.RemainingQuantity ?? 0)
                     }).ToListAsync(cancellationToken);
 
+                var cdoReturnByClientItems = await _context.ReturnOrderItems
+                    .Where(r => r.ReturnOrder.CreatedbyId == request.AccessBy &&
+                                r.ReturnOrder.Status == Status.Received)
+                    .GroupBy(i => i.ItemId)
+                    .Select(g => new
+                    {
+                        ItemId = g.Key,
+                        AvailableQuantity = g.Sum(i => i.RemainingQuantity)
+                    }).ToListAsync(cancellationToken);
+
                 var totalAvailableItems = cdoMoveOrderItems
                     .Concat(cdoTransferOrderItems)
+                    .Concat(cdoReturnByClientItems)
                     .GroupBy(x => x.ItemId)
                     .Select(g => new
                     {
@@ -171,6 +182,37 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         {
                             toItem.RemainingQuantity = 0;
                             quantityToDeduct -= available;
+                        }
+                    }
+
+                    if (quantityToDeduct > 0)
+                    {
+                        var returnOrderItems = await _context.ReturnOrderItems
+                            .Where(r =>
+                                r.ReturnOrder.CreatedbyId == request.AccessBy &&
+                                r.ReturnOrder.Status == Status.Received &&
+                                r.ItemId == reqItem.ItemId &&
+                                r.IsActive &&
+                                r.RemainingQuantity > 0
+                            )
+                            .OrderBy(r => r.ReturnOrder.CreatedDate)
+                            .ToListAsync(cancellationToken);
+
+                        foreach (var roItem in returnOrderItems)
+                        {
+                            if (quantityToDeduct <= 0) break;
+
+                            var available = roItem.RemainingQuantity;
+                            if (available >= quantityToDeduct)
+                            {
+                                roItem.RemainingQuantity -= quantityToDeduct;
+                                quantityToDeduct = 0;
+                            }
+                            else
+                            {
+                                roItem.RemainingQuantity = 0;
+                                quantityToDeduct -= available;
+                            }
                         }
                     }
 
