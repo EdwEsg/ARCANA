@@ -86,6 +86,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 public decimal? Quantity { get; set; }
                 public string Bbd { get; set; }
                 public int? FreebieOrderId { get; set; }
+                public string Reason { get; set; }
             }
         }
 
@@ -139,7 +140,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             Uom = x.Item.Uom.UomDescription,
                             Quantity = x.Quantity,
                             Bbd = x.Bbd,
-                            FreebieOrderId = x.FreebieOrderId
+                            FreebieOrderId = x.FreebieOrderId,
+                            Reason = x.Reason,
                         })
                     }).OrderByDescending(x => x.CreatedDate);
 

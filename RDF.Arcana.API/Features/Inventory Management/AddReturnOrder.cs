@@ -46,6 +46,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 public decimal Quantity { get; set; }
                 public decimal Price { get; set; }
                 public string Bbd { get; set; }
+                public string Reason { get; set; }
             }
 
             public class ReplaceOrdersDto
@@ -54,6 +55,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 public decimal Quantity { get; set; }
                 public decimal Price { get; set; }
                 public string Bbd { get; set; }
+                public string Reason { get; set; }
             }
         }
 
@@ -237,7 +239,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     Quantity = r.Quantity,
                     Price = r.Price,
                     Bbd = r.Bbd,
-                    RemainingQuantity = r.Quantity
+                    RemainingQuantity = r.Quantity,
+                    Reason = r.Reason
                 }).ToList();
 
                 _context.ReturnOrderItems.AddRange(returnOrderItems);
@@ -248,7 +251,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     ItemId = r.ItemId,
                     Quantity = r.Quantity,
                     Price = r.Price,
-                    Bbd = r.Bbd
+                    Bbd = r.Bbd,
+                    Reason= r.Reason
                 }).ToList();
 
                 _context.ReplaceOrderItems.AddRange(replaceOrderItems);

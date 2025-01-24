@@ -11,6 +11,7 @@ namespace RDF.Arcana.API.Domain.Inventory
         public bool IsActive { get; set; } = true;
         public int? MoveOrderId { get; set; }
         public int? TransferOrderId { get; set; }
+        public string Reason { get; set; }
 
         public virtual Items Item { get; set; }
         public virtual FreebieOrder FreebieOrder { get; set; }

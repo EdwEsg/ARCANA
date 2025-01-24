@@ -88,6 +88,7 @@ namespace RDF.Arcana.API.Domain.Inventory
                 public decimal Price { get; set; }
                 public decimal Net { get; set; }
                 public string Bbd { get; set; }
+                public string Reason { get; set; }
             }
             public class ReplaceOrderItemsDto
             {
@@ -98,6 +99,7 @@ namespace RDF.Arcana.API.Domain.Inventory
                 public decimal Price { get; set; }
                 public decimal Net { get; set; }
                 public string Bbd { get; set; }
+                public string Reason { get; set; }
             }
 
         }
@@ -150,7 +152,8 @@ namespace RDF.Arcana.API.Domain.Inventory
                             Quantity = x.Quantity,
                             Price = x.Price,
                             Net = x.Price * x.Quantity,
-                            Bbd = x.Bbd
+                            Bbd = x.Bbd,
+                            Reason = x.Reason
                         }),
                         ReplaceItems = r.ReplaceOrderItems.Select(x => new GetReturnOrderResult.ReplaceOrderItemsDto
                         {
@@ -160,7 +163,8 @@ namespace RDF.Arcana.API.Domain.Inventory
                             Quantity = x.Quantity,
                             Price = x.Price,
                             Net = x.Price * x.Quantity,
-                            Bbd = x.Bbd
+                            Bbd = x.Bbd,
+                            Reason = x.Reason
                         })
                     }).OrderByDescending(x => x.CreatedDate);
 

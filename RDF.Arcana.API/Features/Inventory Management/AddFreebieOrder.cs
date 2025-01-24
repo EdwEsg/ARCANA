@@ -4,6 +4,8 @@ using RDF.Arcana.API.Data;
 using RDF.Arcana.API.Domain.Inventory;
 using System.Security.Claims;
 
+//THIS IS ALSO THE SAMPLING LOGIC
+
 namespace RDF.Arcana.API.Features.Inventory_Management
 {
     [Route("api/add-freebie-order"), ApiController]
@@ -44,6 +46,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             {
                 public int ItemId { get; set; }
                 public decimal? Quantity { get; set; }
+                public string Reason { get; set; }
             }
         }
 
@@ -81,7 +84,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     .Select(g => new
                     {
                         ItemId = g.Key,
-                        RequestedQuantity = g.Sum(i => i.Quantity ?? 0)
+                        RequestedQuantity = g.Sum(i => i.Quantity ?? 0),
+                        Reason = g.Select(i => i.Reason).ToList()
                     }).ToList();
 
                 var cdoMoveOrderItems = await _context.MoveOrderItems
@@ -232,7 +236,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     ItemId = i.ItemId,
                     Quantity = i.RequestedQuantity,
                     Bbd = "", 
-                    IsActive = true
+                    IsActive = true,
+                    Reason = string.Join(", ", i.Reason)
                 }).ToList();
 
                 _context.FreebieOrderItems.AddRange(freebieOrderItems);
