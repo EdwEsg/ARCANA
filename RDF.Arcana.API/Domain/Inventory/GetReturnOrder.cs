@@ -66,6 +66,7 @@ namespace RDF.Arcana.API.Domain.Inventory
             public DateTime DateTo { get; set; }
             public int? ReturnId { get; set; }
             public int AccessBy { get; set; }
+            public string Status { get; set; }
         }
 
         public class GetReturnOrderResult
@@ -77,6 +78,7 @@ namespace RDF.Arcana.API.Domain.Inventory
             public DateTime CreatedDate { get; set; }
             public decimal TotalReturnPrice { get; set; }
             public decimal TotalExchangePrice { get; set; }
+            public string Status { get; set; }
             public IEnumerable<ReturnOrderItemsDto> ReturnItems { get; set; }
             public IEnumerable<ReplaceOrderItemsDto> ReplaceItems { get; set; }
             public class ReturnOrderItemsDto
@@ -118,13 +120,16 @@ namespace RDF.Arcana.API.Domain.Inventory
 
                 var returnOrder = _context.ReturnedOrders
                     .AsNoTracking()
-                    .AsQueryable();
-
-                returnOrder = returnOrder.Where(r => r.CreatedDate >= request.DateFrom && r.CreatedDate < adjustedDateTo);
+                    .Where(r => r.CreatedDate >= request.DateFrom && r.CreatedDate < adjustedDateTo);
 
                 if (request.ReturnId != null)
                 {
                     returnOrder = returnOrder.Where(r => r.Id == request.ReturnId);
+                }
+
+                if (!string.IsNullOrEmpty(request.Status))
+                {
+                    returnOrder = returnOrder.Where(r => r.Status == request.Status);
                 }
 
                 if (!string.IsNullOrEmpty(request.Search))
@@ -144,6 +149,7 @@ namespace RDF.Arcana.API.Domain.Inventory
                         CreatedDate = r.CreatedDate,
                         TotalReturnPrice = r.TotalReturn,
                         TotalExchangePrice = r.TotalExchange,
+                        Status = r.Status,
                         ReturnItems = r.ReturnOrderItems.Select(x => new GetReturnOrderResult.ReturnOrderItemsDto
                         {
                             ItemId = x.Item.Id,

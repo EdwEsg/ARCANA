@@ -258,7 +258,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         });
 
                     var groupReturn = _context.ReturnOrderItems
-                        .Where(r => r.ReturnOrder.CreatedbyId == cdo)
+                        .Where(r => r.ReturnOrder.CreatedbyId == cdo && r.ReturnOrder.Status == Status.Received)
                         .GroupBy(i => i.Item.ItemCode)
                         .Select(g => new
                         {
@@ -455,7 +455,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         });
 
                     var groupReturn = _context.ReturnOrderItems
-                        .Where(r => r.ReturnOrder.CreatedbyId == request.AccessBy)
+                        .Where(r => r.ReturnOrder.CreatedbyId == request.AccessBy && r.ReturnOrder.Status == Status.Received)
                         .GroupBy(i => i.Item.ItemCode)
                         .Select(g => new
                         {
