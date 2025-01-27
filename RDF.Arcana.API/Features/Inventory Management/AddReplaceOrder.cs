@@ -281,7 +281,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     returnedOrder.TotalExchange = totalExchange;
                 }
 
-                returnedOrder.Status = "Received";
+                returnedOrder.Status = Status.Received;
 
 
                 await _context.SaveChangesAsync(cancellationToken);

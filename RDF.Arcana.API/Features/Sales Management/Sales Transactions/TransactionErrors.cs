@@ -19,4 +19,9 @@ public static class TransactionErrors
     public static Error NoInvoiceAttach() => new("NoInvoiceAttach", "Transaction has no Invoice Attachment, please input first");
     public static Error CannotVoid() => new("CannotVoid", "Cannot void/cancel. The Cheque has paid multiple transactions.");
     public static Error APUsed() => new("AdvancePayment.Used", "Cannot void/cancel. Check's Excess Amount was used.");
+
+    //Inventory
+    public static Error ItemNotFound(string itemcode) => new("Item", $"Item {itemcode} Not Found");
+    public static Error InsufficientQuantity(string itemcode, decimal reqQuan, decimal availQuan) => new("Insufficient", $"Insufficient Quantity for {itemcode}, requested is {reqQuan}, available is {availQuan}");
+
 }
