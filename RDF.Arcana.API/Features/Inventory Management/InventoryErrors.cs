@@ -20,5 +20,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         public static Error InvalidTranType() => new("InvalidTranType", "Invalid Transaction Type (Freebie/Sampling) only");
         public static Error NoReturnFound() => new("NotFound", "No Return Id Found");
         public static Error InvalidStatus() => new("Status.Not.Pending", "Status is Received");
+        public static Error Unauthorized() => new("UserNotAunthorized", "User not Authorize");
     }
 }
