@@ -316,6 +316,45 @@ public class AddTransaction : ControllerBase
             await _context.Transactions.AddAsync(transaction, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
+            foreach (var item in request.Items)
+            {
+                var exisitngitems = await _context.Items.FirstOrDefaultAsync(i => i.Id == item.ItemId, cancellationToken);
+                if (exisitngitems == null)
+                {
+                    return ItemErrors.NotFound(item.ItemId);
+                }
+
+                var transactionItems = new TransactionItems
+                {
+                    TransactionId = transaction.Id,
+                    ItemId = item.ItemId,
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice,
+                    Amount = item.UnitPrice * item.Quantity,
+                    AddedBy = request.AddedBy
+                };
+
+                var itemDetails = await _context.Items
+                    .Include(x => x.Uom)
+                    .Where(i => i.Id == item.ItemId)
+                    .Select(i => new { i.ItemCode, i.ItemDescription, i.Uom.UomCode })
+                    .FirstOrDefaultAsync(cancellationToken);
+                itemsCollection.Add(new AddNewTransactionResult.Item
+                {
+                    ItemId = item.ItemId,
+                    ItemCode = itemDetails.ItemCode,
+                    ItemDescription = itemDetails.ItemDescription,
+                    Uom = itemDetails.UomCode,
+                    UnitPrice = item.UnitPrice,
+                    Quantity = item.Quantity,
+                    Amount = transactionItems.Amount
+                });
+
+                await _context.TransactionItems.AddAsync(transactionItems, cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+
+
             var newTransactionSales = new TransactionSales
             {
                 TransactionId = transaction.Id,

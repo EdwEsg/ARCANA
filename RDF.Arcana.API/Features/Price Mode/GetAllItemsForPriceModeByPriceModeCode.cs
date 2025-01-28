@@ -122,7 +122,7 @@ namespace RDF.Arcana.API.Features.Price_Mode
                     });
 
                 var returnOrderItems = _context.ReturnOrderItems
-                    .Where(rq => rq.RemainingQuantity > 0 && rq.ReturnOrder.CreatedbyId == request.AccessBy)
+                    .Where(rq => rq.RemainingQuantity > 0 && rq.ReturnOrder.CreatedbyId == request.AccessBy && rq.ReturnOrder.Status == Status.Received)
                     .Select(x => new
                     {
                         x.Item.ItemCode,
