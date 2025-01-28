@@ -460,7 +460,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         .Select(g => new
                         {
                             ItemCode = g.Key,
-                            Quantity = g.Sum(x => x.Quantity)
+                            Quantity = g.Sum(x => x.Quantity),
+                            RemainingQuantity = g.Sum(x => x.RemainingQuantity)
                         });
 
                     var groupReplace = _context.ReplaceOrderItems
@@ -540,7 +541,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                  +
                                  (groupReturn
                                     .Where(ti => ti.ItemCode == i.ItemCode)
-                                    .Select(ti => ti.Quantity)
+                                    .Select(ti => ti.RemainingQuantity)
                                     .FirstOrDefault())
                                 )), 0)
                         })
