@@ -82,6 +82,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public DateTime TransactionDate { get; set; }
             public string TransferType { get; set; }
             public string Status { get; set; }
+            public decimal TotalAmount { get; set; }
             public IEnumerable<TransferItemsDto> TransferItems { get; set; }
             public class TransferItemsDto
             {
@@ -92,6 +93,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 public string ProductionDate { get; set; }
                 public int? MoveOrderId { get; set; }
                 public string Reason { get; set; }
+                public decimal Amount { get; set; }
             }
 
         }
@@ -176,6 +178,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         TransactionDate = to.TransactionDate,
                         TransferType = to.TransferType,
                         Status = to.Status,
+                        TotalAmount = to.TotalAmount,
                         TransferItems = to.TransferOrderItems.Select(x => new GetTransferResult.TransferItemsDto
                         {
                             ItemCode = x.ItemCode,
@@ -185,6 +188,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             ProductionDate = x.ProductionDate,
                             MoveOrderId = x.MoveId,
                             Reason = x.Reason,
+                            Amount = x.Amount,
                         })
                     }).OrderByDescending(x => x.TransactionDate);
 

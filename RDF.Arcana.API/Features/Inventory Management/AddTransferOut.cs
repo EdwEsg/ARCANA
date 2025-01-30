@@ -47,6 +47,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 public string ItemCode { get; set; }
                 public decimal? Quantity { get; set; }
                 public string Reason { get; set; }
+                public decimal Amount { get; set; }
 
             }
         }
@@ -98,6 +99,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     })
                     .ToList();
 
+                
+
                 var transferOrderItems = await _context.TransferOrderItems
                     .Where(t => t.TransferOrder.TransferToId == request.AccessBy &&
                                 t.TransferOrder.Status == Status.Received &&
@@ -121,18 +124,68 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     .OrderBy(m => m.MoveOrder.CreatedDate)
                     .ToListAsync(cancellationToken);
 
-                var availableStock = transferOrderItems
-                    .Concat(returnOrderItems.Cast<dynamic>())
-                    .Concat(moveOrderItems.Cast<dynamic>())
-                    .GroupBy(i => i.ItemCode)
-                    .ToDictionary(g => g.Key, g => g.Sum(i => (decimal)i.RemainingQuantity));
+                //
+                var transferOrderItemsDto = transferOrderItems
+                    .Select(t => new
+                    {
+                        ItemId = _context.Items
+                                .Where(i => i.ItemCode == t.ItemCode)
+                                .Select(i => i.Id)
+                                .FirstOrDefault(),
+                        RemainingQuantity = t.RemainingQuantity ?? 0
+                    })
+                    .ToList();
 
+                var returnOrderItemsDto = returnOrderItems
+                    .Select(r => new
+                    {
+                        r.ItemId,
+                        RemainingQuantity = r.RemainingQuantity
+                    })
+                    .ToList();
+
+                var moveOrderItemsDto = moveOrderItems
+                    .Select(m => new
+                    {
+                        ItemId = _context.Items
+                                .Where(i => i.ItemCode == m.ItemCode)
+                                .Select(i => i.Id)
+                                .FirstOrDefault(),
+                        RemainingQuantity = m.RemainingQuantity ?? 0
+                    })
+                    .ToList();
+
+                var combinedStock = transferOrderItemsDto
+                    .Concat(returnOrderItemsDto)
+                    .Concat(moveOrderItemsDto);
+
+                var availableStockByItemId = combinedStock
+                    .GroupBy(s => s.ItemId)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Sum(x => x.RemainingQuantity)
+                    );
+                //
+
+                var itemCodeToId = await _context.Items
+                    .Where(x => requestedItems.Select(r => r.ItemCode).Contains(x.ItemCode))
+                    .ToDictionaryAsync(x => x.ItemCode, x => x.Id, cancellationToken);
 
                 foreach (var requestedItem in requestedItems)
                 {
-                    if (!availableStock.TryGetValue(requestedItem.ItemCode, out var totalAvailable) || totalAvailable < requestedItem.RequestedQuantity)
+                    if (!itemCodeToId.TryGetValue(requestedItem.ItemCode, out var requestedItemId))
                     {
-                        return InventoryErrors.InsufficientQuantity(requestedItem.ItemCode, requestedItem.RequestedQuantity, totalAvailable);
+                        return InventoryErrors.ItemNotFound(requestedItem.ItemCode);
+                    }
+
+                    if (!availableStockByItemId.TryGetValue(requestedItemId, out var totalAvailable)
+                        || totalAvailable < requestedItem.RequestedQuantity)
+                    {
+                        return InventoryErrors.InsufficientQuantity(
+                            requestedItem.ItemCode,
+                            requestedItem.RequestedQuantity,
+                            totalAvailable
+                        );
                     }
 
                     var remainingToDeduct = requestedItem.RequestedQuantity;
@@ -186,6 +239,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     TransferType = Status.TransferOut,
                     CreatedById = request.AccessBy,
                     Status = Status.ForReceiving,
+                    TotalAmount = request.TransferItems.Sum(i => (i.Amount * i.Quantity) ?? 0)
                 };
 
                 _context.TransferOrders.Add(transferOrder);
@@ -229,7 +283,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         CreatedById = request.AccessBy,
                         RemainingQuantity = i.Quantity,
                         ItemId = matchedItem?.Id ?? 0,
-                        Reason = i.Reason
+                        Reason = i.Reason,
+                        Amount = i.Amount
                     };
                 }).ToList();
 

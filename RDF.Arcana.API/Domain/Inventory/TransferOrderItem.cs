@@ -17,6 +17,7 @@ namespace RDF.Arcana.API.Domain.Inventory
         public decimal? RemainingQuantity { get; set; }
         public int ItemId { get; set; }
         public string Reason { get; set; }
+        public decimal Amount { get; set; }
 
         public virtual Items Item { get; set; }
         public virtual User CreatedBy { get; set; }
