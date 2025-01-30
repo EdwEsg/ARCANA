@@ -331,7 +331,8 @@ public class AddTransaction : ControllerBase
                     Quantity = item.Quantity,
                     UnitPrice = item.UnitPrice,
                     Amount = item.UnitPrice * item.Quantity,
-                    AddedBy = request.AddedBy
+                    AddedBy = request.AddedBy,
+                    RemainingQuantity = item.Quantity,
                 };
 
                 var itemDetails = await _context.Items
