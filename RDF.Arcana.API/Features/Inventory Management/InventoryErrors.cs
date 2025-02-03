@@ -1,4 +1,5 @@
 ﻿using RDF.Arcana.API.Common;
+using static RDF.Arcana.API.Features.Sales_Management.Payment_Transaction.GetPaymentOverview.GetPaymentOverviewResponse;
 
 namespace RDF.Arcana.API.Features.Inventory_Management
 {
@@ -21,5 +22,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         public static Error NoReturnFound() => new("NotFound", "No Return Id Found");
         public static Error InvalidStatus() => new("Status.Not.Pending", "Status is Received");
         public static Error Unauthorized() => new("UserNotAunthorized", "User not Authorize");
+        public static Error TransactionNotFound(string tran, string cdo) => new("NotFound", $"Transaction Id '{tran}'  Not Found for Cdo: {cdo}");
+        public static Error TransactionItemNotFound(string tran, string cdo) => new("NotFound", $"TransactionItem Id '{tran}'  Not Found for Cdo: {cdo}");
+        public static Error InvalidRemainingInventory(decimal rem, decimal quan, string tran) => new("CannotExceed", $"RemainingInv {rem} cannot exceed Quantity {quan} for TransactionItemId {tran}");
     }
 }
