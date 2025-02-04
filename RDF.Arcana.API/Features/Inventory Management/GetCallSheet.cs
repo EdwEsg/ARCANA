@@ -76,6 +76,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public string CustomerName { get; set; }
             public string BusinessName { get; set; }
             public DateTime CallSheetDate { get; set; }
+            public int Gray { get; set; }
             public int Red { get; set; }
             public int Orange { get; set; }
             public int Green { get; set; }
@@ -111,6 +112,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public async Task<PagedList<GetCallSheetResult>> Handle(GetCallSheetQuery request, CancellationToken cancellationToken)
             {
                 var adjustedDateTo = request.DateTo.AddDays(1);
+                var now = DateTime.Now;
 
                 var transactions = _context.Transactions
                     .Where(t => t.CreatedAt >= request.DateFrom && t.CreatedAt < adjustedDateTo &&
@@ -167,6 +169,26 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     CustomerName = t.Client.Fullname,
                     BusinessName = t.Client.BusinessName,
                     CallSheetDate = t.CreatedAt,
+
+                    Gray = t.TransactionItems
+                    .SelectMany(ti => ti.TransactionItemBbd)
+                    .Where(bbd => bbd.Bbd < now)
+                    .Sum(bbd => (int?)bbd.Quantity) ?? 0,
+
+                    Red = t.TransactionItems
+                    .SelectMany(ti => ti.TransactionItemBbd)
+                    .Where(bbd => bbd.Bbd >= now && bbd.Bbd <= now.AddDays(10))
+                    .Sum(bbd => (int?)bbd.Quantity) ?? 0,
+
+                    Orange = t.TransactionItems
+                    .SelectMany(ti => ti.TransactionItemBbd)
+                    .Where(bbd => bbd.Bbd > now.AddDays(10) && bbd.Bbd <= now.AddDays(15))
+                    .Sum(bbd => (int?)bbd.Quantity) ?? 0,
+
+                    Green = t.TransactionItems
+                    .SelectMany(ti => ti.TransactionItemBbd)
+                    .Where(bbd => bbd.Bbd > now.AddDays(15))
+                    .Sum(bbd => (int?)bbd.Quantity) ?? 0,
                     TransactionItemsDtos = t.TransactionItems.Select(ti => new GetCallSheetResult.TransactionItemsDto
                     {
                         TransactionItemId = ti.Id,
