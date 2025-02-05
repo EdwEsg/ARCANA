@@ -69,6 +69,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         {
             public string ItemCode { get; set; }
             public string ItemDescription { get; set; }
+            public decimal? FromDepot { get; set; }
             public decimal? Receiving { get; set; }
             public decimal? TransferIn { get; set; }
             public decimal? TransferOut { get; set; }
@@ -285,6 +286,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             ItemCode = i.ItemCode,
                             ItemDescription = i.ItemDescription,
 
+                            FromDepot = groupReceiving
+                                .Where(r => r.ItemCode == i.ItemCode)
+                                .Select(r => r.Quantity)
+                                .FirstOrDefault(),
+
                             Sales = groupSales
                                 .Where(s => s.ItemCode == i.ItemCode)
                                 .Select(s => s.Quantity)
@@ -482,6 +488,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         {
                             ItemCode = i.ItemCode,
                             ItemDescription = i.ItemDescription,
+
+                            FromDepot = groupReceiving
+                                .Where(r => r.ItemCode == i.ItemCode)
+                                .Select(r => r.Quantity)
+                                .FirstOrDefault(),
 
                             Sales = groupSales
                                 .Where(s => s.ItemCode == i.ItemCode)
