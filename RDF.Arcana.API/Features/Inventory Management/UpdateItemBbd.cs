@@ -75,7 +75,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 decimal sumOfBbdQuantity = request.ItemBbds.Sum(t => t.Quantity);
                 if (sumOfBbdQuantity > transactionItem.Quantity)
                 {
-                    return InventoryErrors.InvalidRemainingInventory(transactionItem.RemainingQuantity, sumOfBbdQuantity, transactionItem.Id.ToString());
+                    return InventoryErrors.InvalidRemainingInventory(transactionItem.Quantity, sumOfBbdQuantity, transactionItem.Id.ToString());
                 }
 
                 transactionItem.RemainingQuantity = sumOfBbdQuantity;
