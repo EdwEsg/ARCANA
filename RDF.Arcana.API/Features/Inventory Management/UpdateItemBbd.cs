@@ -41,7 +41,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         {
             public int TransactionItemId { get; set; }
             public int AccessBy { get; set; }
-            public List<ItemBbdDto> itemBbds { get; set; }
+            public List<ItemBbdDto> ItemBbds { get; set; }
             public class ItemBbdDto
             {
                 public decimal Quantity { get; set; }
@@ -72,13 +72,15 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     return InventoryErrors.TransactionItemNotFound(request.TransactionItemId.ToString(), userCdo.Fullname);
                 }
 
-                decimal sumOfBbdQuantity = request.itemBbds.Sum(t => t.Quantity);
-                if (sumOfBbdQuantity > transactionItem.RemainingQuantity)
+                decimal sumOfBbdQuantity = request.ItemBbds.Sum(t => t.Quantity);
+                if (sumOfBbdQuantity > transactionItem.Quantity)
                 {
                     return InventoryErrors.InvalidRemainingInventory(transactionItem.RemainingQuantity, sumOfBbdQuantity, transactionItem.Id.ToString());
                 }
 
-                var newBbds = request.itemBbds.Select(x => new TransactionItemBbd
+                transactionItem.RemainingQuantity = sumOfBbdQuantity;
+
+                var newBbds = request.ItemBbds.Select(x => new TransactionItemBbd
                 {
                     TransactionItemsId = transactionItem.Id,
                     Quantity = x.Quantity,
