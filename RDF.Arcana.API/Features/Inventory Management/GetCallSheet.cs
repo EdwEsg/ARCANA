@@ -98,6 +98,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     public int BbdId { get; set; }
                     public decimal Quantity { get; set; }
                     public DateTime Bbd { get; set; }
+                    public decimal RemainingQuantity { get; set; }
                 }
             }
         }
@@ -173,23 +174,23 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                     Gray = t.TransactionItems
                     .SelectMany(ti => ti.TransactionItemBbd)
-                    .Where(bbd => bbd.Bbd < now)
-                    .Sum(bbd => (int?)bbd.Quantity) ?? 0,
+                    .Where(bbd => bbd.Bbd < now && bbd.IsActive)
+                    .Sum(bbd => (int?)bbd.RemainingQuantity) ?? 0,
 
                     Red = t.TransactionItems
                     .SelectMany(ti => ti.TransactionItemBbd)
-                    .Where(bbd => bbd.Bbd >= now && bbd.Bbd <= now.AddDays(10))
-                    .Sum(bbd => (int?)bbd.Quantity) ?? 0,
+                    .Where(bbd => bbd.Bbd >= now && bbd.Bbd <= now.AddDays(10) && bbd.IsActive)
+                    .Sum(bbd => (int?)bbd.RemainingQuantity) ?? 0,
 
                     Orange = t.TransactionItems
                     .SelectMany(ti => ti.TransactionItemBbd)
-                    .Where(bbd => bbd.Bbd > now.AddDays(10) && bbd.Bbd <= now.AddDays(15))
-                    .Sum(bbd => (int?)bbd.Quantity) ?? 0,
+                    .Where(bbd => bbd.Bbd > now.AddDays(10) && bbd.Bbd <= now.AddDays(15) && bbd.IsActive)
+                    .Sum(bbd => (int?)bbd.RemainingQuantity) ?? 0,
 
                     Green = t.TransactionItems
                     .SelectMany(ti => ti.TransactionItemBbd)
-                    .Where(bbd => bbd.Bbd > now.AddDays(15))
-                    .Sum(bbd => (int?)bbd.Quantity) ?? 0,
+                    .Where(bbd => bbd.Bbd > now.AddDays(15) && bbd.IsActive)
+                    .Sum(bbd => (int?)bbd.RemainingQuantity) ?? 0,
                     TransactionItemsDtos = t.TransactionItems.Select(ti => new GetCallSheetResult.TransactionItemsDto
                     {
                         TransactionItemId = ti.Id,
@@ -197,11 +198,12 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         ItemDescription = ti.Item.ItemDescription,
                         SalesIn = ti.Quantity,
                         RemainingInv = ti.RemainingQuantity,
-                        BbbDtos = ti.TransactionItemBbd.Select(bbd => new GetCallSheetResult.TransactionItemsDto.BbbDto
+                        BbbDtos = ti.TransactionItemBbd.Where(x => x.IsActive).Select(bbd => new GetCallSheetResult.TransactionItemsDto.BbbDto
                         {
                             BbdId = bbd.Id,
                             Quantity = bbd.Quantity,
-                            Bbd = bbd.Bbd
+                            Bbd = bbd.Bbd,
+                            RemainingQuantity = bbd.RemainingQuantity
                         }).ToList()
                     }).ToList()
                 });

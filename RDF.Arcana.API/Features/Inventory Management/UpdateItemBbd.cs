@@ -84,13 +84,15 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         transactionItem.Id.ToString());
                 }
 
+                var originalBbdItems = transactionItem.TransactionItemBbd.Where(x => x.IsActive).ToList();
+
                 foreach (var item in request.ItemBbds)
                 {
                     if (item.BbdId.HasValue && item.BbdId.Value > 0)
                     {
-                        var existingBbd = await _context.TransactionItemBbd
+                        var existingBbd = await _context.TransactionItemBbd.Where(x => x.IsActive)
                             .FirstOrDefaultAsync(
-                                b => b.Id == item.BbdId.Value && b.TransactionItemsId == transactionItem.Id,
+                                b => b.Id == item.BbdId.Value && b.TransactionItemsId == transactionItem.Id && b.IsActive,
                                 cancellationToken);
 
                         if (existingBbd == null)
@@ -98,7 +100,12 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             return InventoryErrors.TransactionItemNotFound(item.BbdId.Value.ToString(), userCdo.Fullname);
                         }
 
-                        existingBbd.Quantity = item.Quantity;
+                        if (existingBbd.Quantity < item.Quantity)
+                        {
+                            return InventoryErrors.InvalidRemainingInventory(item.Quantity,existingBbd.Quantity, existingBbd.Id.ToString());
+                        }
+
+                        existingBbd.RemainingQuantity = item.Quantity;
                         existingBbd.Bbd = item.Bbd;
                     }
                     else
@@ -109,12 +116,27 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             Quantity = item.Quantity,
                             Bbd = item.Bbd,
                             IsActive = true,
-                            CreatedDate = DateTime.Now
+                            CreatedDate = DateTime.Now,
+                            RemainingQuantity = item.Quantity,
                         };
 
                         await _context.TransactionItemBbd.AddAsync(newBbd, cancellationToken);
                     }
                 }
+
+                var providedIds = request.ItemBbds
+                    .Where(x => x.BbdId.HasValue && x.BbdId.Value > 0)
+                    .Select(x => x.BbdId.Value)
+                    .ToList();
+
+                foreach (var existing in originalBbdItems)
+                {
+                    if (!providedIds.Contains(existing.Id))
+                    {
+                        existing.IsActive = false;
+                    }
+                }
+
                 await _context.SaveChangesAsync(cancellationToken);
 
                 var totalQuantity = await _context.TransactionItemBbd
