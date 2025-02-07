@@ -15,8 +15,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             _mediator = mediator;
         }
 
-        [HttpPut("{itemId:int}")]
-        public async Task<IActionResult> Put([FromBody] UpdateItemBbdCommand command, [FromRoute] int itemId)
+        [HttpPut("{transactionItemId:int}")]
+        public async Task<IActionResult> Put([FromBody] UpdateItemBbdCommand command, [FromRoute] int transactionItemId)
         {
             try
             {
@@ -26,7 +26,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     command.AccessBy = userId;
                 }
 
-                command.TransactionItemId = itemId;
+                command.TransactionItemId = transactionItemId;
                 var result = await _mediator.Send(command);
 
                 return result.IsSuccess ? Ok(result) : BadRequest(result);
@@ -44,6 +44,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public List<ItemBbdDto> ItemBbds { get; set; }
             public class ItemBbdDto
             {
+                public int? BbdId { get; set; }
                 public decimal Quantity { get; set; }
                 public DateTime Bbd { get; set; }
             }
@@ -64,32 +65,64 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                 var transactionItem = await _context.TransactionItems
                     .Include(t => t.Transaction)
-                    .Include(bbd => bbd.TransactionItemBbd)
-                    .FirstOrDefaultAsync(ti => ti.Id == request.TransactionItemId && ti.Transaction.AddedBy == request.AccessBy, cancellationToken);
+                    .Include(t => t.TransactionItemBbd)
+                    .FirstOrDefaultAsync(
+                        ti => ti.Id == request.TransactionItemId && ti.Transaction.AddedBy == request.AccessBy,
+                        cancellationToken);
 
                 if (transactionItem == null)
                 {
                     return InventoryErrors.TransactionItemNotFound(request.TransactionItemId.ToString(), userCdo.Fullname);
                 }
 
-                decimal sumOfBbdQuantity = request.ItemBbds.Sum(t => t.Quantity);
-                if (sumOfBbdQuantity > transactionItem.Quantity)
+                decimal sumOfIncomingQuantities = request.ItemBbds.Sum(x => x.Quantity);
+                if (sumOfIncomingQuantities > transactionItem.Quantity)
                 {
-                    return InventoryErrors.InvalidRemainingInventory(transactionItem.Quantity, sumOfBbdQuantity, transactionItem.Id.ToString());
+                    return InventoryErrors.InvalidRemainingInventory(
+                        transactionItem.Quantity,
+                        sumOfIncomingQuantities,
+                        transactionItem.Id.ToString());
                 }
 
-                transactionItem.RemainingQuantity = sumOfBbdQuantity;
-
-                var newBbds = request.ItemBbds.Select(x => new TransactionItemBbd
+                foreach (var item in request.ItemBbds)
                 {
-                    TransactionItemsId = transactionItem.Id,
-                    Quantity = x.Quantity,
-                    Bbd = x.Bbd
-                }).ToList();
+                    if (item.BbdId.HasValue && item.BbdId.Value > 0)
+                    {
+                        var existingBbd = await _context.TransactionItemBbd
+                            .FirstOrDefaultAsync(
+                                b => b.Id == item.BbdId.Value && b.TransactionItemsId == transactionItem.Id,
+                                cancellationToken);
 
-                await _context.TransactionItemBbd.AddRangeAsync(newBbds, cancellationToken);
+                        if (existingBbd == null)
+                        {
+                            return InventoryErrors.TransactionItemNotFound(item.BbdId.Value.ToString(), userCdo.Fullname);
+                        }
+
+                        existingBbd.Quantity = item.Quantity;
+                        existingBbd.Bbd = item.Bbd;
+                    }
+                    else
+                    {
+                        var newBbd = new TransactionItemBbd
+                        {
+                            TransactionItemsId = transactionItem.Id,
+                            Quantity = item.Quantity,
+                            Bbd = item.Bbd,
+                            IsActive = true,
+                            CreatedDate = DateTime.Now
+                        };
+
+                        await _context.TransactionItemBbd.AddAsync(newBbd, cancellationToken);
+                    }
+                }
                 await _context.SaveChangesAsync(cancellationToken);
 
+                var totalQuantity = await _context.TransactionItemBbd
+                    .Where(b => b.TransactionItemsId == transactionItem.Id && b.IsActive)
+                    .SumAsync(b => b.Quantity, cancellationToken);
+                transactionItem.RemainingQuantity = totalQuantity;
+
+                await _context.SaveChangesAsync(cancellationToken);
                 return Result.Success();
 
             }
