@@ -22,6 +22,7 @@ public abstract class AuthenticateUser
         [Required] public string Username { get; set; }
 
         [Required] public string Password { get; set; }
+        public bool? NeverExpire { get; set; } = false;
     }
 
     public class AuthenticateUserResult
@@ -87,14 +88,14 @@ public abstract class AuthenticateUser
 
             await _context.SaveChangesAsync(cancellationToken);
 
-            var token = GenerateJwtToken(user);
+            var token = GenerateJwtToken(user, command.NeverExpire ?? false);
 
             var results = user.ToGetAuthenticatedUserResult(token);
 
             return Result.Success(results);
         }
 
-        private string GenerateJwtToken(User user)
+        private string GenerateJwtToken(User user, bool neverExpire = false)
         {
             var key = _configuration.GetValue<string>("JwtConfig:Key");
             var audience = _configuration.GetValue<string>("JwtConfig:Audience");
@@ -109,13 +110,18 @@ public abstract class AuthenticateUser
                     new Claim(ClaimTypes.Name, user.Fullname),
                     new Claim(ClaimTypes.Role, user.UserRoles.UserRoleName)
                 }),
-                Expires = DateTime.UtcNow.AddDays(1),
                 Issuer = issuer,
                 Audience = audience,
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(keyBytes),
                     SecurityAlgorithms.HmacSha256Signature)
             };
+
+            if (!neverExpire)
+            {
+                tokenDescriptor.Expires = DateTime.UtcNow.AddDays(1);
+            }
+
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
