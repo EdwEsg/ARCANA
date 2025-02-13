@@ -121,6 +121,11 @@ namespace RDF.Arcana.API.Features.Get_Reports
 
             public async Task<Result<List<ArcanaGLResult>>> Handle(ArcanaGLQuery request, CancellationToken cancellationToken)
             {
+                if (string.IsNullOrWhiteSpace(request.adjustment_month))
+                {
+                    return Result.Success(new List<ArcanaGLResult>());
+                }
+
                 if (!DateTime.TryParseExact(request.adjustment_month, "yyyy-MM",
                                             CultureInfo.InvariantCulture, DateTimeStyles.None,
                                             out DateTime adjustmentMonth))
