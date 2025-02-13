@@ -25,7 +25,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
             var result = await _mediator.Send(query);
             if (result.IsSuccess)
             {
-                return Ok(new { custom_header = result.Value });
+                return Ok(result.Value);
             }
             else
             {
