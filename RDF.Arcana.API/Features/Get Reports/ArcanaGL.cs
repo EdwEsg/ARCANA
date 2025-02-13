@@ -149,21 +149,22 @@ namespace RDF.Arcana.API.Features.Get_Reports
                     .ToListAsync(cancellationToken);
 
                 var result = transactions.SelectMany(t =>
-                    t.TransactionItems.Select(ti => new ArcanaGLResult
+                    t.TransactionItems.SelectMany(ti => new List<ArcanaGLResult>
+                    {
+
+                    //credit
+                    new ArcanaGLResult
                     {
                         SyncId = "A" + (ti?.Id.ToString() ?? string.Empty),
                         Mark = "SJ",
                         Mark2 = string.Empty,
                         AssetCIP = string.Empty,
-
                         AccountingTag = t?.InvoiceType == "Charge"
-                        ? $"CI#{t?.InvoiceNo ?? string.Empty}"
-                        : t?.InvoiceType == "Sales"
-                            ? $"SI#{t?.InvoiceNo ?? string.Empty}"
-                            : t?.InvoiceNo ?? string.Empty,
-
+                            ? $"CI#{t?.InvoiceNo ?? string.Empty}"
+                            : t?.InvoiceType == "Sales"
+                                ? $"SI#{t?.InvoiceNo ?? string.Empty}"
+                                : t?.InvoiceNo ?? string.Empty,
                         TransactionDate = t?.CreatedAt.ToString("yyyy-MM-dd") ?? string.Empty,
-
                         ClientSupplier = t?.Client?.BusinessName ?? string.Empty,
                         AccountTitleCode = "411200",
                         AccountTitle = "Sales Commercial",
@@ -179,21 +180,17 @@ namespace RDF.Arcana.API.Features.Get_Reports
                         SubUnit = string.Empty,
                         LocationCode = "1679",
                         Location = t?.Client?.Cluster?.ClusterType ?? string.Empty,
-
                         PONumber = string.Empty,
                         RRNumber = string.Empty,
-
                         ReferenceNo = t?.InvoiceType == "Charge"
-                        ? $"CI#{t?.InvoiceNo ?? string.Empty}"
-                        : t?.InvoiceType == "Sales"
-                            ? $"SI#{t?.InvoiceNo ?? string.Empty}"
-                            : t?.InvoiceNo ?? string.Empty,
-
+                            ? $"CI#{t?.InvoiceNo ?? string.Empty}"
+                            : t?.InvoiceType == "Sales"
+                                ? $"SI#{t?.InvoiceNo ?? string.Empty}"
+                                : t?.InvoiceNo ?? string.Empty,
                         ItemCode = ti?.Item?.ItemCode ?? string.Empty,
                         ItemDescription = ti?.Item?.ItemDescription ?? string.Empty,
                         Quantity = ti?.Quantity.ToString() ?? "0",
                         UOM = ti?.Item?.Uom?.UomDescription ?? string.Empty,
-
                         UnitPrice = "-" + (ti?.UnitPrice.ToString() ?? "0"),
                         LineAmount = "-" + (ti?.Amount.ToString() ?? "0"),
                         VoucherJournal = string.Empty,
@@ -218,10 +215,8 @@ namespace RDF.Arcana.API.Features.Get_Reports
                         DepreciationDescription = string.Empty,
                         RemainingDepreciationValue = string.Empty,
                         UsefulLife = string.Empty,
-
                         Month = t?.CreatedAt.ToString("MMM") ?? string.Empty,
                         Year = t?.CreatedAt.ToString("yyyy") ?? string.Empty,
-
                         Particulars = string.Empty,
                         Month2 = string.Empty,
                         FarmType = string.Empty,
@@ -235,8 +230,92 @@ namespace RDF.Arcana.API.Features.Get_Reports
                         ChequeVoucherNumber = string.Empty,
                         BOA2 = "Sales Journal - Meats",
                         System = "Manual",
-                        Books = string.Empty
-                    })).ToList();
+                        Books = "Sales Journal"
+                    },
+
+                    //debit
+                    new ArcanaGLResult
+                    {
+                        SyncId = "A" + (ti?.Id.ToString() ?? string.Empty),
+                        Mark = "SJ",
+                        Mark2 = string.Empty,
+                        AssetCIP = string.Empty,
+                        AccountingTag = t?.InvoiceType == "Charge"
+                            ? $"CI#{t?.InvoiceNo ?? string.Empty}"
+                            : t?.InvoiceType == "Sales"
+                                ? $"SI#{t?.InvoiceNo ?? string.Empty}"
+                                : t?.InvoiceNo ?? string.Empty,
+                        TransactionDate = t?.CreatedAt.ToString("yyyy-MM-dd") ?? string.Empty,
+                        ClientSupplier = t?.Client?.BusinessName ?? string.Empty,
+                        AccountTitleCode = "411200",
+                        AccountTitle = "Account Receivable",
+                        CompanyCode = "0001",
+                        Company = "RDFFLFI",
+                        DivisionCode = "31",
+                        Division = "Fresh Options",
+                        DepartmentCode = "7200",
+                        Department = "General Trade Distributorship",
+                        UnitCode = string.Empty,
+                        Unit = string.Empty,
+                        SubUnitCode = string.Empty,
+                        SubUnit = string.Empty,
+                        LocationCode = "1679",
+                        Location = t?.Client?.Cluster?.ClusterType ?? string.Empty,
+                        PONumber = string.Empty,
+                        RRNumber = string.Empty,
+                        ReferenceNo = t?.InvoiceType == "Charge"
+                            ? $"CI#{t?.InvoiceNo ?? string.Empty}"
+                            : t?.InvoiceType == "Sales"
+                                ? $"SI#{t?.InvoiceNo ?? string.Empty}"
+                                : t?.InvoiceNo ?? string.Empty,
+                        ItemCode = ti?.Item?.ItemCode ?? string.Empty,
+                        ItemDescription = ti?.Item?.ItemDescription ?? string.Empty,
+                        Quantity = ti?.Quantity.ToString() ?? "0",
+                        UOM = ti?.Item?.Uom?.UomDescription ?? string.Empty,
+                        UnitPrice = ti?.UnitPrice.ToString() ?? "0", 
+                        LineAmount = ti?.Amount.ToString() ?? "0",      
+                        VoucherJournal = string.Empty,
+                        AccountType = "INCOME",
+                        DRCR = "Debit",
+                        AssetCode = string.Empty,
+                        Asset = string.Empty,
+                        ServiceProviderCode = string.Empty,
+                        ServiceProvider = string.Empty,
+                        BOA = "Sales Journal",
+                        Allocation = "0",
+                        AccountGroup = string.Empty,
+                        AccountSubGroup = string.Empty,
+                        FinancialStatement = "Income Statement",
+                        UnitResponsible = "MAU",
+                        Batch = string.Empty,
+                        Remarks = string.Empty,
+                        PayrollPeriod = string.Empty,
+                        Position = string.Empty,
+                        PayrollType = string.Empty,
+                        PayrollType2 = string.Empty,
+                        DepreciationDescription = string.Empty,
+                        RemainingDepreciationValue = string.Empty,
+                        UsefulLife = string.Empty,
+                        Month = t?.CreatedAt.ToString("MMM") ?? string.Empty,
+                        Year = t?.CreatedAt.ToString("yyyy") ?? string.Empty,
+                        Particulars = string.Empty,
+                        Month2 = string.Empty,
+                        FarmType = string.Empty,
+                        JeanRemarks = string.Empty,
+                        From = string.Empty,
+                        ChangeTo = string.Empty,
+                        Reason = string.Empty,
+                        CheckingRemarks = string.Empty,
+                        BankName = string.Empty,
+                        ChequeNumber = string.Empty,
+                        ChequeVoucherNumber = string.Empty,
+                        BOA2 = "Sales Journal - Meats",
+                        System = "Manual",
+                        Books = "Sales Journal"
+                    }
+                    })
+                     ).ToList();
+
 
                 return Result.Success(result);
             }
