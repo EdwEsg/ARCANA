@@ -144,6 +144,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     .SumAsync(b => b.Quantity, cancellationToken);
                 transactionItem.RemainingQuantity = totalQuantity;
 
+                var totalRemainingQuantity = await _context.TransactionItemBbd
+                    .Where(b => b.TransactionItemsId == transactionItem.Id && b.IsActive)
+                    .SumAsync(b => b.RemainingQuantity, cancellationToken);
+                transactionItem.RemainingQuantity = totalRemainingQuantity;
+
                 await _context.SaveChangesAsync(cancellationToken);
                 return Result.Success();
 
