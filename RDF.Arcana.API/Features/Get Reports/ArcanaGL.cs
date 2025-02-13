@@ -42,7 +42,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
         public class ArcanaGLResult
         {
             public string SyncId { get; set; }
-            public string Mark { get; set; }
+            public string Mark1 { get; set; }
             public string Mark2 { get; set; }
             public string AssetCIP { get; set; }
             public string AccountingTag { get; set; }
@@ -67,10 +67,10 @@ namespace RDF.Arcana.API.Features.Get_Reports
             public string ReferenceNo { get; set; }
             public string ItemCode { get; set; }
             public string ItemDescription { get; set; }
-            public string Quantity { get; set; }
+            public decimal? Quantity { get; set; }
             public string UOM { get; set; }
-            public string UnitPrice { get; set; }
-            public string LineAmount { get; set; }
+            public decimal? UnitPrice { get; set; }
+            public decimal? LineAmount { get; set; }
             public string VoucherJournal { get; set; }
             public string AccountType { get; set; }
             public string DRCR { get; set; }
@@ -156,7 +156,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
                     new ArcanaGLResult
                     {
                         SyncId = "A" + (ti?.Id.ToString() ?? string.Empty),
-                        Mark = "SJ",
+                        Mark1 = "SJ",
                         Mark2 = string.Empty,
                         AssetCIP = string.Empty,
                         AccountingTag = t?.InvoiceType == "Charge"
@@ -189,10 +189,10 @@ namespace RDF.Arcana.API.Features.Get_Reports
                                 : t?.InvoiceNo ?? string.Empty,
                         ItemCode = ti?.Item?.ItemCode ?? string.Empty,
                         ItemDescription = ti?.Item?.ItemDescription ?? string.Empty,
-                        Quantity = ti?.Quantity.ToString() ?? "0",
+                        Quantity = ti?.Quantity ?? 0,
                         UOM = ti?.Item?.Uom?.UomDescription ?? string.Empty,
-                        UnitPrice = "-" + (ti?.UnitPrice.ToString() ?? "0"),
-                        LineAmount = "-" + (ti?.Amount.ToString() ?? "0"),
+                        UnitPrice = -(ti?.UnitPrice ?? 0),
+                        LineAmount = -(ti?.Amount ?? 0),
                         VoucherJournal = string.Empty,
                         AccountType = "INCOME",
                         DRCR = "Credit",
@@ -237,7 +237,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
                     new ArcanaGLResult
                     {
                         SyncId = "A" + (ti?.Id.ToString() ?? string.Empty),
-                        Mark = "SJ",
+                        Mark1 = "SJ",
                         Mark2 = string.Empty,
                         AssetCIP = string.Empty,
                         AccountingTag = t?.InvoiceType == "Charge"
@@ -270,10 +270,10 @@ namespace RDF.Arcana.API.Features.Get_Reports
                                 : t?.InvoiceNo ?? string.Empty,
                         ItemCode = ti?.Item?.ItemCode ?? string.Empty,
                         ItemDescription = ti?.Item?.ItemDescription ?? string.Empty,
-                        Quantity = ti?.Quantity.ToString() ?? "0",
+                        Quantity = ti?.Quantity ?? 0,
                         UOM = ti?.Item?.Uom?.UomDescription ?? string.Empty,
-                        UnitPrice = ti?.UnitPrice.ToString() ?? "0", 
-                        LineAmount = ti?.Amount.ToString() ?? "0",      
+                        UnitPrice = ti?.UnitPrice ?? 0, 
+                        LineAmount = ti?.Amount ?? 0,      
                         VoucherJournal = string.Empty,
                         AccountType = "INCOME",
                         DRCR = "Debit",
