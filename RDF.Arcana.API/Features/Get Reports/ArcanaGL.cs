@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Data;
+using RDF.Arcana.API.Features.Authenticate.AuthXApi;
 using System.Globalization;
 
 namespace RDF.Arcana.API.Features.Get_Reports
 {
     [Route("api/arcana-gl"), ApiController]
+    [AllowAnonymous]
     public class ArcanaGL : ControllerBase
     {
         private readonly IMediator _mediator;
@@ -17,6 +19,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
         }
 
         [HttpGet]
+        [ApiKeyAuth]
         public async Task<IActionResult> Get([FromQuery] ArcanaGLQuery query)
         {
             var result = await _mediator.Send(query);

@@ -174,12 +174,9 @@ app.ApplyMigrations();
 app.MapCarter();
 app.UseAuthentication();
 app.UseHttpsRedirection();
-//app.UseMiddleware<ApiKeyAuthMiddleaware>();
 app.UseCors(clientPermission);
-// app.UseAuthorization();
 app.MapControllers();
 app.Run();
-//await app.RunAsync();
 
 //ralph
 
