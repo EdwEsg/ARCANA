@@ -130,10 +130,21 @@ namespace RDF.Arcana.API.Features.Price_Mode
                         RemainingQuantity = (decimal?)x.RemainingQuantity
                     });
 
+                //For Reserve
+                var freebieRegistrationForReserve = _context.FreebieItems
+                    .Where(f => f.FreebieRequest.RequestedBy == request.AccessBy && f.FreebieRequest.Status == Status.ForReleasing)
+                    .Select(x => new
+                    {
+                        x.Items.ItemCode,
+                        x.Items.ItemDescription,
+                        RemainingQuantity = -(decimal?)x.Quantity
+                    });
+
                 var consolidatedQuery =
                     moveOrderItems
                     .Concat(transferInItems)
                     .Concat(returnOrderItems)
+                    .Concat(freebieRegistrationForReserve)
                     .GroupBy(g => new { g.ItemCode, g.ItemDescription })
                     .Select(grp => new
                     {

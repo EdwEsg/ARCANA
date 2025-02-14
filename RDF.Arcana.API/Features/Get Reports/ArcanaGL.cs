@@ -229,7 +229,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
                         ChequeNumber = string.Empty,
                         ChequeVoucherNumber = string.Empty,
                         BOA2 = "Sales Journal - Meats",
-                        System = "Manual",
+                        System = "Arcana",
                         Books = "Sales Journal"
                     },
 
@@ -310,7 +310,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
                         ChequeNumber = string.Empty,
                         ChequeVoucherNumber = string.Empty,
                         BOA2 = "Sales Journal - Meats",
-                        System = "Manual",
+                        System = "Arcana",
                         Books = "Sales Journal"
                     }
                     })

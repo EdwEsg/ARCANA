@@ -80,6 +80,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public decimal? Soh { get; set; }
             public decimal? Sales { get; set; }
             public decimal? ReturnCdo { get; set; }
+            public decimal? Reserve { get; set; }
         }
 
         public class FreebieGroup
@@ -203,6 +204,17 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         {
                             ItemCode = g.Key,
                             Quantity = g.Sum(f => f.Quantity),
+                        });
+
+                    //For Reserve
+                    var groupFreebieRegistrationForReserve = _context.FreebieItems
+                        .Where(f => f.FreebieRequest.RequestedBy == cdo &&
+                            f.FreebieRequest.Status == Status.ForReleasing)
+                        .GroupBy(f => f.Items.ItemCode)
+                        .Select(g => new FreebieGroup
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(g => g.Quantity),
                         });
 
                     //-------------------------------------------------------------------
@@ -336,6 +348,28 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 .Select(ti => ti.Quantity)
                                 .FirstOrDefault(),
 
+                            Reserve = Math.Max(
+                                (((groupReceiving
+                                    .Where(r => r.ItemCode == i.ItemCode)
+                                    .Select(r => r.RemainingQuantity)
+                                    .FirstOrDefault() ?? 0)
+                                 +
+                                 (groupTransferIn
+                                    .Where(ti => ti.ItemCode == i.ItemCode)
+                                    .Select(ti => ti.RemainingQuantity)
+                                    .FirstOrDefault() ?? 0)
+                                 +
+                                 (groupReturn
+                                    .Where(ti => ti.ItemCode == i.ItemCode)
+                                    .Select(ti => ti.Quantity)
+                                    .FirstOrDefault())
+                                ))
+                                 - groupFreebieRegistrationForReserve
+                                    .Where(f => f.ItemCode == i.ItemCode)
+                                    .Select(f => f.Quantity)
+                                    .FirstOrDefault()
+                                , 0),
+
                             Soh = Math.Max(
                                 (((groupReceiving
                                     .Where(r => r.ItemCode == i.ItemCode)
@@ -405,6 +439,17 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         {
                             ItemCode = g.Key,
                             Quantity = g.Sum(f => f.Quantity),
+                        });
+
+                    //For Reserve
+                    var groupFreebieRegistrationForReserve = _context.FreebieItems
+                        .Where(f => f.FreebieRequest.RequestedBy == request.AccessBy &&
+                            f.FreebieRequest.Status == Status.ForReleasing)
+                        .GroupBy(f => f.Items.ItemCode)
+                        .Select(g => new FreebieGroup
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(g => g.Quantity),
                         });
 
                     //-------------------------------------------------------------------
@@ -538,6 +583,28 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 .Where(ti => ti.ItemCode == i.ItemCode)
                                 .Select(ti => ti.Quantity)
                                 .FirstOrDefault(),
+
+                            Reserve = Math.Max(
+                                (((groupReceiving
+                                    .Where(r => r.ItemCode == i.ItemCode)
+                                    .Select(r => r.RemainingQuantity)
+                                    .FirstOrDefault() ?? 0)
+                                 +
+                                 (groupTransferIn
+                                    .Where(ti => ti.ItemCode == i.ItemCode)
+                                    .Select(ti => ti.RemainingQuantity)
+                                    .FirstOrDefault() ?? 0)
+                                 +
+                                 (groupReturn
+                                    .Where(ti => ti.ItemCode == i.ItemCode)
+                                    .Select(ti => ti.Quantity)
+                                    .FirstOrDefault())
+                                ))
+                                 - groupFreebieRegistrationForReserve
+                                    .Where(f => f.ItemCode == i.ItemCode)
+                                    .Select(f => f.Quantity)
+                                    .FirstOrDefault()
+                                , 0),
 
                             Soh = Math.Max(
                                 (((groupReceiving
