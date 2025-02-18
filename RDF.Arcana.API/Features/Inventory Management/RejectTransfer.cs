@@ -40,6 +40,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         {
             public int TransferId { get; set; }
             public int AccessBy { get; set; }
+            public string Reason { get; set; }
         }
 
         public class RejectTransferHandler : IRequestHandler<RejectTransferCommand, Result>
@@ -83,7 +84,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 var itemCodes = groupedItems.Select(i => i.ItemCode).ToList();
                 var userMoveOrderItems = await _context.MoveOrderItems
                     .Where(m => m.CreatedBy.Id == moveOrderItemsCreator && itemCodes.Contains(m.ItemCode) 
-                        && m.Reason == null)
+                        && m.RemainingQuantity != null)
                     .OrderBy(m => m.ItemCode)
                     .ToListAsync(cancellationToken);
 
@@ -92,7 +93,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     var quantityToRestore = item.QuantityToRestore;
 
                     var matchedMoveOrderItems = userMoveOrderItems
-                        .Where(m => m.ItemCode == item.ItemCode && m.Reason == null)
+                        .Where(m => m.ItemCode == item.ItemCode && m.RemainingQuantity != null)
                         .ToList();
 
                     foreach (var moItem in matchedMoveOrderItems)
@@ -134,6 +135,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 transferOrder.Status = Status.Rejected;
                 transferOrder.ModifiedBy = request.AccessBy;
                 transferOrder.ModifiedDate = DateTime.Now;
+                transferOrder.RejectReason = request.Reason;
 
                 await _context.SaveChangesAsync(cancellationToken);
 

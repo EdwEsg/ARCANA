@@ -17,6 +17,7 @@ namespace RDF.Arcana.API.Domain.Inventory
         public int? ModifiedBy { get; set; }
         public string Status { get; set; }
         public decimal TotalAmount { get; set; }
+        public string RejectReason { get; set; }
 
         public virtual User TransferTo { get; set; }
         public virtual User CreatedBy { get; set; }

@@ -83,6 +83,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public string TransferType { get; set; }
             public string Status { get; set; }
             public decimal TotalAmount { get; set; }
+            public string RejectReason { get; set; }
             public IEnumerable<TransferItemsDto> TransferItems { get; set; }
             public class TransferItemsDto
             {
@@ -179,6 +180,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         TransferType = to.TransferType,
                         Status = to.Status,
                         TotalAmount = to.TotalAmount,
+                        RejectReason = to.RejectReason,
                         TransferItems = to.TransferOrderItems.Select(x => new GetTransferResult.TransferItemsDto
                         {
                             ItemCode = x.ItemCode,

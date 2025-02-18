@@ -107,7 +107,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 if (user.UserRoles.UserRoleName == Roles.Depot) 
                 {
                     var moReturnByCdo = _context.MoveOrderItems
-                        .Where(mo => mo.Reason != null)
+                        .Where(mo => mo.Reason != null && mo.RemainingQuantity == null)
                         .GroupBy(x => new { x.ItemCode })
                         .Select(x => new
                         {
