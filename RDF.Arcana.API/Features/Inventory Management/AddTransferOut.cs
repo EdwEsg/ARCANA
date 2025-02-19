@@ -171,61 +171,56 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     .Where(x => requestedItems.Select(r => r.ItemCode).Contains(x.ItemCode))
                     .ToDictionaryAsync(x => x.ItemCode, x => x.Id, cancellationToken);
 
-                foreach (var requestedItem in requestedItems)
-                {
-                    if (!itemCodeToId.TryGetValue(requestedItem.ItemCode, out var requestedItemId))
-                    {
-                        return InventoryErrors.ItemNotFound(requestedItem.ItemCode);
-                    }
+                //foreach (var requestedItem in requestedItems)
+                //{
+                //    if (!itemCodeToId.TryGetValue(requestedItem.ItemCode, out var requestedItemId))
+                //    {
+                //        return InventoryErrors.ItemNotFound(requestedItem.ItemCode);
+                //    }
 
-                    if (!availableStockByItemId.TryGetValue(requestedItemId, out var totalAvailable)
-                        || totalAvailable < requestedItem.RequestedQuantity)
-                    {
-                        return InventoryErrors.InsufficientQuantity(
-                            requestedItem.ItemCode,
-                            requestedItem.RequestedQuantity,
-                            totalAvailable
-                        );
-                    }
+                //    if (!availableStockByItemId.TryGetValue(requestedItemId, out var totalAvailable)
+                //        || totalAvailable < requestedItem.RequestedQuantity)
+                //    {
+                //        return InventoryErrors.InsufficientQuantity(
+                //            requestedItem.ItemCode,
+                //            requestedItem.RequestedQuantity,
+                //            totalAvailable
+                //        );
+                //    }
 
-                    var remainingToDeduct = requestedItem.RequestedQuantity;
+                //    var remainingToDeduct = requestedItem.RequestedQuantity;
 
-                    foreach (var stock in transferOrderItems.Where(t => t.ItemCode == requestedItem.ItemCode))
-                    {
-                        if (remainingToDeduct <= 0) break;
-                        var deduction = Math.Min(stock.RemainingQuantity ?? 0, remainingToDeduct);
-                        stock.RemainingQuantity -= deduction;
-                        remainingToDeduct -= deduction;
-                    }
+                //    foreach (var stock in transferOrderItems.Where(t => t.ItemCode == requestedItem.ItemCode))
+                //    {
+                //        if (remainingToDeduct <= 0) break;
+                //        var deduction = Math.Min(stock.RemainingQuantity ?? 0, remainingToDeduct);
+                //        stock.RemainingQuantity -= deduction;
+                //        remainingToDeduct -= deduction;
+                //    }
 
-                    foreach (var stock in returnOrderItems.Where(r => r.ItemId == _context.Items.Where(i => i.ItemCode == requestedItem.ItemCode).Select(i => i.Id).FirstOrDefault()))
-                    {
-                        if (remainingToDeduct <= 0) break;
-                        var deduction = Math.Min(stock.RemainingQuantity, remainingToDeduct);
-                        stock.RemainingQuantity -= deduction;
-                        remainingToDeduct -= deduction;
-                    }
+                //    foreach (var stock in returnOrderItems.Where(r => r.ItemId == _context.Items.Where(i => i.ItemCode == requestedItem.ItemCode).Select(i => i.Id).FirstOrDefault()))
+                //    {
+                //        if (remainingToDeduct <= 0) break;
+                //        var deduction = Math.Min(stock.RemainingQuantity, remainingToDeduct);
+                //        stock.RemainingQuantity -= deduction;
+                //        remainingToDeduct -= deduction;
+                //    }
 
-                    foreach (var stock in moveOrderItems.Where(m => m.ItemCode == requestedItem.ItemCode))
-                    {
-                        if (remainingToDeduct <= 0) break;
-                        var deduction = Math.Min(stock.RemainingQuantity ?? 0, remainingToDeduct);
-                        stock.RemainingQuantity -= deduction;
-                        remainingToDeduct -= deduction;
-                    }
+                //    foreach (var stock in moveOrderItems.Where(m => m.ItemCode == requestedItem.ItemCode))
+                //    {
+                //        if (remainingToDeduct <= 0) break;
+                //        var deduction = Math.Min(stock.RemainingQuantity ?? 0, remainingToDeduct);
+                //        stock.RemainingQuantity -= deduction;
+                //        remainingToDeduct -= deduction;
+                //    }
 
-                    if (remainingToDeduct > 0)
-                    {
-                        throw new InvalidOperationException($"Unable to fully deduct quantity for ItemCode '{requestedItem.ItemCode}'. Remaining: {remainingToDeduct}");
-                    }
-                }
+                //    if (remainingToDeduct > 0)
+                //    {
+                //        throw new InvalidOperationException($"Unable to fully deduct quantity for ItemCode '{requestedItem.ItemCode}'. Remaining: {remainingToDeduct}");
+                //    }
+                //}
 
-                var itemCodes = requestedItems.Select(i => i.ItemCode).ToList();
-
-                var moveOrderItemsForUser = await _context.MoveOrderItems
-                    .Where(m => m.CreatedBy.Id == request.AccessBy && itemCodes.Contains(m.ItemCode))
-                    .OrderBy(m => m.ItemCode) 
-                    .ToListAsync(cancellationToken);
+                
 
                 
                 await _context.SaveChangesAsync(cancellationToken);
@@ -244,6 +239,13 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                 _context.TransferOrders.Add(transferOrder);
                 await _context.SaveChangesAsync(cancellationToken);
+
+                var itemCodes = requestedItems.Select(i => i.ItemCode).ToList();
+
+                var moveOrderItemsForUser = await _context.MoveOrderItems
+                    .Where(m => m.CreatedBy.Id == request.AccessBy && itemCodes.Contains(m.ItemCode))
+                    .OrderBy(m => m.ItemCode)
+                    .ToListAsync(cancellationToken);
 
                 var itemsInContext = await _context.Items
                     .Where(i => itemCodes.Contains(i.ItemCode))

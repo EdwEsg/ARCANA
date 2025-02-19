@@ -60,6 +60,74 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     return InventoryErrors.ToNotFound();
                 }
 
+                var senderId = transferOrders.CreatedById;
+
+                var senderTransferStocks = await _context.TransferOrderItems
+                    .Where(t => t.TransferOrder.TransferToId == senderId &&
+                                t.TransferOrder.Status == Status.Received &&
+                                t.IsActive &&
+                                t.RemainingQuantity > 0)
+                    .OrderBy(t => t.TransferOrder.TransactionDate)
+                    .ToListAsync(cancellationToken);
+
+                var senderReturnStocks = await _context.ReturnOrderItems
+                    .Where(r => r.ReturnOrder.CreatedbyId == senderId &&
+                                r.ReturnOrder.Status == Status.Received &&
+                                r.IsActive &&
+                                r.RemainingQuantity > 0)
+                    .OrderBy(r => r.ReturnOrder.CreatedDate)
+                    .ToListAsync(cancellationToken);
+
+                var senderMoveStocks = await _context.MoveOrderItems
+                    .Where(m => m.CreatedBy.Id == senderId &&
+                                m.IsActive &&
+                                m.RemainingQuantity > 0)
+                    .OrderBy(m => m.MoveOrder.CreatedDate)
+                    .ToListAsync(cancellationToken);
+
+                var transferOrderItemsList = await _context.TransferOrderItems
+                    .Where(t => t.TransferOrderId == transferOrders.Id)
+                    .ToListAsync(cancellationToken);
+
+                foreach (var orderItem in transferOrderItemsList)
+                {
+                    var itemCode = orderItem.ItemCode;
+                    var remainingToDeduct = orderItem.Quantity;
+
+                    foreach (var stock in senderTransferStocks.Where(s => s.ItemCode == itemCode))
+                    {
+                        if (remainingToDeduct <= 0) break;
+                        var available = stock.RemainingQuantity ?? 0;
+                        var deduction = available >= remainingToDeduct ? remainingToDeduct : available;
+                        stock.RemainingQuantity = (stock.RemainingQuantity ?? 0) - deduction;
+                        remainingToDeduct -= deduction;
+                    }
+
+                    foreach (var stock in senderReturnStocks.Where(s => s.ItemId == orderItem.ItemId))
+                    {
+                        if (remainingToDeduct <= 0) break;
+                        var available = stock.RemainingQuantity;
+                        var deduction = available >= remainingToDeduct ? remainingToDeduct : available;
+                        stock.RemainingQuantity = (available - deduction) ?? 0;
+                        remainingToDeduct -= deduction;
+                    }
+
+                    foreach (var stock in senderMoveStocks.Where(s => s.ItemCode == itemCode))
+                    {
+                        if (remainingToDeduct <= 0) break;
+                        var available = stock.RemainingQuantity ?? 0;
+                        var deduction = available >= remainingToDeduct ? remainingToDeduct : available;
+                        stock.RemainingQuantity = (stock.RemainingQuantity ?? 0) - deduction;
+                        remainingToDeduct -= deduction;
+                    }
+
+                    if (remainingToDeduct > 0)
+                    {
+                        throw new InvalidOperationException($"Unable to fully deduct quantity for ItemCode '{itemCode}'. Remaining: {remainingToDeduct}");
+                    }
+                }
+
+
                 transferOrders.Status = Status.Received;
                 transferOrders.ModifiedBy = request.AccessBy;
                 transferOrders.ModifiedDate = DateTime.Now;

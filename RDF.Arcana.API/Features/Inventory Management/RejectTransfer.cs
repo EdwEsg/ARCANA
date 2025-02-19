@@ -61,76 +61,76 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     return InventoryErrors.ToNotFound();
                 }
 
-                var transferOrderItems = await _context.TransferOrderItems
-                    .Where(toi => toi.TransferOrderId == request.TransferId)
-                    .ToListAsync(cancellationToken);
+                //var transferOrderItems = await _context.TransferOrderItems
+                //    .Where(toi => toi.TransferOrderId == request.TransferId)
+                //    .ToListAsync(cancellationToken);
 
-                if (!transferOrderItems.Any())
-                {
-                    return InventoryErrors.ToNotFound();
-                }
+                //if (!transferOrderItems.Any())
+                //{
+                //    return InventoryErrors.ToNotFound();
+                //}
 
-                var groupedItems = transferOrderItems
-                    .GroupBy(i => i.ItemCode)
-                    .Select(g => new
-                    {
-                        ItemCode = g.Key,
-                        QuantityToRestore = g.Sum(x => x.Quantity ?? 0)
-                    })
-                    .ToList();
+                //var groupedItems = transferOrderItems
+                //    .GroupBy(i => i.ItemCode)
+                //    .Select(g => new
+                //    {
+                //        ItemCode = g.Key,
+                //        QuantityToRestore = g.Sum(x => x.Quantity ?? 0)
+                //    })
+                //    .ToList();
 
-                var moveOrderItemsCreator = transferOrder.CreatedById;
+                //var moveOrderItemsCreator = transferOrder.CreatedById;
 
-                var itemCodes = groupedItems.Select(i => i.ItemCode).ToList();
-                var userMoveOrderItems = await _context.MoveOrderItems
-                    .Where(m => m.CreatedBy.Id == moveOrderItemsCreator && itemCodes.Contains(m.ItemCode) 
-                        && m.RemainingQuantity != null)
-                    .OrderBy(m => m.ItemCode)
-                    .ToListAsync(cancellationToken);
+                //var itemCodes = groupedItems.Select(i => i.ItemCode).ToList();
+                //var userMoveOrderItems = await _context.MoveOrderItems
+                //    .Where(m => m.CreatedBy.Id == moveOrderItemsCreator && itemCodes.Contains(m.ItemCode) 
+                //        && m.RemainingQuantity != null)
+                //    .OrderBy(m => m.ItemCode)
+                //    .ToListAsync(cancellationToken);
 
-                foreach (var item in groupedItems)
-                {
-                    var quantityToRestore = item.QuantityToRestore;
+                //foreach (var item in groupedItems)
+                //{
+                //    var quantityToRestore = item.QuantityToRestore;
 
-                    var matchedMoveOrderItems = userMoveOrderItems
-                        .Where(m => m.ItemCode == item.ItemCode && m.RemainingQuantity != null)
-                        .ToList();
+                //    var matchedMoveOrderItems = userMoveOrderItems
+                //        .Where(m => m.ItemCode == item.ItemCode && m.RemainingQuantity != null)
+                //        .ToList();
 
-                    foreach (var moItem in matchedMoveOrderItems)
-                    {
-                        if (quantityToRestore <= 0)
-                            break;
+                //    foreach (var moItem in matchedMoveOrderItems)
+                //    {
+                //        if (quantityToRestore <= 0)
+                //            break;
 
-                        var currentQuantity = moItem.RemainingQuantity ?? 0;
-                        var maxAllowed = moItem.Quantity; 
-                        var availableSpace = maxAllowed - currentQuantity;
+                //        var currentQuantity = moItem.RemainingQuantity ?? 0;
+                //        var maxAllowed = moItem.Quantity; 
+                //        var availableSpace = maxAllowed - currentQuantity;
 
-                        if (availableSpace <= 0)
-                        {
-                            continue;
-                        }
+                //        if (availableSpace <= 0)
+                //        {
+                //            continue;
+                //        }
 
-                        if (quantityToRestore <= availableSpace)
-                        {
-                            moItem.RemainingQuantity = currentQuantity + quantityToRestore;
-                            quantityToRestore = 0;
-                        }
-                        else
-                        {
-                            moItem.RemainingQuantity = currentQuantity + availableSpace;
-                            quantityToRestore -= availableSpace;
-                        }
-                    }
+                //        if (quantityToRestore <= availableSpace)
+                //        {
+                //            moItem.RemainingQuantity = currentQuantity + quantityToRestore;
+                //            quantityToRestore = 0;
+                //        }
+                //        else
+                //        {
+                //            moItem.RemainingQuantity = currentQuantity + availableSpace;
+                //            quantityToRestore -= availableSpace;
+                //        }
+                //    }
 
-                    if (quantityToRestore > 0)
-                    {
-                        throw new InvalidOperationException(
-                            $"Unable to restore full quantity for ItemCode '{item.ItemCode}'. Missing {quantityToRestore} units."
-                        );
-                    }
-                }
+                //    if (quantityToRestore > 0)
+                //    {
+                //        throw new InvalidOperationException(
+                //            $"Unable to restore full quantity for ItemCode '{item.ItemCode}'. Missing {quantityToRestore} units."
+                //        );
+                //    }
+                //}
 
-                await _context.SaveChangesAsync(cancellationToken);
+                //await _context.SaveChangesAsync(cancellationToken);
 
                 transferOrder.Status = Status.Rejected;
                 transferOrder.ModifiedBy = request.AccessBy;

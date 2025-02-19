@@ -6,6 +6,7 @@ using RDF.Arcana.API.Common.Pagination;
 using RDF.Arcana.API.Data;
 using RDF.Arcana.API.Domain;
 using System.Security.Claims;
+using static RDF.Arcana.API.Features.Inventory_Management.GetInventoryMrp;
 
 namespace RDF.Arcana.API.Features.Price_Mode
 {
@@ -140,11 +141,35 @@ namespace RDF.Arcana.API.Features.Price_Mode
                         RemainingQuantity = -(decimal?)x.Quantity
                     });
 
+                var groupTransferForReserve = _context.TransferOrderItems
+                        .Where(t => t.CreatedById == request.AccessBy &&
+                            t.TransferOrder.Status == Status.ForReceiving)
+                        .Select(x => new
+                        {
+                            x.Item.ItemCode,
+                            x.Item.ItemDescription,
+                            RemainingQuantity = -(decimal?)x.Quantity
+                        });
+
+                var groupReturnForReserve = _context.ReturnOrderItems
+                    .Where(t => t.ReturnOrder.CreatedbyId == request.AccessBy &&
+                        t.ReturnOrder.Status == Status.Pending)
+                    .Select(x => new
+                    {
+                        x.Item.ItemCode,
+                        x.Item.ItemDescription,
+                        RemainingQuantity = -(decimal?)x.Quantity
+                    });
+
+                //-------------------------------------------------------------------------------------
+
                 var consolidatedQuery =
                     moveOrderItems
                     .Concat(transferInItems)
                     .Concat(returnOrderItems)
                     .Concat(freebieRegistrationForReserve)
+                    .Concat(groupTransferForReserve)
+                    .Concat(groupReturnForReserve)
                     .GroupBy(g => new { g.ItemCode, g.ItemDescription })
                     .Select(grp => new
                     {

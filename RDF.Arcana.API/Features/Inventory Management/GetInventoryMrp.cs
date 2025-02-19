@@ -206,6 +206,9 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             Quantity = g.Sum(f => f.Quantity),
                         });
 
+                    //-------------------------------------------------------------------
+
+
                     //For Reserve
                     var groupFreebieRegistrationForReserve = _context.FreebieItems
                         .Where(f => f.FreebieRequest.RequestedBy == cdo &&
@@ -217,7 +220,38 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             Quantity = g.Sum(g => g.Quantity),
                         });
 
-                    //-------------------------------------------------------------------
+                    var groupTransferForReserve = _context.TransferOrderItems
+                        .Where(t => t.CreatedById == cdo &&
+                            t.TransferOrder.Status == Status.ForReceiving)
+                        .GroupBy(t => t.ItemCode)
+                        .Select(g => new FreebieGroup
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(t => t.Quantity) ?? 0
+                        });
+
+                    var groupReturnForReserve = _context.ReturnOrderItems
+                        .Where(r => r.ReturnOrder.CreatedbyId == cdo &&
+                            r.ReturnOrder.Status == Status.Pending)
+                        .GroupBy(t => t.Item.ItemCode)
+                        .Select(g => new FreebieGroup
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(r => r.Quantity)
+                        });
+
+                    var groupReturnForReplace = _context.ReturnOrderItems
+                        .Where(r => r.ReturnOrder.CreatedbyId == cdo &&
+                            r.ReturnOrder.Status == Status.Received &&
+                            r.Quantity != r.RemainingQuantity)
+                        .GroupBy(t => t.Item.ItemCode)
+                        .Select(g => new FreebieGroup
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(r => r.Quantity - r.RemainingQuantity)
+                        });
+
+                    //---------------------------------------------------------------------
 
                     var groupReturnCdo = _context.MoveOrderItems
                         .Where(mo => mo.CreatedBy.Id == cdo && (mo.ActualQuantity == null && mo.RemainingQuantity == null))
@@ -368,6 +402,18 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                     .Where(f => f.ItemCode == i.ItemCode)
                                     .Select(f => f.Quantity)
                                     .FirstOrDefault()
+                                - groupTransferForReserve
+                                    .Where(f => f.ItemCode == i.ItemCode)
+                                    .Select(f => f.Quantity)
+                                    .FirstOrDefault()
+                                - groupReturnForReserve
+                                    .Where(f => f.ItemCode == i.ItemCode)
+                                    .Select(f => f.Quantity)
+                                    .FirstOrDefault()
+                                - groupReturnForReplace
+                                    .Where(f => f.ItemCode == i.ItemCode)
+                                    .Select(f => f.Quantity)
+                                    .FirstOrDefault()
                                 , 0),
 
                             Soh = Math.Max(
@@ -441,7 +487,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             Quantity = g.Sum(f => f.Quantity),
                         });
 
+                    //-------------------------------------------------------------------
+
+
                     //For Reserve
+
                     var groupFreebieRegistrationForReserve = _context.FreebieItems
                         .Where(f => f.FreebieRequest.RequestedBy == request.AccessBy &&
                             f.FreebieRequest.Status == Status.ForReleasing)
@@ -452,7 +502,39 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             Quantity = g.Sum(g => g.Quantity),
                         });
 
-                    //-------------------------------------------------------------------
+                    var groupTransferForReserve = _context.TransferOrderItems
+                        .Where(t => t.CreatedById == request.AccessBy &&
+                            t.TransferOrder.Status == Status.ForReceiving)
+                        .GroupBy(t => t.ItemCode)
+                        .Select(g => new FreebieGroup
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(t => t.Quantity) ?? 0
+                        });
+
+                    var groupReturnForReserve = _context.ReturnOrderItems
+                        .Where(r => r.ReturnOrder.CreatedbyId == request.AccessBy &&
+                            r.ReturnOrder.Status == Status.Pending)
+                        .GroupBy(t => t.Item.ItemCode)
+                        .Select(g => new FreebieGroup
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(r => r.Quantity)
+                        });
+
+                    var groupReturnForReplace = _context.ReturnOrderItems
+                        .Where(r => r.ReturnOrder.CreatedbyId == request.AccessBy &&
+                            r.ReturnOrder.Status == Status.Received &&
+                            r.Quantity != r.RemainingQuantity)
+                        .GroupBy(t => t.Item.ItemCode)
+                        .Select(g => new FreebieGroup
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(r => r.Quantity - r.RemainingQuantity)
+                        });
+
+
+                    //--------------------------------------------------------------------
 
                     var groupReturnCdo = _context.MoveOrderItems
                         .Where(mo => mo.CreatedBy.Id == request.AccessBy && (mo.ActualQuantity == null && mo.RemainingQuantity == null))
@@ -601,6 +683,18 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                     .FirstOrDefault())
                                 ))
                                  - groupFreebieRegistrationForReserve
+                                    .Where(f => f.ItemCode == i.ItemCode)
+                                    .Select(f => f.Quantity)
+                                    .FirstOrDefault()
+                                - groupTransferForReserve
+                                    .Where(f => f.ItemCode == i.ItemCode)
+                                    .Select(f => f.Quantity)
+                                    .FirstOrDefault()
+                                - groupReturnForReserve
+                                    .Where(f => f.ItemCode == i.ItemCode)
+                                    .Select(f => f.Quantity)
+                                    .FirstOrDefault()
+                                - groupReturnForReplace
                                     .Where(f => f.ItemCode == i.ItemCode)
                                     .Select(f => f.Quantity)
                                     .FirstOrDefault()
