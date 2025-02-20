@@ -151,7 +151,7 @@ public class UpdateFreebiesInformation : ControllerBase
 
                 var itemDetails = await _context.Items
                     .Include(x => x.Uom)
-                    .Where(i => i.Id == freebieItem.ItemId)
+                    .Where(i => i.Id == requestFreebie.ItemId)
                     .Select(i => new { i.ItemCode, i.ItemDescription, i.Uom.UomCode })
                     .FirstOrDefaultAsync(cancellationToken);
                 if (freebieItem != null)

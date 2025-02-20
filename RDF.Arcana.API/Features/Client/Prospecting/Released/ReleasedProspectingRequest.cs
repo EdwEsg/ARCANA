@@ -140,7 +140,8 @@ public class ReleasedProspectingRequest : ControllerBase
                         .Where(t =>
                             t.RemainingQuantity > 0 &&
                             t.TransferOrder.CreatedById == validateClientRequest.RequestedBy &&
-                            t.ItemCode == dbItem.ItemCode)
+                            t.ItemCode == dbItem.ItemCode && 
+                            t.TransferOrder.Status == Status.Received)
                         .SumAsync(t => t.RemainingQuantity ?? 0, cancellationToken);
 
                     totalAvailable += (int)await _context.ReturnOrderItems
@@ -169,7 +170,8 @@ public class ReleasedProspectingRequest : ControllerBase
                         .Where(t =>
                             t.RemainingQuantity > 0 &&
                             t.TransferOrder.CreatedById == validateClientRequest.RequestedBy &&
-                            t.ItemCode == dbItem.ItemCode)
+                            t.ItemCode == dbItem.ItemCode &&
+                            t.TransferOrder.Status == Status.Received)
                         .OrderBy(t => t.Id)
                         .ToListAsync(cancellationToken);
 
