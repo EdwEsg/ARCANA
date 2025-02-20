@@ -232,24 +232,16 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                     var groupReturnForReserve = _context.ReturnOrderItems
                         .Where(r => r.ReturnOrder.CreatedbyId == cdo &&
-                            r.ReturnOrder.Status == Status.Pending)
-                        .GroupBy(t => t.Item.ItemCode)
-                        .Select(g => new FreebieGroup
-                        {
-                            ItemCode = g.Key,
-                            Quantity = g.Sum(r => r.Quantity)
-                        });
-
-                    var groupReturnForReplace = _context.ReturnOrderItems
-                        .Where(r => r.ReturnOrder.CreatedbyId == cdo &&
                             r.ReturnOrder.Status == Status.Received &&
-                            r.Quantity != r.RemainingQuantity)
-                        .GroupBy(t => t.Item.ItemCode)
+                            r.RemainingQuantity != r.Quantity &&
+                            r.RemainingQuantity != 0)
+                        .GroupBy(r => r.Item.ItemCode)
                         .Select(g => new FreebieGroup
                         {
                             ItemCode = g.Key,
                             Quantity = g.Sum(r => r.Quantity - r.RemainingQuantity)
                         });
+
 
                     //---------------------------------------------------------------------
 
@@ -410,10 +402,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                     .Where(f => f.ItemCode == i.ItemCode)
                                     .Select(f => f.Quantity)
                                     .FirstOrDefault()
-                                - groupReturnForReplace
-                                    .Where(f => f.ItemCode == i.ItemCode)
-                                    .Select(f => f.Quantity)
-                                    .FirstOrDefault()
                                 , 0),
 
                             Soh = Math.Max(
@@ -514,25 +502,15 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                     var groupReturnForReserve = _context.ReturnOrderItems
                         .Where(r => r.ReturnOrder.CreatedbyId == request.AccessBy &&
-                            r.ReturnOrder.Status == Status.Pending)
-                        .GroupBy(t => t.Item.ItemCode)
-                        .Select(g => new FreebieGroup
-                        {
-                            ItemCode = g.Key,
-                            Quantity = g.Sum(r => r.Quantity)
-                        });
-
-                    var groupReturnForReplace = _context.ReturnOrderItems
-                        .Where(r => r.ReturnOrder.CreatedbyId == request.AccessBy &&
                             r.ReturnOrder.Status == Status.Received &&
-                            r.Quantity != r.RemainingQuantity)
-                        .GroupBy(t => t.Item.ItemCode)
+                            r.RemainingQuantity != r.Quantity &&
+                            r.RemainingQuantity != 0)
+                        .GroupBy(r => r.Item.ItemCode)
                         .Select(g => new FreebieGroup
                         {
                             ItemCode = g.Key,
                             Quantity = g.Sum(r => r.Quantity - r.RemainingQuantity)
                         });
-
 
                     //--------------------------------------------------------------------
 
@@ -691,10 +669,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                     .Select(f => f.Quantity)
                                     .FirstOrDefault()
                                 - groupReturnForReserve
-                                    .Where(f => f.ItemCode == i.ItemCode)
-                                    .Select(f => f.Quantity)
-                                    .FirstOrDefault()
-                                - groupReturnForReplace
                                     .Where(f => f.ItemCode == i.ItemCode)
                                     .Select(f => f.Quantity)
                                     .FirstOrDefault()

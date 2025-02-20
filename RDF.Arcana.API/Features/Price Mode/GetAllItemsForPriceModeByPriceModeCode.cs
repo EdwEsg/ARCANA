@@ -151,15 +151,6 @@ namespace RDF.Arcana.API.Features.Price_Mode
                             RemainingQuantity = -(decimal?)x.Quantity
                         });
 
-                var groupReturnForReserve = _context.ReturnOrderItems
-                    .Where(t => t.ReturnOrder.CreatedbyId == request.AccessBy &&
-                        t.ReturnOrder.Status == Status.Pending)
-                    .Select(x => new
-                    {
-                        x.Item.ItemCode,
-                        x.Item.ItemDescription,
-                        RemainingQuantity = -(decimal?)x.Quantity
-                    });
 
                 //-------------------------------------------------------------------------------------
 
@@ -169,7 +160,6 @@ namespace RDF.Arcana.API.Features.Price_Mode
                     .Concat(returnOrderItems)
                     .Concat(freebieRegistrationForReserve)
                     .Concat(groupTransferForReserve)
-                    .Concat(groupReturnForReserve)
                     .GroupBy(g => new { g.ItemCode, g.ItemDescription })
                     .Select(grp => new
                     {
