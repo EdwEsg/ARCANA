@@ -48,6 +48,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 public decimal? Quantity { get; set; }
                 public string Reason { get; set; }
                 public decimal Amount { get; set; }
+                public string Bbd { get; set; }
 
             }
         }
@@ -286,7 +287,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         RemainingQuantity = i.Quantity,
                         ItemId = matchedItem?.Id ?? 0,
                         Reason = i.Reason,
-                        Amount = i.Amount
+                        Amount = i.Amount,
+                        Bbd = i.Bbd,
                     };
                 }).ToList();
 

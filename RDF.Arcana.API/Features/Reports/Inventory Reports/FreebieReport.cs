@@ -2,22 +2,21 @@
 using Microsoft.AspNetCore.Mvc;
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Data;
-using RDF.Arcana.API.Domain.Inventory;
 using System.Security.Claims;
 
-namespace RDF.Arcana.API.Features.Reports
+namespace RDF.Arcana.API.Features.Reports.Inventory_Reports
 {
-    [Route("api/arcana-mo-reports"), ApiController]
-    public class ReceivingReport : ControllerBase
+    [Route("api/arcana-freebie-report"), ApiController]
+    public class FreebieReport : ControllerBase
     {
         private readonly IMediator _mediator;
-        public ReceivingReport(IMediator mediator)
+        public FreebieReport(IMediator mediator)
         {
             _mediator = mediator;
         }
 
         [HttpGet]
-        public async Task<IActionResult> ArcanaMoReports([FromQuery] ReceivingReportCommand command)
+        public async Task<IActionResult> ArcanaFreebie([FromQuery] FreebieReportCommand command)
         {
             try
             {
@@ -28,7 +27,6 @@ namespace RDF.Arcana.API.Features.Reports
                 }
 
                 var result = await _mediator.Send(command);
-
                 return result;
             }
             catch (Exception ex)
@@ -37,7 +35,7 @@ namespace RDF.Arcana.API.Features.Reports
             }
         }
 
-        public class ReceivingReportCommand : IRequest<IActionResult>
+        public class FreebieReportCommand : IRequest<IActionResult>
         {
             public int AccessBy { get; set; }
             public DateTime DateFrom { get; set; }
@@ -45,7 +43,7 @@ namespace RDF.Arcana.API.Features.Reports
             public int? ClusterId { get; set; }
         }
 
-        public class Handler : IRequestHandler<ReceivingReportCommand, IActionResult>
+        public class Handler : IRequestHandler<FreebieReportCommand, IActionResult>
         {
             private readonly ArcanaDbContext _context;
             public Handler(ArcanaDbContext context)
@@ -53,7 +51,7 @@ namespace RDF.Arcana.API.Features.Reports
                 _context = context;
             }
 
-            public async Task<IActionResult> Handle(ReceivingReportCommand request, CancellationToken cancellationToken)
+            public async Task<IActionResult> Handle(FreebieReportCommand request, CancellationToken cancellationToken)
             {
                 var adjustedDateTo = request.DateTo.AddDays(1);
 
@@ -61,41 +59,45 @@ namespace RDF.Arcana.API.Features.Reports
                     .Include(u => u.UserRoles)
                     .FirstOrDefaultAsync(u => u.Id == request.AccessBy, cancellationToken);
 
-                var userDictionary = await _context.Users
-                    .Where(u => _context.MoveOrderItems.Select(moi => moi.CreatedBy.Id).Distinct().Contains(u.Id))
-                    .ToDictionaryAsync(u => u.Id, u => u.Fullname, cancellationToken);
-
-                IQueryable<MoveOrderItem> query = _context.MoveOrderItems
+                var query = _context.FreebieOrders
                     .AsSplitQuery()
                     .AsNoTracking()
-                    .Include(m => m.MoveOrder)
-                    .Include(u => u.Uom)
-                    .Include(i => i.Item)
-                        .ThenInclude(mt => mt.MeatType)
-                    .Include(i => i.Item)
-                        .ThenInclude(pr => pr.ProductSubCategory)
-                    .Include(c => c.CreatedBy);
+                    .Include(u => u.CreatedBy)
+                        .ThenInclude(c => c.CdoCluster)
+                    .Where(t => t.TransactionType == Status.Freebie);
 
-                if (user.UserRoles.UserRoleName != Roles.Cdo) 
+                if (user.UserRoles.UserRoleName != Roles.Cdo)
                 {
-                    query = query.Where(ti => ti.MoveOrder.CreatedDate >= request.DateFrom && ti.MoveOrder.CreatedDate < adjustedDateTo);
+                    query = query.Where(t => t.CreatedDate >= request.DateFrom && t.CreatedDate < adjustedDateTo);
                 }
 
                 if (request.ClusterId != null)
                 {
-                    query = query.Where(mo => mo.CreatedBy.CdoCluster.ClusterId == request.ClusterId);
+                    query = query.Where(t => t.CreatedBy.CdoCluster.ClusterId == request.ClusterId);
                 }
 
                 else
                 {
-                    query = query.Where(mo => mo.CreatedBy.Id == request.AccessBy);
+                    query = query.Where(t => t.CreatedBy.Id == request.AccessBy);
                 }
 
-                var consolidate = await query.ToListAsync(cancellationToken);
+                var finalQuery = query.SelectMany(t => t.FreebieOrderItems)
+                    .Select(i => new
+                    {
+                        FreebieItems = i,
+                        FreebieId = i.FreebieOrder.Id,
+                        CreatedByName = i.FreebieOrder.CreatedBy.Fullname,
+                        MeatType = i.Item.MeatType.MeatTypeName,
+                        ProductSubCategory = i.Item.ProductSubCategory.ProductSubCategoryName,
+                        Date = i.FreebieOrder.CreatedDate,
+                        Client = i.FreebieOrder.Client.BusinessName
+                    });
+
+                var consolidate = await finalQuery.ToListAsync(cancellationToken);
 
                 using (var workbook = new XLWorkbook())
                 {
-                    var worksheet = workbook.Worksheets.Add("Arcana_Received_MoveOrders");
+                    var worksheet = workbook.Worksheets.Add("Arcana_Freebie");
 
                     var headers = new List<string>
                     {
@@ -128,7 +130,8 @@ namespace RDF.Arcana.API.Features.Reports
                         "Account",
                         "Warehouse Code",
                         "Transaction Date",
-                        "Encoded By"
+                        "Encoded By",
+                        "Client"
                     };
 
                     var headerRange = worksheet.Range(worksheet.Cell(1, 1), worksheet.Cell(1, headers.Count));
@@ -154,19 +157,19 @@ namespace RDF.Arcana.API.Features.Reports
                         var rowColor = index % 2 == 0 ? evenRowColor : oddRowColor;
                         row.Style.Fill.BackgroundColor = rowColor;
 
-                        row.Cell(1).Value = consolidate[index].Id;
-                        row.Cell(2).Value = consolidate[index].MoveOrder.MoveOrderIdExternal;
-                        row.Cell(3).Value = consolidate[index].MoveOrder.CreatedDate.ToString("dd/MM/yyyy");
+                        row.Cell(1).Value = consolidate[index].FreebieId;
+                        row.Cell(2).Value = consolidate[index].FreebieItems.Id;
+                        row.Cell(3).Value = consolidate[index].Date;
                         row.Cell(4).Value = "RDF";
                         row.Cell(5).Value = "RDF";
-                        row.Cell(6).Value = consolidate[index].ItemCode;
-                        row.Cell(7).Value = consolidate[index].Item.ItemDescription;
-                        row.Cell(8).Value = consolidate[index].Uom.UomDescription;
-                        row.Cell(9).Value = consolidate[index].Item.MeatType.MeatTypeName;
-                        row.Cell(10).Value = consolidate[index].Item.ProductSubCategory.ProductSubCategoryName;
-                        row.Cell(11).Value = consolidate[index].ActualQuantity;
+                        row.Cell(6).Value = consolidate[index].FreebieItems.Item?.ItemCode;
+                        row.Cell(7).Value = consolidate[index].FreebieItems.Item?.ItemDescription;
+                        row.Cell(8).Value = consolidate[index].FreebieItems.Item?.Uom.UomDescription;
+                        row.Cell(9).Value = consolidate[index].MeatType;
+                        row.Cell(10).Value = consolidate[index].ProductSubCategory;
+                        row.Cell(11).Value = consolidate[index].FreebieItems.Quantity;
                         row.Cell(12).Value = "";
-                        row.Cell(13).Value = consolidate[index].ProductionDate;
+                        row.Cell(13).Value = consolidate[index].FreebieItems.Bbd;
                         row.Cell(14).Value = "";
                         row.Cell(15).Value = "";
                         row.Cell(16).Value = "";
@@ -182,10 +185,10 @@ namespace RDF.Arcana.API.Features.Reports
                         row.Cell(26).Value = "";
                         row.Cell(27).Value = "";
                         row.Cell(28).Value = "";
-                        row.Cell(29).Value = consolidate[index].MoveOrder.TransactionDate;
-                        row.Cell(30).Value = consolidate[index].CreatedBy.Fullname;
+                        row.Cell(29).Value = consolidate[index].Date;
+                        row.Cell(30).Value = consolidate[index].CreatedByName;
+                        row.Cell(31).Value = consolidate[index].Client;
 
-                        //for centering the numeric value for better readability
                         for (int col = 1; col <= 23; col++)
                         {
                             var cell = row.Cell(col);
@@ -203,7 +206,7 @@ namespace RDF.Arcana.API.Features.Reports
                     workbook.SaveAs(stream);
                     stream.Seek(0, SeekOrigin.Begin);
 
-                    string fileName = $"Arcana_MoveOrder_Receiving{request.DateFrom:MMM d, yyyy}-{request.DateTo:MMM d, yyyy}.xlsx";
+                    string fileName = $"Arcana_Freebie{request.DateFrom:MMM d, yyyy}-{request.DateTo:MMM d, yyyy}.xlsx";
                     return new FileStreamResult(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                     {
                         FileDownloadName = fileName
