@@ -118,7 +118,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                 var transactions = _context.Transactions
                     .Where(t => t.CreatedAt >= request.DateFrom && t.CreatedAt < adjustedDateTo &&
-                        //t.CreatedAt > DateTime.Parse("2025-01-22") &&
                         t.Status != Status.Cancelled)
                     .AsNoTracking()
                     .AsSplitQuery()
