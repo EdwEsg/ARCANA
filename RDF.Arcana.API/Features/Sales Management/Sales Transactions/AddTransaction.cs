@@ -106,6 +106,7 @@ public class AddTransaction : ControllerBase
             public decimal Quantity { get; set; }
             public decimal UnitPrice { get; set; }
             public decimal Amount { get; set; }
+            public decimal RemainingQuantity { get; set; }
         }
 
         public class BusinessAddressResult
@@ -332,7 +333,7 @@ public class AddTransaction : ControllerBase
                     UnitPrice = item.UnitPrice,
                     Amount = item.UnitPrice * item.Quantity,
                     AddedBy = request.AddedBy,
-                    RemainingQuantity = 0,
+                    RemainingQuantity = item.Quantity
                 };
 
                 var itemDetails = await _context.Items
@@ -348,7 +349,8 @@ public class AddTransaction : ControllerBase
                     Uom = itemDetails.UomCode,
                     UnitPrice = item.UnitPrice,
                     Quantity = item.Quantity,
-                    Amount = transactionItems.Amount
+                    Amount = transactionItems.Amount,
+                    RemainingQuantity = item.Quantity
                 });
 
                 await _context.TransactionItems.AddAsync(transactionItems, cancellationToken);

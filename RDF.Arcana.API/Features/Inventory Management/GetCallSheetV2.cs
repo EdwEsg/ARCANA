@@ -63,9 +63,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public string Search { get; set; }
             public DateTime DateFrom { get; set; }
             public DateTime DateTo { get; set; }
-            public int? ClientId { get; set; }
-            public int? TransactionId { get; set; }
-            public int? TransactionItemId { get; set; }
             public int AccessBy { get; set; }
         }
 
@@ -75,41 +72,32 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public string CustomerName { get; set; }
             public string BusinessName { get; set; }
             public DateTime CallSheetDate { get; set; }
-            public int TotalGray { get; set; }
-            public int TotalRed { get; set; }
-            public int TotalOrange { get; set; }
-            public int TotalGreen { get; set; }
-            public List<TransactionDto> CallSheetDtos { get; set; }
-            public class TransactionDto
+            public int Gray { get; set; }
+            public int Red { get; set; }
+            public int Orange { get; set; }
+            public int Green { get; set; }
+            public List<TransactionItemDto> CallSheetDtos { get; set; }
+            public class TransactionItemDto
             {
-                public int TransactionId { get; set; }
-                public int Gray { get; set; }
-                public int Red { get; set; }
-                public int Orange { get; set; }
-                public int Green { get; set; }
-                public List<TransactionItemDto> transactionItemDtos { get; set; }
-                public class TransactionItemDto
+                public string ItemCode { get; set; }
+                public string ItemDescription { get; set; }
+                public decimal SalesIn { get; set; }
+                public decimal RemainingInv { get; set; }
+                public decimal EndingInv { get; set; }
+                public decimal SalesOut { get; set; }
+                public decimal SuggestedPo { get; set; }
+                public decimal AverageSales { get; set; }
+                public List<BbdDto> bbdDtos { get; set; }
+                public class BbdDto
                 {
-                    public int TransactionItemId { get; set; }
-                    public string ItemCode { get; set; }
-                    public string ItemDescription { get; set; }
-                    public decimal SalesIn { get; set; }
-                    public decimal RemainingInv { get; set; }
-                    public decimal EndingInv { get; set; }
-                    public decimal SalesOut { get; set; }
-                    public decimal SuggestedPo { get; set; }
-                    public decimal AverageSales { get; set; }
-                    public List<BbdDto> bbdDtos { get; set; }
-                    public class BbdDto
-                    {
-                        public int BbdId { get; set; }
-                        public decimal Quantity { get; set; }
-                        public DateTime BbdDate { get; set; }
-                        public decimal RemainingQuantity { get; set; }
-                    }
+                    public int BbdId { get; set; }
+                    public decimal Quantity { get; set; }
+                    public DateTime BbdDate { get; set; }
+                    public decimal RemainingQuantity { get; set; }
                 }
+
             }
-            
+
         }
 
         public class Handler : IRequestHandler<GetCallSheetV2Query, PagedList<GetCallSheetV2Result>>
@@ -147,6 +135,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         .OrderByDescending(t => t.CreatedAt);
                 }
 
+                //search
                 if (!string.IsNullOrEmpty(request.Search))
                 {
                     transactionsQuery = transactionsQuery
@@ -155,130 +144,102 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         .OrderByDescending(t => t.CreatedAt);
                 }
 
-                if (request.ClientId.HasValue)
-                {
-                    transactionsQuery = transactionsQuery
-                        .Where(t => t.ClientId == request.ClientId)
-                        .OrderByDescending(t => t.CreatedAt);
-                }
-
-                if (request.TransactionId.HasValue)
-                {
-                    transactionsQuery = transactionsQuery
-                        .Where(t => t.Id == request.TransactionId)
-                        .OrderByDescending(t => t.CreatedAt);
-                }
-
-                if (request.TransactionItemId.HasValue)
-                {
-                    transactionsQuery = transactionsQuery
-                        .Where(t => t.TransactionItems.Any(ti => ti.Id == request.TransactionItemId))
-                        .OrderByDescending(t => t.CreatedAt);
-                }
-
                 var transactionsList = await transactionsQuery.ToListAsync(cancellationToken);
+
+                var allItems = await _context.Items
+                    .AsNoTracking()
+                    .ToListAsync(cancellationToken);
 
                 var groupedData = transactionsList
                     .GroupBy(t => new
                     {
                         t.ClientId,
                         CustomerName = t.Client.Fullname,
-                        BusinessName = t.Client.BusinessName,
-                        CallSheetDate = t.CreatedAt.Date
+                        BusinessName = t.Client.BusinessName
                     })
                     .Select(g =>
                     {
-                        // Summaries for the entire group
-                        var totalGray = g.Sum(t => t.TransactionItems
+                        var callSheetDate = g.Max(t => t.CreatedAt);
+
+                        var graySum = g.Sum(t => t.TransactionItems
                             .SelectMany(ti => ti.TransactionItemBbd)
                             .Where(bbd => bbd.Bbd < now && bbd.IsActive)
                             .Sum(bbd => (int?)bbd.RemainingQuantity) ?? 0);
 
-                        var totalRed = g.Sum(t => t.TransactionItems
+                        var redSum = g.Sum(t => t.TransactionItems
                             .SelectMany(ti => ti.TransactionItemBbd)
                             .Where(bbd => bbd.Bbd >= now && bbd.Bbd <= now.AddDays(10) && bbd.IsActive)
                             .Sum(bbd => (int?)bbd.RemainingQuantity) ?? 0);
 
-                        var totalOrange = g.Sum(t => t.TransactionItems
+                        var orangeSum = g.Sum(t => t.TransactionItems
                             .SelectMany(ti => ti.TransactionItemBbd)
                             .Where(bbd => bbd.Bbd > now.AddDays(10) && bbd.Bbd <= now.AddDays(15) && bbd.IsActive)
                             .Sum(bbd => (int?)bbd.RemainingQuantity) ?? 0);
 
-                        var totalGreen = g.Sum(t => t.TransactionItems
+                        var greenSum = g.Sum(t => t.TransactionItems
                             .SelectMany(ti => ti.TransactionItemBbd)
                             .Where(bbd => bbd.Bbd > now.AddDays(15) && bbd.IsActive)
                             .Sum(bbd => (int?)bbd.RemainingQuantity) ?? 0);
 
-                        var callSheetDtos = g.Select(t =>
-                        {
-                            var gray = t.TransactionItems
-                                .SelectMany(ti => ti.TransactionItemBbd)
-                                .Where(bbd => bbd.Bbd < now && bbd.IsActive)
-                                .Sum(bbd => (int?)bbd.RemainingQuantity) ?? 0;
+                        var allTransactionItems = g
+                            .SelectMany(t => t.TransactionItems)
+                            .ToList();
 
-                            var red = t.TransactionItems
-                                .SelectMany(ti => ti.TransactionItemBbd)
-                                .Where(bbd => bbd.Bbd >= now && bbd.Bbd <= now.AddDays(10) && bbd.IsActive)
-                                .Sum(bbd => (int?)bbd.RemainingQuantity) ?? 0;
+                        var callSheetDtos = allItems
+                            .Select(item =>
+                            {
+                                var matchingTIs = allTransactionItems
+                                    .Where(ti => ti.Item.ItemCode == item.ItemCode)
+                                    .ToList();
 
-                            var orange = t.TransactionItems
-                                .SelectMany(ti => ti.TransactionItemBbd)
-                                .Where(bbd => bbd.Bbd > now.AddDays(10) && bbd.Bbd <= now.AddDays(15) && bbd.IsActive)
-                                .Sum(bbd => (int?)bbd.RemainingQuantity) ?? 0;
+                                var salesIn = matchingTIs.Sum(x => x.Quantity);
 
-                            var green = t.TransactionItems
-                                .SelectMany(ti => ti.TransactionItemBbd)
-                                .Where(bbd => bbd.Bbd > now.AddDays(15) && bbd.IsActive)
-                                .Sum(bbd => (int?)bbd.RemainingQuantity) ?? 0;
+                                var remainingInv = matchingTIs.Sum(x => x.RemainingQuantity);
 
-                            var transactionItemDtos = t.TransactionItems
-                                .Select(ti => new GetCallSheetV2Result.TransactionDto.TransactionItemDto
+                                var allMatchedBbds = matchingTIs
+                                    .SelectMany(ti => ti.TransactionItemBbd)
+                                    .Where(bbd => bbd.IsActive)
+                                    .ToList();
+
+                                var bbdDtos = allMatchedBbds
+                                    .Select(bbd => new GetCallSheetV2Result.TransactionItemDto.BbdDto
+                                    {
+                                        BbdId = bbd.Id,
+                                        Quantity = bbd.Quantity,
+                                        BbdDate = bbd.Bbd,
+                                        RemainingQuantity = bbd.RemainingQuantity
+                                    })
+                                    .ToList();
+
+                                return new GetCallSheetV2Result.TransactionItemDto
                                 {
-                                    TransactionItemId = ti.Id,
-                                    ItemCode = ti.Item.ItemCode,
-                                    ItemDescription = ti.Item.ItemDescription,
-                                    SalesIn = ti.Quantity,
-                                    RemainingInv = ti.RemainingQuantity,
+                                    ItemCode = item.ItemCode,
+                                    ItemDescription = item.ItemDescription,
+                                    SalesIn = salesIn,
+                                    RemainingInv = remainingInv,
 
                                     EndingInv = 0,
                                     SalesOut = 0,
                                     SuggestedPo = 0,
                                     AverageSales = 0,
 
-                                    bbdDtos = ti.TransactionItemBbd
-                                        .Where(x => x.IsActive)
-                                        .Select(bbd => new GetCallSheetV2Result.TransactionDto.TransactionItemDto.BbdDto
-                                        {
-                                            BbdId = bbd.Id,
-                                            Quantity = bbd.Quantity,
-                                            BbdDate = bbd.Bbd,
-                                            RemainingQuantity = bbd.RemainingQuantity
-                                        })
-                                        .ToList()
-                                })
-                                .ToList();
-
-                            return new GetCallSheetV2Result.TransactionDto
-                            {
-                                TransactionId = t.Id,
-                                Gray = gray,
-                                Red = red,
-                                Orange = orange,
-                                Green = green,
-                                transactionItemDtos = transactionItemDtos
-                            };
-                        }).ToList();
+                                    bbdDtos = bbdDtos
+                                };
+                            })
+                            .ToList();
 
                         return new GetCallSheetV2Result
                         {
                             ClientId = g.Key.ClientId,
                             CustomerName = g.Key.CustomerName,
                             BusinessName = g.Key.BusinessName,
-                            CallSheetDate = g.Key.CallSheetDate,
-                            TotalGray = totalGray,
-                            TotalRed = totalRed,
-                            TotalOrange = totalOrange,
-                            TotalGreen = totalGreen,
+                            CallSheetDate = callSheetDate,
+
+                            Gray = graySum,
+                            Red = redSum,
+                            Orange = orangeSum,
+                            Green = greenSum,
+
                             CallSheetDtos = callSheetDtos
                         };
                     })
