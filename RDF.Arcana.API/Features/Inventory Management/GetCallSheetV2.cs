@@ -91,6 +91,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 public class BbdDto
                 {
                     public int BbdId { get; set; }
+                    public int TransactionItemId { get; set; }
                     public decimal Quantity { get; set; }
                     public DateTime BbdDate { get; set; }
                     public decimal RemainingQuantity { get; set; }
@@ -205,6 +206,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                     .Select(bbd => new GetCallSheetV2Result.TransactionItemDto.BbdDto
                                     {
                                         BbdId = bbd.Id,
+                                        TransactionItemId = bbd.TransactionItemsId,
                                         Quantity = bbd.Quantity,
                                         BbdDate = bbd.Bbd,
                                         RemainingQuantity = bbd.RemainingQuantity
