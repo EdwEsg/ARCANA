@@ -79,7 +79,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public List<TransactionItemDto> CallSheetDtos { get; set; }
             public class TransactionItemDto
             {
-                public List<int> TransactionItemIds { get; set; }
+                public List<TransactionItemInfoDto> TransactionItemIds { get; set; }
                 public string ItemCode { get; set; }
                 public string ItemDescription { get; set; }
                 public decimal SalesIn { get; set; }
@@ -96,6 +96,12 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     public decimal Quantity { get; set; }
                     public DateTime BbdDate { get; set; }
                     public decimal RemainingQuantity { get; set; }
+                }
+                public class TransactionItemInfoDto
+                {
+                    public int TransactionItemId { get; set; }
+                    public decimal RemainingQuantity { get; set; }
+                    public string ItemCode { get; set; }
                 }
 
             }
@@ -185,6 +191,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                         var allTransactionItems = g
                             .SelectMany(t => t.TransactionItems)
+                            .Where(t => t.RemainingQuantity > 0)
                             .ToList();
 
                         var callSheetDtos = allItems
@@ -218,8 +225,14 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 return new GetCallSheetV2Result.TransactionItemDto
                                 {
                                     TransactionItemIds = matchingTIs
-                                        .Select(ti => ti.Id)
-                                        .Distinct()
+                                        .GroupBy(ti => ti.Id)
+                                        .Select(grp => grp.First())
+                                        .Select(ti => new GetCallSheetV2Result.TransactionItemDto.TransactionItemInfoDto
+                                        {
+                                            TransactionItemId = ti.Id,
+                                            RemainingQuantity = ti.RemainingQuantity,
+                                            ItemCode = ti.Item.ItemCode
+                                        })
                                         .ToList(),
 
                                     ItemCode = item.ItemCode,
