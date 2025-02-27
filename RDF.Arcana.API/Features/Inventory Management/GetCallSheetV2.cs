@@ -79,6 +79,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public List<TransactionItemDto> CallSheetDtos { get; set; }
             public class TransactionItemDto
             {
+                public List<int> TransactionItemIds { get; set; }
                 public string ItemCode { get; set; }
                 public string ItemDescription { get; set; }
                 public decimal SalesIn { get; set; }
@@ -90,7 +91,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 public List<BbdDto> bbdDtos { get; set; }
                 public class BbdDto
                 {
-
                     public int TransactionItemId { get; set; }
                     public int BbdId { get; set; }
                     public decimal Quantity { get; set; }
@@ -217,6 +217,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                                 return new GetCallSheetV2Result.TransactionItemDto
                                 {
+                                    TransactionItemIds = matchingTIs
+                                        .Select(ti => ti.Id)
+                                        .Distinct()
+                                        .ToList(),
+
                                     ItemCode = item.ItemCode,
                                     ItemDescription = item.ItemDescription,
                                     SalesIn = salesIn,
