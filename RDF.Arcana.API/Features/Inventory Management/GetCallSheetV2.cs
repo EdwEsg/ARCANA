@@ -101,7 +101,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 {
                     public int TransactionItemId { get; set; }
                     public decimal RemainingQuantity { get; set; }
-                    public string ItemCode { get; set; }
                 }
 
             }
@@ -231,7 +230,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                         {
                                             TransactionItemId = ti.Id,
                                             RemainingQuantity = ti.RemainingQuantity,
-                                            ItemCode = ti.Item.ItemCode
                                         })
                                         .ToList(),
 
