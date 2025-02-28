@@ -15,8 +15,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             _mediator = mediator;
         }
 
-        [HttpPut("{transactionItemId:int}")]
-        public async Task<IActionResult> Put([FromBody] UpdateItemBbdCommand command, [FromRoute] int transactionItemId)
+        [HttpPut]
+        public async Task<IActionResult> Put([FromBody] UpdateItemBbdCommand command)
         {
             try
             {
@@ -25,8 +25,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 {
                     command.AccessBy = userId;
                 }
-
-                command.TransactionItemId = transactionItemId;
                 var result = await _mediator.Send(command);
 
                 return result.IsSuccess ? Ok(result) : BadRequest(result);
