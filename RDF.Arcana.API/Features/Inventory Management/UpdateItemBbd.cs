@@ -44,7 +44,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
         public class UpdateItemBbdDto
         {
-            public int TransactionItemId { get; set; }
+            public int TransactionId { get; set; }
+            public string ItemCode { get; set; }
 
             public List<ItemBbdDto> ItemBbds { get; set; } = new();
         }
@@ -76,7 +77,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         .Include(ti => ti.Transaction)
                         .Include(ti => ti.TransactionItemBbd)
                         .FirstOrDefaultAsync(
-                            ti => ti.Id == itemDto.TransactionItemId
+                            ti => ti.TransactionId == itemDto.TransactionId 
+                                  && ti.Item.ItemCode == itemDto.ItemCode
                                   && ti.Transaction.AddedBy == request.AccessBy,
                             cancellationToken);
 
@@ -84,7 +86,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     {
 
                         return InventoryErrors.TransactionItemNotFound(
-                            itemDto.TransactionItemId.ToString(),
+                            itemDto.TransactionId.ToString(),
                             currentUser?.Fullname
                         );
                     }

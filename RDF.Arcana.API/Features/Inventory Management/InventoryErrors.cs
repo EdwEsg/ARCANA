@@ -5,6 +5,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 {
     public class InventoryErrors
     {
+        public static Error NotFound(string code) => new("404", $"Not Found {code}");
         public static Error MoNotFound() => new("NotFound", "Move Order Not Found");
         public static Error ToNotFound() => new("NotFound", "Transfer Order Not Found");
         public static Error MoAlreadyExist() => new("AlreadyExist", "Move Order Already Exist in Database");

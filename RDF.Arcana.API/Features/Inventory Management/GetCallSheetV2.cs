@@ -91,7 +91,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 public List<BbdDto> bbdDtos { get; set; }
                 public class BbdDto
                 {
-                    public int TransactionItemId { get; set; }
+                    public int TransactionId { get; set; }
                     public int BbdId { get; set; }
                     public decimal Quantity { get; set; }
                     public DateTime BbdDate { get; set; }
@@ -99,7 +99,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 }
                 public class TransactionItemInfoDto
                 {
-                    public int TransactionItemId { get; set; }
+                    public int TransactionId { get; set; }
+                    public decimal Quantity { get; set; }
                     public decimal RemainingQuantity { get; set; }
                 }
 
@@ -190,7 +191,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                         var allTransactionItems = g
                             .SelectMany(t => t.TransactionItems)
-                            .Where(t => t.RemainingQuantity > 0)
+                            //.Where(t => t.RemainingQuantity > 0)
                             .ToList();
 
                         var callSheetDtos = allItems
@@ -213,7 +214,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                     .Select(bbd => new GetCallSheetV2Result.TransactionItemDto.BbdDto
                                     {
 
-                                        TransactionItemId = bbd.TransactionItemsId,
+                                        TransactionId = bbd.TransactionItems.TransactionId,
                                         BbdId = bbd.Id,
                                         Quantity = bbd.Quantity,
                                         BbdDate = bbd.Bbd,
@@ -228,7 +229,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                         .Select(grp => grp.First())
                                         .Select(ti => new GetCallSheetV2Result.TransactionItemDto.TransactionItemInfoDto
                                         {
-                                            TransactionItemId = ti.Id,
+                                            TransactionId = ti.TransactionId,
+                                            Quantity = ti.Quantity,
                                             RemainingQuantity = ti.RemainingQuantity,
                                         })
                                         .ToList(),
