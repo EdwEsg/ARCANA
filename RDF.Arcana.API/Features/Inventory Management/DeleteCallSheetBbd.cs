@@ -74,9 +74,10 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                 bbdId.IsActive = false;
                 bbdId.TransactionItems.RemainingQuantity += bbdId.Quantity;
-                bbdId.TransactionItems.RemainingQuantity -= bbdId.RemainingQuantity;
                 bbdId.TransactionItems.IsActive = true;
+                await _context.SaveChangesAsync(cancellationToken);
 
+                bbdId.TransactionItems.RemainingQuantity -= bbdId.RemainingQuantity;
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return Result.Success();
