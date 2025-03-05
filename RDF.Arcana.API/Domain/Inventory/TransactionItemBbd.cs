@@ -11,6 +11,8 @@ namespace RDF.Arcana.API.Domain.Inventory
         public bool IsActive { get; set; } = true;
         public DateTime CreatedDate { get; set; } = DateTime.Now;
         public decimal RemainingQuantity { get; set; }
+        public int TransactionBbdId { get; set; }
+        public virtual TransactionBbd TransactionBbd { get; set; }
 
     }
 }

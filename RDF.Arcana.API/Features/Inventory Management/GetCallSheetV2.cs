@@ -68,6 +68,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
         public class GetCallSheetV2Result
         {
+            public DateTime ModifiedDate { get; set; }
             public int ClientId { get; set; }
             public string CustomerName { get; set; }
             public string BusinessName { get; set; }
@@ -211,6 +212,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                     .ToList();
 
                                 var bbdDtos = allMatchedBbds
+                                    //.Where(r => r.RemainingQuantity > 0)
                                     .Select(bbd => new GetCallSheetV2Result.TransactionItemDto.BbdDto
                                     {
 
@@ -252,6 +254,13 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                         return new GetCallSheetV2Result
                         {
+                            ModifiedDate = g
+                                .SelectMany(t => t.TransactionItems)
+                                .SelectMany(ti => ti.TransactionItemBbd)
+                                .Where(b => b.TransactionItems.AddedBy == request.AccessBy)
+                                .Select(b => b.CreatedDate)
+                                .DefaultIfEmpty(DateTime.MinValue)
+                                .Max(),
                             ClientId = g.Key.ClientId,
                             CustomerName = g.Key.CustomerName,
                             BusinessName = g.Key.BusinessName,
