@@ -4,7 +4,7 @@ namespace RDF.Arcana.API.Domain.Inventory
 {
     public class TransactionItemBbd : BaseEntity
     {
-        public int TransactionItemsId { get; set; }
+        public int? TransactionItemsId { get; set; }
         public decimal Quantity { get; set; }
         public DateTime Bbd { get; set; }
         public virtual TransactionItems TransactionItems { get; set; }
@@ -13,6 +13,7 @@ namespace RDF.Arcana.API.Domain.Inventory
         public decimal RemainingQuantity { get; set; }
         public int TransactionBbdId { get; set; }
         public virtual TransactionBbd TransactionBbd { get; set; }
+        public string ItemCode { get; set; }
 
     }
 }

@@ -44,7 +44,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
         public class UpdateItemBbdDto
         {
-            public int TransactionId { get; set; }
             public string ItemCode { get; set; }
 
             public List<ItemBbdDto> ItemBbds { get; set; } = new();
@@ -68,7 +67,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
             public async Task<Result> Handle(UpdateMultipleBbdCommand request, CancellationToken cancellationToken)
             {
-                var currentUser = await _context.Users
+                var user = await _context.Users
                     .FirstOrDefaultAsync(u => u.Id == request.AccessBy, cancellationToken);
 
                 TransactionBbd newTransactionBbd = null;
@@ -102,119 +101,134 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     }
                 }
 
-
                 foreach (var itemDto in request.Items)
                 {
-                    var transactionItem = await _context.TransactionItems
-                        .Include(ti => ti.Transaction)
-                        .Include(ti => ti.TransactionItemBbd)
-                        .FirstOrDefaultAsync(
-                            ti => ti.TransactionId == itemDto.TransactionId 
-                                  && ti.Item.ItemCode == itemDto.ItemCode
-                                  && ti.Transaction.AddedBy == request.AccessBy,
-                            cancellationToken);
+                    var existingBbdRows = await _context.TransactionItemBbd
+                        .Include(x => x.TransactionItems)
+                        .Where(x =>
+                            x.ItemCode == itemDto.ItemCode
+                            && x.IsActive
+                            && x.Bbd > DateTime.MinValue
+                        )
+                        .ToListAsync(cancellationToken);
 
-                    if (transactionItem == null)
+                    decimal oldTotal = existingBbdRows.Sum(x => x.Quantity);
+                    decimal newTotal = 0;
+
+                    var existingIdsInRequest = itemDto.ItemBbds
+                        .Where(b => b.BbdId.HasValue && b.BbdId.Value > 0)
+                        .Select(b => b.BbdId.Value)
+                        .ToHashSet();
+
+                    foreach (var dbBbd in existingBbdRows)
                     {
-
-                        return InventoryErrors.TransactionItemNotFound(
-                            itemDto.TransactionId.ToString(),
-                            currentUser?.Fullname
-                        );
-                    }
-
-                    if (!itemDto.ItemBbds.Any())
-                    {
-                        foreach (var existingBbd in transactionItem.TransactionItemBbd.Where(x => x.IsActive))
+                        if (!existingIdsInRequest.Contains(dbBbd.Id))
                         {
-                            existingBbd.IsActive = false;
+                            dbBbd.IsActive = false;
                         }
-
-                        transactionItem.RemainingQuantity = transactionItem.Quantity;
-                        await _context.SaveChangesAsync(cancellationToken);
-                        continue;
                     }
-
-                    decimal sumOfIncomingQuantities = itemDto.ItemBbds.Sum(x => x.Quantity);
-
-                    if (sumOfIncomingQuantities > transactionItem.Quantity || sumOfIncomingQuantities < 0)
-                    {
-                        return InventoryErrors.InvalidRemainingInventory(
-                            transactionItem.Quantity,
-                            sumOfIncomingQuantities,
-                            transactionItem.Id.ToString()
-                        );
-                    }
-
-                    var originalBbdItems = transactionItem.TransactionItemBbd
-                        .Where(x => x.IsActive)
-                        .ToList();
 
                     foreach (var bbdInput in itemDto.ItemBbds)
                     {
                         if (bbdInput.BbdId.HasValue && bbdInput.BbdId.Value > 0)
                         {
-                            var existingBbd = originalBbdItems
-                                .FirstOrDefault(b => b.Id == bbdInput.BbdId.Value && b.IsActive);
+                            var found = existingBbdRows
+                                .FirstOrDefault(x => x.Id == bbdInput.BbdId.Value);
 
-                            if (existingBbd == null)
+                            if (found == null)
                             {
                                 return InventoryErrors.TransactionItemNotFound(
                                     bbdInput.BbdId.Value.ToString(),
-                                    currentUser?.Fullname
+                                    user?.Fullname
                                 );
                             }
 
-                            if (existingBbd.Quantity < bbdInput.Quantity)
+                            if (bbdInput.Quantity > found.Quantity)
                             {
                                 return InventoryErrors.InvalidRemainingInventory(
                                     bbdInput.Quantity,
-                                    existingBbd.Quantity,
-                                    existingBbd.Id.ToString()
+                                    found.Quantity,
+                                    found.Id.ToString()
                                 );
                             }
 
-                            existingBbd.RemainingQuantity = bbdInput.Quantity;
-                            existingBbd.Bbd = bbdInput.Bbd;
+                            found.Quantity = bbdInput.Quantity;
+                            found.RemainingQuantity = bbdInput.Quantity;
+                            found.Bbd = bbdInput.Bbd;
+
+                            newTotal += bbdInput.Quantity;
                         }
                         else
                         {
+
+                            var firstTi = await _context.TransactionItems
+                                .Where(ti =>
+                                    ti.Item.ItemCode == itemDto.ItemCode
+                                    && ti.Transaction.AddedBy == request.AccessBy
+                                    && ti.IsActive
+                                    && ti.RemainingQuantity > 0
+                                )
+                                .OrderBy(ti => ti.CreatedAt)
+                                .FirstOrDefaultAsync(cancellationToken);
+
+                            int? linkTiId = null;
+                            if (firstTi != null)
+                            {
+                                linkTiId = firstTi.Id;
+                            }
+
                             var newBbd = new TransactionItemBbd
                             {
-                                TransactionItemsId = transactionItem.Id,
+                                TransactionItemsId = linkTiId,
                                 Quantity = bbdInput.Quantity,
+                                RemainingQuantity = bbdInput.Quantity,
                                 Bbd = bbdInput.Bbd,
                                 IsActive = true,
                                 CreatedDate = DateTime.Now,
-                                RemainingQuantity = bbdInput.Quantity,
-                                TransactionBbdId = newTransactionBbd?.Id ?? 0
+                                TransactionBbdId = newTransactionBbd?.Id ?? 0,
+                                ItemCode = itemDto.ItemCode
                             };
-
                             await _context.TransactionItemBbd.AddAsync(newBbd, cancellationToken);
+
                         }
                     }
 
-                    var providedIds = itemDto.ItemBbds
-                        .Where(x => x.BbdId.HasValue && x.BbdId.Value > 0)
-                        .Select(x => x.BbdId.Value)
-                        .ToList();
+                    await _context.SaveChangesAsync(cancellationToken);
 
-                    foreach (var existing in originalBbdItems)
+                    if (newTotal > oldTotal)
                     {
-                        if (!providedIds.Contains(existing.Id))
-                        {
-                            existing.IsActive = false;
-                        }
+                        return InventoryErrors.InvalidRemainingInventory(
+                            oldTotal,
+                            newTotal,
+                            itemDto.ItemCode
+                        );
                     }
 
-                    await _context.SaveChangesAsync(cancellationToken);
+                    decimal difference = oldTotal - newTotal;
+                    if (difference > 0)
+                    {
+                        var transactionItemsForFifo = await _context.TransactionItems
+                            .Where(ti =>
+                                ti.Item.ItemCode == itemDto.ItemCode
+                                && ti.Transaction.AddedBy == request.AccessBy
+                                && ti.IsActive
+                                && ti.RemainingQuantity > 0
+                            )
+                            .OrderBy(ti => ti.CreatedAt)
+                            .ToListAsync(cancellationToken);
 
-                    var totalRemainingQuantity = await _context.TransactionItemBbd
-                        .Where(b => b.TransactionItemsId == transactionItem.Id && b.IsActive)
-                        .SumAsync(b => b.RemainingQuantity, cancellationToken);
+                        decimal neededQty = difference;
+                        foreach (var ti in transactionItemsForFifo)
+                        {
+                            if (neededQty <= 0) break;
+                            if (ti.RemainingQuantity <= 0) continue;
 
-                    transactionItem.RemainingQuantity = totalRemainingQuantity;
-                    await _context.SaveChangesAsync(cancellationToken);
+                            var allocation = Math.Min(ti.RemainingQuantity, neededQty);
+                            ti.RemainingQuantity -= allocation;
+                            neededQty -= allocation;
+                        }
+                        await _context.SaveChangesAsync(cancellationToken);
+                    }
                 }
 
                 return Result.Success();

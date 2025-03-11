@@ -130,13 +130,14 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
                 }
 
 
-                //filter for Admin/Finanace/GAS/Treasury
+                //filter for Admin/Finanace/GAS/Treasury/sir jtmerilles-3
                 var adminClusterFilter = _context.Users.Find(request.AccessBy);
                 if ((adminClusterFilter.UserRolesId == 1 ||
                     adminClusterFilter.UserRolesId == 7 ||
                     adminClusterFilter.UserRolesId == 8 ||
                     adminClusterFilter.UserRolesId == 9 ||
-                    adminClusterFilter.UserRolesId == 10) 
+                    adminClusterFilter.UserRolesId == 10 ||
+                    adminClusterFilter.UserRolesId == 3) 
                     && request.ClusterId is not null)
                 {
                     transactions = transactions.Where(t => t.Client.ClusterId == request.ClusterId);

@@ -90,41 +90,57 @@ namespace RDF.Arcana.API.Features.Get_Reports
 
             public async Task<PagedList<GetCDOReportsResult>> Handle(GetCDOReportsQuery request, CancellationToken cancellationToken)
             {
+                // Extend DateTo by 1 day for an exclusive upper bound
                 var adjustedDateTo = request.DateTo.AddDays(1);
 
-                var transactionItem = _context.TransactionItems
+                // Base query: items within date range
+                var transactionItems = _context.TransactionItems
                     .Include(t => t.Transaction)
                         .ThenInclude(ts => ts.TransactionSales)
                     .Include(t => t.Transaction)
                         .ThenInclude(c => c.Client)
                     .Include(i => i.Item)
+                    .Where(ti =>
+                        ti.CreatedAt >= request.DateFrom &&
+                        ti.CreatedAt < adjustedDateTo
+                    )
                     .AsSplitQuery()
                     .AsNoTracking();
 
-                //admin
-                if (request.AddedBy == 1)
+                // If there's a cluster filter, apply it
+                if (request.ClusterId is not null)
                 {
-                    transactionItem = transactionItem.Where(ti => ti.CreatedAt >= request.DateFrom && ti.CreatedAt < adjustedDateTo);
+                    transactionItems = transactionItems
+                        .Where(ti => ti.Transaction.Client.ClusterId == request.ClusterId);
                 }
-                else
-                {
-                    transactionItem = transactionItem.Where(ti => ti.CreatedAt >= request.DateFrom && ti.CreatedAt < adjustedDateTo
-                                              && ti.AddedBy == request.AddedBy);
 
-                    var hasMatchingItems = await transactionItem.AnyAsync(cancellationToken);
-                    if (!hasMatchingItems)
+                // If we have a user ID, apply logic based on whether user is admin or not
+                if (request.AddedBy is int userId)
+                {
+                    // If admin (userId == 1), do nothing special; they see all items
+                    if (userId != 1)
                     {
-                        throw new UnauthorizedAccessException("Unauthorized");
+                        // Non-admin: check if user has any items for this date range
+                        bool userHasAnyItems = await _context.TransactionItems
+                            .AnyAsync(
+                                ti => ti.AddedBy == userId &&
+                                      ti.CreatedAt >= request.DateFrom &&
+                                      ti.CreatedAt < adjustedDateTo,
+                                cancellationToken
+                            );
+
+                        // If user has any items, filter to only their items
+                        if (userHasAnyItems)
+                        {
+                            transactionItems = transactionItems
+                                .Where(ti => ti.AddedBy == userId);
+                        }
+                        // else, user sees all items
                     }
                 }
 
-
-                if (request.ClusterId is not null)
-                {
-                    transactionItem = transactionItem.Where(t => t.Transaction.Client.ClusterId == request.ClusterId);
-                }
-
-                var result = transactionItem.Select(t => new GetCDOReportsResult
+                // Project to our result model
+                var resultQuery = transactionItems.Select(t => new GetCDOReportsResult
                 {
                     Date = t.CreatedAt,
                     InvoiceNo = t.Transaction.InvoiceNo,
@@ -133,9 +149,11 @@ namespace RDF.Arcana.API.Features.Get_Reports
                     UnitPrice = t.UnitPrice,
                     Amount = t.Amount,
                     Outlet = t.Transaction.Client.BusinessName
-                }).OrderBy(d => d.Date);
+                })
+                .OrderBy(d => d.Date);
 
-                return await PagedList<GetCDOReportsResult>.CreateAsync(result, request.PageNumber, request.PageSize);
+                return await PagedList<GetCDOReportsResult>
+                    .CreateAsync(resultQuery, request.PageNumber, request.PageSize);
             }
         }
     }

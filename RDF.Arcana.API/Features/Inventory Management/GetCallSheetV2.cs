@@ -92,9 +92,9 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 public List<BbdDto> bbdDtos { get; set; }
                 public class BbdDto
                 {
-                    public int TransactionId { get; set; }
+                    //public int TransactionId { get; set; }
                     public int BbdId { get; set; }
-                    public decimal Quantity { get; set; }
+                    //public decimal Quantity { get; set; }
                     public DateTime BbdDate { get; set; }
                     public decimal RemainingQuantity { get; set; }
                 }
@@ -192,7 +192,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                         var allTransactionItems = g
                             .SelectMany(t => t.TransactionItems)
-                            //.Where(t => t.RemainingQuantity > 0)
+                            .Where(t => t.RemainingQuantity > 0)
                             .ToList();
 
                         var callSheetDtos = allItems
@@ -212,13 +212,13 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                     .ToList();
 
                                 var bbdDtos = allMatchedBbds
-                                    //.Where(r => r.RemainingQuantity > 0)
+                                    .Where(r => r.RemainingQuantity > 0)
                                     .Select(bbd => new GetCallSheetV2Result.TransactionItemDto.BbdDto
                                     {
 
-                                        TransactionId = bbd.TransactionItems.TransactionId,
+                                        //TransactionId = bbd.TransactionItems.TransactionId,
                                         BbdId = bbd.Id,
-                                        Quantity = bbd.Quantity,
+                                        //Quantity = bbd.Quantity,
                                         BbdDate = bbd.Bbd,
                                         RemainingQuantity = bbd.RemainingQuantity
                                     })
