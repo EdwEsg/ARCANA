@@ -148,7 +148,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 );
                             }
 
-                            found.Quantity = bbdInput.Quantity;
+                            //found.Quantity = bbdInput.Quantity;
                             found.RemainingQuantity = bbdInput.Quantity;
                             found.Bbd = bbdInput.Bbd;
                         }
@@ -180,7 +180,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                     decimal sumAllActiveBbd = await _context.TransactionItemBbd
                         .Where(b => b.ItemCode == itemDto.ItemCode && b.IsActive)
-                        .SumAsync(b => b.Quantity, cancellationToken);
+                        .SumAsync(b => b.RemainingQuantity, cancellationToken);
 
                     var allTforCode = await _context.TransactionItems
                         .Where(ti =>
