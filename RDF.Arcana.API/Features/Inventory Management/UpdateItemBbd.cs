@@ -70,11 +70,12 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 var user = await _context.Users
                     .FirstOrDefaultAsync(u => u.Id == request.AccessBy, cancellationToken);
 
-                TransactionBbd newTransactionBbd = null;
-                bool skipCreation = request.Items.All(item =>
+                // 1) If there's at least one brand-new BBD, create a TransactionBbd row 
+                var skipCreation = request.Items.All(item =>
                     item.ItemBbds.All(b => b.BbdId.HasValue && b.BbdId.Value > 0)
                 );
 
+                TransactionBbd newTransactionBbd = null;
                 if (!skipCreation)
                 {
                     newTransactionBbd = new TransactionBbd
@@ -88,6 +89,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 }
                 else
                 {
+                    // If everything is an update, just bump ModifiedDate on *some* existing row
                     var existingItemBbd = await _context.TransactionItemBbd
                         .Include(tib => tib.TransactionBbd)
                         .Where(tib => tib.IsActive)
@@ -101,37 +103,38 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     }
                 }
 
+                // 2) Process each item code
                 foreach (var itemDto in request.Items)
                 {
+                    // A) Gather all existing BBD rows for that item code
                     var existingBbdRows = await _context.TransactionItemBbd
-                        .Include(x => x.TransactionItems)
                         .Where(x =>
                             x.ItemCode == itemDto.ItemCode
                             && x.IsActive
-                            && x.Bbd > DateTime.MinValue
                         )
                         .ToListAsync(cancellationToken);
 
-                    decimal oldTotal = existingBbdRows.Sum(x => x.Quantity);
-                    decimal newTotal = 0;
-
-                    var existingIdsInRequest = itemDto.ItemBbds
+                    // B) Deactivate any existing rows not in the request
+                    var bbdIdsInRequest = itemDto.ItemBbds
                         .Where(b => b.BbdId.HasValue && b.BbdId.Value > 0)
                         .Select(b => b.BbdId.Value)
                         .ToHashSet();
 
                     foreach (var dbBbd in existingBbdRows)
                     {
-                        if (!existingIdsInRequest.Contains(dbBbd.Id))
+                        if (!bbdIdsInRequest.Contains(dbBbd.Id))
                         {
                             dbBbd.IsActive = false;
                         }
                     }
+                    await _context.SaveChangesAsync(cancellationToken);
 
+                    // C) Update or create each BBD from the request
                     foreach (var bbdInput in itemDto.ItemBbds)
                     {
                         if (bbdInput.BbdId.HasValue && bbdInput.BbdId.Value > 0)
                         {
+                            // Update existing
                             var found = existingBbdRows
                                 .FirstOrDefault(x => x.Id == bbdInput.BbdId.Value);
 
@@ -143,7 +146,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 );
                             }
 
-                            if (bbdInput.Quantity > found.Quantity)
+                            if (bbdInput.Quantity < 0)
                             {
                                 return InventoryErrors.InvalidRemainingInventory(
                                     bbdInput.Quantity,
@@ -152,34 +155,25 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 );
                             }
 
+                            // Overwrite quantity & Bbd
                             found.Quantity = bbdInput.Quantity;
                             found.RemainingQuantity = bbdInput.Quantity;
                             found.Bbd = bbdInput.Bbd;
-
-                            newTotal += bbdInput.Quantity;
                         }
                         else
                         {
-
-                            var firstTi = await _context.TransactionItems
-                                .Where(ti =>
-                                    ti.Item.ItemCode == itemDto.ItemCode
-                                    && ti.Transaction.AddedBy == request.AccessBy
-                                    && ti.IsActive
-                                    && ti.RemainingQuantity > 0
-                                )
-                                .OrderBy(ti => ti.CreatedAt)
-                                .FirstOrDefaultAsync(cancellationToken);
-
-                            int? linkTiId = null;
-                            if (firstTi != null)
+                            // brand-new BBD => create
+                            if (bbdInput.Quantity < 0)
                             {
-                                linkTiId = firstTi.Id;
+                                return InventoryErrors.InvalidRemainingInventory(
+                                    0,
+                                    bbdInput.Quantity,
+                                    itemDto.ItemCode
+                                );
                             }
 
                             var newBbd = new TransactionItemBbd
                             {
-                                TransactionItemsId = linkTiId,
                                 Quantity = bbdInput.Quantity,
                                 RemainingQuantity = bbdInput.Quantity,
                                 Bbd = bbdInput.Bbd,
@@ -189,46 +183,29 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 ItemCode = itemDto.ItemCode
                             };
                             await _context.TransactionItemBbd.AddAsync(newBbd, cancellationToken);
-
                         }
                     }
-
                     await _context.SaveChangesAsync(cancellationToken);
 
-                    if (newTotal > oldTotal)
+                    // D) Now re-compute T's RemQty = sum of *all active* BBD rows for that item code
+                    decimal sumAllActiveBbd = await _context.TransactionItemBbd
+                        .Where(b => b.ItemCode == itemDto.ItemCode && b.IsActive)
+                        .SumAsync(b => b.Quantity, cancellationToken);
+
+                    // E) Update *all* T's for that code => set .RemainingQuantity = sumAllActiveBbd
+                    var allTforCode = await _context.TransactionItems
+                        .Where(ti =>
+                            ti.Item.ItemCode == itemDto.ItemCode
+                            && ti.Transaction.AddedBy == request.AccessBy
+                            && ti.IsActive
+                        )
+                        .ToListAsync(cancellationToken);
+
+                    foreach (var tRow in allTforCode)
                     {
-                        return InventoryErrors.InvalidRemainingInventory(
-                            oldTotal,
-                            newTotal,
-                            itemDto.ItemCode
-                        );
+                        tRow.RemainingQuantity = sumAllActiveBbd;
                     }
-
-                    decimal difference = oldTotal - newTotal;
-                    if (difference > 0)
-                    {
-                        var transactionItemsForFifo = await _context.TransactionItems
-                            .Where(ti =>
-                                ti.Item.ItemCode == itemDto.ItemCode
-                                && ti.Transaction.AddedBy == request.AccessBy
-                                && ti.IsActive
-                                && ti.RemainingQuantity > 0
-                            )
-                            .OrderBy(ti => ti.CreatedAt)
-                            .ToListAsync(cancellationToken);
-
-                        decimal neededQty = difference;
-                        foreach (var ti in transactionItemsForFifo)
-                        {
-                            if (neededQty <= 0) break;
-                            if (ti.RemainingQuantity <= 0) continue;
-
-                            var allocation = Math.Min(ti.RemainingQuantity, neededQty);
-                            ti.RemainingQuantity -= allocation;
-                            neededQty -= allocation;
-                        }
-                        await _context.SaveChangesAsync(cancellationToken);
-                    }
+                    await _context.SaveChangesAsync(cancellationToken);
                 }
 
                 return Result.Success();
