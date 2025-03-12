@@ -70,7 +70,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 var user = await _context.Users
                     .FirstOrDefaultAsync(u => u.Id == request.AccessBy, cancellationToken);
 
-                // 1) If there's at least one brand-new BBD, create a TransactionBbd row 
                 var skipCreation = request.Items.All(item =>
                     item.ItemBbds.All(b => b.BbdId.HasValue && b.BbdId.Value > 0)
                 );
@@ -89,7 +88,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 }
                 else
                 {
-                    // If everything is an update, just bump ModifiedDate on *some* existing row
                     var existingItemBbd = await _context.TransactionItemBbd
                         .Include(tib => tib.TransactionBbd)
                         .Where(tib => tib.IsActive)
@@ -103,10 +101,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     }
                 }
 
-                // 2) Process each item code
                 foreach (var itemDto in request.Items)
                 {
-                    // A) Gather all existing BBD rows for that item code
                     var existingBbdRows = await _context.TransactionItemBbd
                         .Where(x =>
                             x.ItemCode == itemDto.ItemCode
@@ -114,7 +110,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         )
                         .ToListAsync(cancellationToken);
 
-                    // B) Deactivate any existing rows not in the request
                     var bbdIdsInRequest = itemDto.ItemBbds
                         .Where(b => b.BbdId.HasValue && b.BbdId.Value > 0)
                         .Select(b => b.BbdId.Value)
@@ -129,12 +124,10 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     }
                     await _context.SaveChangesAsync(cancellationToken);
 
-                    // C) Update or create each BBD from the request
                     foreach (var bbdInput in itemDto.ItemBbds)
                     {
                         if (bbdInput.BbdId.HasValue && bbdInput.BbdId.Value > 0)
                         {
-                            // Update existing
                             var found = existingBbdRows
                                 .FirstOrDefault(x => x.Id == bbdInput.BbdId.Value);
 
@@ -155,14 +148,12 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 );
                             }
 
-                            // Overwrite quantity & Bbd
                             found.Quantity = bbdInput.Quantity;
                             found.RemainingQuantity = bbdInput.Quantity;
                             found.Bbd = bbdInput.Bbd;
                         }
                         else
                         {
-                            // brand-new BBD => create
                             if (bbdInput.Quantity < 0)
                             {
                                 return InventoryErrors.InvalidRemainingInventory(
@@ -187,12 +178,10 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     }
                     await _context.SaveChangesAsync(cancellationToken);
 
-                    // D) Now re-compute T's RemQty = sum of *all active* BBD rows for that item code
                     decimal sumAllActiveBbd = await _context.TransactionItemBbd
                         .Where(b => b.ItemCode == itemDto.ItemCode && b.IsActive)
                         .SumAsync(b => b.Quantity, cancellationToken);
 
-                    // E) Update *all* T's for that code => set .RemainingQuantity = sumAllActiveBbd
                     var allTforCode = await _context.TransactionItems
                         .Where(ti =>
                             ti.Item.ItemCode == itemDto.ItemCode
