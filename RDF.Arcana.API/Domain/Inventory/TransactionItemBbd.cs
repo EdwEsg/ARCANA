@@ -14,8 +14,7 @@ namespace RDF.Arcana.API.Domain.Inventory
         public int TransactionBbdId { get; set; }
         public virtual TransactionBbd TransactionBbd { get; set; }
         public string ItemCode { get; set; }
-        public int ClientsId { get; set; }
-        public Clients Clients { get; set; }
+        public int? ClientsId { get; set; }
 
     }
 }

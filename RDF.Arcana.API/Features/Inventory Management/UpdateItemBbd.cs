@@ -38,6 +38,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         public class UpdateMultipleBbdCommand : IRequest<Result>
         {
             public int AccessBy { get; set; }
+            public int? ClientId { get; set; }
 
             public List<UpdateItemBbdDto> Items { get; set; } = new();
         }
@@ -45,7 +46,6 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         public class UpdateItemBbdDto
         {
             public string ItemCode { get; set; }
-            public int ClientId { get; set; }
 
             public List<ItemBbdDto> ItemBbds { get; set; } = new();
         }
@@ -120,7 +120,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     {
                         if (!bbdIdsInRequest.Contains(dbBbd.Id))
                         {
-                            dbBbd.IsActive = false;
+                            dbBbd.IsActive = true;
                         }
                     }
                     await _context.SaveChangesAsync(cancellationToken);
@@ -166,6 +166,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                             var newBbd = new TransactionItemBbd
                             {
+                                ClientsId = request.ClientId,
                                 Quantity = bbdInput.Quantity,
                                 RemainingQuantity = bbdInput.Quantity,
                                 Bbd = bbdInput.Bbd,
@@ -196,6 +197,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         tRow.RemainingQuantity = sumAllActiveBbd;
                     }
                     await _context.SaveChangesAsync(cancellationToken);
+
+
                 }
 
                 return Result.Success();

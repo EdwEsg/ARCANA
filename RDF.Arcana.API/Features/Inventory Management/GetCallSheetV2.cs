@@ -155,7 +155,13 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             .Distinct()
                             .ToList();
 
-                        var allBbdForGroup = allBbdRows.Where(b => itemCodesForGroup.Contains(b.ItemCode)).ToList();
+                        var allBbdForGroup = allBbdRows
+                            .Where(b =>
+                                itemCodesForGroup.Contains(b.ItemCode) &&
+                                // b.ClientsId must match the group’s ClientId
+                                b.ClientsId == g.Key.ClientId
+                            )
+                            .ToList();
 
                         var graySum = allBbdForGroup
                             .Where(bbd => bbd.Bbd < now)
@@ -182,7 +188,12 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             var remainingInv = matchingTIs.Sum(x => x.RemainingQuantity);
 
                             var itemBbds = allBbdRows
-                                .Where(b => b.ItemCode == item.ItemCode && b.IsActive && b.RemainingQuantity > 0)
+                                .Where(b =>
+                                    b.ItemCode == item.ItemCode &&
+                                    b.IsActive &&
+                                    b.RemainingQuantity > 0 &&
+                                    b.ClientsId == g.Key.ClientId // ensure same client
+                                )
                                 .ToList();
 
                             var bbdDtos = itemBbds.Select(bbd => new GetCallSheetV2Result.TransactionItemDto.BbdDto
