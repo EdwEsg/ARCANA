@@ -71,36 +71,36 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 var user = await _context.Users
                     .FirstOrDefaultAsync(u => u.Id == request.AccessBy, cancellationToken);
 
-                var skipCreation = request.Items.All(item =>
-                    item.ItemBbds.All(b => b.BbdId.HasValue && b.BbdId.Value > 0)
-                );
+                //var skipCreation = request.Items.All(item =>
+                //    item.ItemBbds.All(b => b.BbdId.HasValue && b.BbdId.Value > 0)
+                //);
 
-                TransactionBbd newTransactionBbd = null;
-                if (!skipCreation)
-                {
-                    newTransactionBbd = new TransactionBbd
-                    {
-                        CreatedById = request.AccessBy,
-                        ModifiedDate = DateTime.Now,
-                        IsActive = true
-                    };
-                    await _context.TransactionBbd.AddAsync(newTransactionBbd, cancellationToken);
-                    await _context.SaveChangesAsync(cancellationToken);
-                }
-                else
-                {
-                    var existingItemBbd = await _context.TransactionItemBbd
-                        .Include(tib => tib.TransactionBbd)
-                        .Where(tib => tib.IsActive)
-                        .FirstOrDefaultAsync(cancellationToken);
+                //TransactionBbd newTransactionBbd = null;
+                //if (!skipCreation)
+                //{
+                //    newTransactionBbd = new TransactionBbd
+                //    {
+                //        CreatedById = request.AccessBy,
+                //        ModifiedDate = DateTime.Now,
+                //        IsActive = true
+                //    };
+                //    await _context.TransactionBbd.AddAsync(newTransactionBbd, cancellationToken);
+                //    await _context.SaveChangesAsync(cancellationToken);
+                //}
+                //else
+                //{
+                //    var existingItemBbd = await _context.TransactionItemBbd
+                //        .Include(tib => tib.TransactionBbd)
+                //        .Where(tib => tib.IsActive)
+                //        .FirstOrDefaultAsync(cancellationToken);
 
-                    if (existingItemBbd?.TransactionBbd != null)
-                    {
-                        existingItemBbd.TransactionBbd.ModifiedDate = DateTime.Now;
-                        existingItemBbd.CreatedDate = DateTime.Now;
-                        await _context.SaveChangesAsync(cancellationToken);
-                    }
-                }
+                //    if (existingItemBbd?.TransactionBbd != null)
+                //    {
+                //        existingItemBbd.TransactionBbd.ModifiedDate = DateTime.Now;
+                //        existingItemBbd.CreatedDate = DateTime.Now;
+                //        await _context.SaveChangesAsync(cancellationToken);
+                //    }
+                //}
 
                 foreach (var itemDto in request.Items)
                 {
@@ -172,7 +172,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 Bbd = bbdInput.Bbd,
                                 IsActive = true,
                                 CreatedDate = DateTime.Now,
-                                TransactionBbdId = newTransactionBbd?.Id ?? 0,
+                                //TransactionBbdId = newTransactionBbd?.Id ?? 0,
                                 ItemCode = itemDto.ItemCode
                             };
                             await _context.TransactionItemBbd.AddAsync(newBbd, cancellationToken);

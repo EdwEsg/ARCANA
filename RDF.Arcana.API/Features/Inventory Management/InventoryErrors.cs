@@ -26,5 +26,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         public static Error TransactionNotFound(string tran, string cdo) => new("NotFound", $"Transaction Id '{tran}'  Not Found for Cdo: {cdo}");
         public static Error TransactionItemNotFound(string tran, string cdo) => new("NotFound", $"TransactionItem Id '{tran}'  Not Found for Cdo: {cdo}");
         public static Error InvalidRemainingInventory(decimal rem, decimal quan, string tran) => new("CannotExceed", $"RemainingInv {rem} cannot exceed Quantity {quan} for TransactionItemId {tran}");
+        //UpdateItemBBdV2
+        public static Error ExcessQuantity(decimal quantity, decimal remaining, string itemCode)
+            => new("Excess", $"Total input Quantity:{quantity} exceed Remaining Quantity:{remaining} for ItemCode: {itemCode} ");
+
+        public static Error CannotFoundBbd(int? bbdId)
+            => new("CannotFound", $"BbbId:{bbdId} cannot found");
     }
 }

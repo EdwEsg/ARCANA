@@ -158,7 +158,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         var allBbdForGroup = allBbdRows
                             .Where(b =>
                                 itemCodesForGroup.Contains(b.ItemCode) &&
-                                // b.ClientsId must match the group’s ClientId
+                                
                                 b.ClientsId == g.Key.ClientId
                             )
                             .ToList();
@@ -192,7 +192,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                     b.ItemCode == item.ItemCode &&
                                     b.IsActive &&
                                     b.RemainingQuantity > 0 &&
-                                    b.ClientsId == g.Key.ClientId // ensure same client
+                                    b.ClientsId == g.Key.ClientId 
                                 )
                                 .ToList();
 
