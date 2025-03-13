@@ -45,6 +45,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         public class UpdateItemBbdDto
         {
             public string ItemCode { get; set; }
+            public int ClientId { get; set; }
 
             public List<ItemBbdDto> ItemBbds { get; set; } = new();
         }
