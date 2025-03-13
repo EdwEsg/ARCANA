@@ -6,7 +6,7 @@ namespace RDF.Arcana.API.Domain.Inventory
     {
         public int? TransactionItemsId { get; set; }
         public decimal Quantity { get; set; }
-        public DateTime Bbd { get; set; }
+        public DateTime? Bbd { get; set; }
         public virtual TransactionItems TransactionItems { get; set; }
         public bool IsActive { get; set; } = true;
         public DateTime CreatedDate { get; set; } = DateTime.Now;

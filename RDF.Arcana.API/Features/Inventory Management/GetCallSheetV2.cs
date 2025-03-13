@@ -94,7 +94,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 public class BbdDto
                 {
                     public int BbdId { get; set; }
-                    public DateTime BbdDate { get; set; }
+                    public DateTime? BbdDate { get; set; }
                     public decimal RemainingQuantity { get; set; }
                 }
                 public class TransactionItemInfoDto
@@ -188,9 +188,14 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             var bbdDtos = itemBbds.Select(bbd => new GetCallSheetV2Result.TransactionItemDto.BbdDto
                             {
                                 BbdId = bbd.Id,
-                                BbdDate = bbd.Bbd,
+                                BbdDate = bbd?.Bbd,
                                 RemainingQuantity = bbd.RemainingQuantity
                             }).ToList();
+
+                            var endingInv = bbdDtos.Sum(x => x.RemainingQuantity);
+                            var salesOut = salesIn - remainingInv;
+                            var suggestedPo = 0m;
+                            var averageSales = 0m;
 
                             return new GetCallSheetV2Result.TransactionItemDto
                             {
@@ -206,10 +211,10 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 ItemDescription = item.ItemDescription,
                                 SalesIn = salesIn,
                                 RemainingInv = remainingInv,
-                                EndingInv = 0,
-                                SalesOut = 0,
-                                SuggestedPo = 0,
-                                AverageSales = 0,
+                                EndingInv = endingInv,
+                                SalesOut = salesOut,
+                                SuggestedPo = suggestedPo,
+                                AverageSales = averageSales,
                                 bbdDtos = bbdDtos
                             };
                         }).ToList();
