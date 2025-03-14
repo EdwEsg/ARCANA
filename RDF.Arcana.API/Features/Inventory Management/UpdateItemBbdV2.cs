@@ -82,7 +82,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         return InventoryErrors.ExcessQuantity(inputItems, items, item.ItemCode);
                     }
 
-                    foreach (var bbd in item.Bbds)
+                    bool flagNoBbdId = false;
+                    foreach (var bbd in item.Bbds.OrderBy(b => b.BbdId is null))
                     {
                         
                         if (bbd.BbdId is null) 
@@ -114,11 +115,12 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 if (tranItem.Quantity == tranItem.RemainingQuantity && quantityHolder == 0)
                                 {
                                     tranItem.RemainingQuantity = bbd.Quantity;
+                                    flagNoBbdId = true;
                                     break;
                                 }
 
                                 //test
-                                else if (bbd.Quantity >= tranItem.RemainingQuantity)
+                                else if (bbd.Quantity >= tranItem.RemainingQuantity && flagNoBbdId == false)
                                 {
                                     quantityHolder = bbd.Quantity - tranItem.RemainingQuantity;
                                     tranItem.RemainingQuantity = 0;
