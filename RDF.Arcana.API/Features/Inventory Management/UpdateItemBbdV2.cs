@@ -68,6 +68,17 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                 foreach (var item in request.Item)
                 {
+                    foreach (var bbd in item.Bbds)
+                    {
+                        if (bbd.Quantity > 0 && bbd.BbdDate is null)
+                        {
+                            return InventoryErrors.BbdDateNull(bbd.Quantity);
+                        }
+                    }
+                }
+
+                foreach (var item in request.Item)
+                {
                     var items = await _context.TransactionItems
                         .Where(ti => ti.Item.ItemCode == item.ItemCode &&
                                 ti.RemainingQuantity > 0 && 
@@ -110,7 +121,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             decimal quantityHolder = 0;
                             foreach (var tranItem in transactionItems)
                             {
-                                if (bbd.Quantity == 0) break;
+                                if (bbd.Quantity == 0 && bbd.BbdDate is not null) break;
 
                                 if (tranItem.Quantity == tranItem.RemainingQuantity && quantityHolder == 0)
                                 {
