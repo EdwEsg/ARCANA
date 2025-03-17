@@ -6,6 +6,7 @@ public class Roles
     public const string Admin = "Admin";
     public const string Cdo = "CDO";
     public const string Erp = "E.R.P Masterdata";
+    public const string RegistrationApprover = "Customer Registration Approver";
 
     //for GAS and Audit
     public const string GAS = "gas";

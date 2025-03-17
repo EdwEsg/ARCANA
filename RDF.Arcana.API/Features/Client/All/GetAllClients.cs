@@ -207,6 +207,9 @@ public class GetAllClients : ControllerBase
                 // To Separate Under Review & Approved Request between CDO and Approver including Admin
                 // (Request and Approval)
                 //To get the Approved Request, Approval table need to access and the role need to be Approver
+                case Roles.RegistrationApprover:
+                    regularClients = regularClients.Where(c => c.RegistrationStatus == request.RegistrationStatus && c.IsActive);
+                    break;
                 case var roleName when roleName.Contains(Roles.Approver) &&
                       (!string.IsNullOrWhiteSpace(request.RegistrationStatus) &&
                       !string.Equals(request.RegistrationStatus, Status.UnderReview, StringComparison.CurrentCultureIgnoreCase) &&
