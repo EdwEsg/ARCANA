@@ -193,88 +193,88 @@ public class AddTransaction : ControllerBase
             }
             //
 
-            var allItems = await _context.Items
-                .ToDictionaryAsync(i => i.Id, cancellationToken);
+            //var allItems = await _context.Items
+            //    .ToDictionaryAsync(i => i.Id, cancellationToken);
 
-            var transferOrderItems = await _context.TransferOrderItems
-                .Where(t => t.TransferOrder.TransferToId == request.AddedBy &&
-                            t.TransferOrder.Status == Status.Received &&
-                            t.IsActive &&
-                            t.RemainingQuantity > 0)
-                .OrderBy(t => t.TransferOrder.TransactionDate)
-                .ToListAsync(cancellationToken);
+            //var transferOrderItems = await _context.TransferOrderItems
+            //    .Where(t => t.TransferOrder.TransferToId == request.AddedBy &&
+            //                t.TransferOrder.Status == Status.Received &&
+            //                t.IsActive &&
+            //                t.RemainingQuantity > 0)
+            //    .OrderBy(t => t.TransferOrder.TransactionDate)
+            //    .ToListAsync(cancellationToken);
 
-            var returnOrderItems = await _context.ReturnOrderItems
-                .Where(r => r.ReturnOrder.CreatedbyId == request.AddedBy &&
-                            r.ReturnOrder.Status == Status.Received &&
-                            r.IsActive &&
-                            r.RemainingQuantity > 0)
-                .OrderBy(r => r.ReturnOrder.CreatedDate)
-                .ToListAsync(cancellationToken);
+            //var returnOrderItems = await _context.ReturnOrderItems
+            //    .Where(r => r.ReturnOrder.CreatedbyId == request.AddedBy &&
+            //                r.ReturnOrder.Status == Status.Received &&
+            //                r.IsActive &&
+            //                r.RemainingQuantity > 0)
+            //    .OrderBy(r => r.ReturnOrder.CreatedDate)
+            //    .ToListAsync(cancellationToken);
 
-            var moveOrderItems = await _context.MoveOrderItems
-                .Where(m => m.CreatedBy.Id == request.AddedBy &&
-                            m.IsActive &&
-                            m.RemainingQuantity > 0)
-                .OrderBy(m => m.MoveOrder.CreatedDate)
-                .ToListAsync(cancellationToken);
+            //var moveOrderItems = await _context.MoveOrderItems
+            //    .Where(m => m.CreatedBy.Id == request.AddedBy &&
+            //                m.IsActive &&
+            //                m.RemainingQuantity > 0)
+            //    .OrderBy(m => m.MoveOrder.CreatedDate)
+            //    .ToListAsync(cancellationToken);
 
-            var availableStock = transferOrderItems
-                .Concat(returnOrderItems.Cast<dynamic>())
-                .Concat(moveOrderItems.Cast<dynamic>())
-                .GroupBy(i => i.ItemId)
-                .ToDictionary(g => g.Key, g => g.Sum(i => (decimal)i.RemainingQuantity));
+            //var availableStock = transferOrderItems
+            //    .Concat(returnOrderItems.Cast<dynamic>())
+            //    .Concat(moveOrderItems.Cast<dynamic>())
+            //    .GroupBy(i => i.ItemId)
+            //    .ToDictionary(g => g.Key, g => g.Sum(i => (decimal)i.RemainingQuantity));
 
-            foreach (var requestedItem in request.Items)
-            {
-                if (!allItems.ContainsKey(requestedItem.ItemId))
-                {
-                    return ItemErrors.NotFound(requestedItem.ItemId);
-                }
+            //foreach (var requestedItem in request.Items)
+            //{
+            //    if (!allItems.ContainsKey(requestedItem.ItemId))
+            //    {
+            //        return ItemErrors.NotFound(requestedItem.ItemId);
+            //    }
 
-                if (!availableStock.TryGetValue(requestedItem.ItemId, out var totalAvailable) || totalAvailable < requestedItem.Quantity)
-                {
-                    var itemCode = allItems[requestedItem.ItemId].ItemCode;
-                    return TransactionErrors.InsufficientQuantity(itemCode, requestedItem.Quantity, totalAvailable);
-                }
+            //    if (!availableStock.TryGetValue(requestedItem.ItemId, out var totalAvailable) || totalAvailable < requestedItem.Quantity)
+            //    {
+            //        var itemCode = allItems[requestedItem.ItemId].ItemCode;
+            //        return TransactionErrors.InsufficientQuantity(itemCode, requestedItem.Quantity, totalAvailable);
+            //    }
 
-                var remainingToDeduct = requestedItem.Quantity;
+            //    var remainingToDeduct = requestedItem.Quantity;
 
-                foreach (var stock in transferOrderItems.Where(t => t.ItemId == requestedItem.ItemId))
-                {
-                    if (remainingToDeduct <= 0) break;
+            //    foreach (var stock in transferOrderItems.Where(t => t.ItemId == requestedItem.ItemId))
+            //    {
+            //        if (remainingToDeduct <= 0) break;
 
-                    var deduction = Math.Min(stock.RemainingQuantity ?? 0, remainingToDeduct);
-                    stock.RemainingQuantity -= deduction;
-                    remainingToDeduct -= deduction;
-                }
+            //        var deduction = Math.Min(stock.RemainingQuantity ?? 0, remainingToDeduct);
+            //        stock.RemainingQuantity -= deduction;
+            //        remainingToDeduct -= deduction;
+            //    }
 
-                foreach (var stock in returnOrderItems.Where(r => r.ItemId == requestedItem.ItemId))
-                {
-                    if (remainingToDeduct <= 0) break;
+            //    foreach (var stock in returnOrderItems.Where(r => r.ItemId == requestedItem.ItemId))
+            //    {
+            //        if (remainingToDeduct <= 0) break;
 
-                    var deduction = Math.Min(stock.RemainingQuantity, remainingToDeduct);
-                    stock.RemainingQuantity -= deduction;
-                    remainingToDeduct -= deduction;
-                }
+            //        var deduction = Math.Min(stock.RemainingQuantity, remainingToDeduct);
+            //        stock.RemainingQuantity -= deduction;
+            //        remainingToDeduct -= deduction;
+            //    }
 
-                foreach (var stock in moveOrderItems.Where(m => m.ItemId == requestedItem.ItemId))
-                {
-                    if (remainingToDeduct <= 0) break;
+            //    foreach (var stock in moveOrderItems.Where(m => m.ItemId == requestedItem.ItemId))
+            //    {
+            //        if (remainingToDeduct <= 0) break;
 
-                    var deduction = Math.Min(stock.RemainingQuantity ?? 0, remainingToDeduct);
-                    stock.RemainingQuantity -= deduction;
-                    remainingToDeduct -= deduction;
-                }
+            //        var deduction = Math.Min(stock.RemainingQuantity ?? 0, remainingToDeduct);
+            //        stock.RemainingQuantity -= deduction;
+            //        remainingToDeduct -= deduction;
+            //    }
 
-                if (remainingToDeduct > 0)
-                {
-                    var itemCode = allItems[requestedItem.ItemId].ItemCode;
-                    throw new InvalidOperationException($"Insufficient stock for ItemCode: {itemCode}. Remaining: {remainingToDeduct}");
-                }
-            }
+            //    if (remainingToDeduct > 0)
+            //    {
+            //        var itemCode = allItems[requestedItem.ItemId].ItemCode;
+            //        throw new InvalidOperationException($"Insufficient stock for ItemCode: {itemCode}. Remaining: {remainingToDeduct}");
+            //    }
+            //}
 
-            await _context.SaveChangesAsync(cancellationToken);
+            //await _context.SaveChangesAsync(cancellationToken);
 
 
             //
