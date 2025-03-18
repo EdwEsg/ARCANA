@@ -191,7 +191,7 @@ public class AddTransaction : ControllerBase
                 }
 
             }
-            //
+            //Uncomment this for inventory
 
             //var allItems = await _context.Items
             //    .ToDictionaryAsync(i => i.Id, cancellationToken);

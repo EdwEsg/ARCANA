@@ -103,7 +103,7 @@ namespace RDF.Arcana.API.Features.Price_Mode
 
             public async Task<PagedList<GetAllItemsForPriceModeResult>> Handle(GetAllItemsForPriceModeQuery request, CancellationToken cancellationToken)
             {
-
+                //Uncomment this for Inventory
                 //var moveOrderItems = _context.MoveOrderItems
                 //    .Where(rq => rq.RemainingQuantity > 0 && rq.MoveOrder.CreatedById == request.AccessBy)
                 //    .Select(x => new
