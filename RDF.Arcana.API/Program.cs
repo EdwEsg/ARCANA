@@ -48,7 +48,7 @@ builder.Services.AddControllers(
 
 //builder.Services.AddDatabaseConfiguration(builder.Configuration, builder.Environment.EnvironmentName);
 
-var connectionString = builder.Configuration.GetConnectionString("Testing");
+var connectionString = builder.Configuration.GetConnectionString("Production");
 var moveOrderConnectionString = builder.Configuration.GetConnectionString("MoveOrder");
 
 builder.Services.AddDbContext<ArcanaDbContext>(x =>
