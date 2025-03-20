@@ -82,25 +82,32 @@ public class CDOReports : ControllerBase
                 .AsSplitQuery()
                 .AsNoTracking();
 
-            if (request.AddedBy == 1)
-            {
-                query = query.Where(ti => ti.CreatedAt >= request.DateFrom && ti.CreatedAt < adjustedDateTo);
-            }
-            else
-            {
-                query = query.Where(ti => ti.CreatedAt >= request.DateFrom && ti.CreatedAt < adjustedDateTo
-                                          && ti.AddedBy == request.AddedBy);
-
-                var hasMatchingItems = await query.AnyAsync(cancellationToken);
-                if (!hasMatchingItems)
-                {
-                    return new UnauthorizedResult();
-                }
-            }
+            query = query.Where(ti => ti.CreatedAt >= request.DateFrom && ti.CreatedAt < adjustedDateTo);
 
             if (request.ClusterId is not null)
             {
-                query = query.Where(t => t.Transaction.Client.ClusterId == request.ClusterId);
+                query = query
+                    .Where(ti => ti.Transaction.Client.ClusterId == request.ClusterId);
+            }
+
+            if (request.AddedBy is int userId)
+            {
+                if (userId != 1)
+                {
+                    bool userHasAnyItems = await _context.TransactionItems
+                        .AnyAsync(
+                            ti => ti.AddedBy == userId &&
+                                  ti.CreatedAt >= request.DateFrom &&
+                                  ti.CreatedAt < adjustedDateTo,
+                            cancellationToken
+                    );
+
+                    if (userHasAnyItems)
+                    {
+                        query = query
+                            .Where(ti => ti.AddedBy == userId);
+                    }
+                }
             }
 
             var consolidate = await query.ToListAsync(cancellationToken);

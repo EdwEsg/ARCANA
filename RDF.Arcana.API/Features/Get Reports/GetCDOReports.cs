@@ -90,10 +90,8 @@ namespace RDF.Arcana.API.Features.Get_Reports
 
             public async Task<PagedList<GetCDOReportsResult>> Handle(GetCDOReportsQuery request, CancellationToken cancellationToken)
             {
-                // Extend DateTo by 1 day for an exclusive upper bound
                 var adjustedDateTo = request.DateTo.AddDays(1);
 
-                // Base query: items within date range
                 var transactionItems = _context.TransactionItems
                     .Include(t => t.Transaction)
                         .ThenInclude(ts => ts.TransactionSales)
@@ -107,20 +105,16 @@ namespace RDF.Arcana.API.Features.Get_Reports
                     .AsSplitQuery()
                     .AsNoTracking();
 
-                // If there's a cluster filter, apply it
                 if (request.ClusterId is not null)
                 {
                     transactionItems = transactionItems
                         .Where(ti => ti.Transaction.Client.ClusterId == request.ClusterId);
                 }
 
-                // If we have a user ID, apply logic based on whether user is admin or not
                 if (request.AddedBy is int userId)
                 {
-                    // If admin (userId == 1), do nothing special; they see all items
                     if (userId != 1)
                     {
-                        // Non-admin: check if user has any items for this date range
                         bool userHasAnyItems = await _context.TransactionItems
                             .AnyAsync(
                                 ti => ti.AddedBy == userId &&
@@ -129,17 +123,14 @@ namespace RDF.Arcana.API.Features.Get_Reports
                                 cancellationToken
                             );
 
-                        // If user has any items, filter to only their items
                         if (userHasAnyItems)
                         {
                             transactionItems = transactionItems
                                 .Where(ti => ti.AddedBy == userId);
                         }
-                        // else, user sees all items
                     }
                 }
 
-                // Project to our result model
                 var resultQuery = transactionItems.Select(t => new GetCDOReportsResult
                 {
                     Date = t.CreatedAt,
