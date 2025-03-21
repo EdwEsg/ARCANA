@@ -81,6 +81,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public decimal? Sales { get; set; }
             public decimal? ReturnCdo { get; set; }
             public decimal? Reserve { get; set; }
+            public decimal? ForReleasing { get; set; }
+            public decimal? TemporaryReturn { get; set; }
         }
 
         public class FreebieGroup
@@ -314,6 +316,16 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             Quantity = g.Sum(x => x.Quantity)
                         });
 
+                    //Temporary Return
+                    var groupTemporaryReturn = _context.ReturnOrderItems
+                        .Where(r => r.ReturnOrder.CreatedbyId == cdo &&
+                            r.ReturnOrder.Status == Status.Pending)
+                        .GroupBy(r => r.Item.ItemCode)
+                        .Select(g => new FreebieGroup
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(r => r.Quantity)
+                        });
 
                     var consolidateGroups = _context.Items
                         .Where(i => string.IsNullOrEmpty(request.Search) ||
@@ -370,6 +382,16 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 .FirstOrDefault(),
 
                             Replace = groupReplace
+                                .Where(ti => ti.ItemCode == i.ItemCode)
+                                .Select(ti => ti.Quantity)
+                                .FirstOrDefault(),
+
+                            ForReleasing = groupFreebieRegistrationForReserve
+                                .Where(ti => ti.ItemCode == i.ItemCode)
+                                .Select(ti => ti.Quantity)
+                                .FirstOrDefault(),
+
+                            TemporaryReturn = groupTemporaryReturn
                                 .Where(ti => ti.ItemCode == i.ItemCode)
                                 .Select(ti => ti.Quantity)
                                 .FirstOrDefault(),
@@ -584,6 +606,17 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             Quantity = g.Sum(x => x.Quantity)
                         });
 
+                    //Temporary Return
+                    var groupTemporaryReturn = _context.ReturnOrderItems
+                        .Where(r => r.ReturnOrder.CreatedbyId == request.AccessBy &&
+                            r.ReturnOrder.Status == Status.Pending)
+                        .GroupBy(r => r.Item.ItemCode)
+                        .Select(g => new FreebieGroup
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(r => r.Quantity)
+                        });
+
 
                     var consolidateGroups = _context.Items
                         .Where(i => string.IsNullOrEmpty(request.Search) ||
@@ -640,6 +673,16 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 .FirstOrDefault(),
 
                             Replace = groupReplace
+                                .Where(ti => ti.ItemCode == i.ItemCode)
+                                .Select(ti => ti.Quantity)
+                                .FirstOrDefault(),
+
+                            ForReleasing = groupFreebieRegistrationForReserve
+                                .Where(ti => ti.ItemCode == i.ItemCode)
+                                .Select(ti => ti.Quantity)
+                                .FirstOrDefault(),
+
+                            TemporaryReturn = groupTemporaryReturn
                                 .Where(ti => ti.ItemCode == i.ItemCode)
                                 .Select(ti => ti.Quantity)
                                 .FirstOrDefault(),
