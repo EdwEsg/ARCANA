@@ -35,5 +35,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
         public static Error BbdDateNull(decimal quantity)
             => new("BbdDateBull", $"Bbd date should not be null because it has Quantity:{quantity}");
+
+        public static Error ReturnOrderIdNotFound(string code) => new("404", $"Not Found Return Order Id: {code}");
     }
 }

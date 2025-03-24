@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using DocumentFormat.OpenXml.Office.CustomUI;
+using Microsoft.AspNetCore.Mvc;
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Data;
 using RDF.Arcana.API.Domain.Inventory;
@@ -46,7 +47,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 public List<BbdsDto> Bbds { get; set; }
                 public class BbdsDto
                 {
-                    public int? BbdId { get; set; }
+                    //public int? BbdId { get; set; }
                     public decimal Quantity { get; set; }
                     public DateTime? BbdDate { get; set; }
                 }
@@ -77,6 +78,26 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     }
                 }
 
+                var itemGroup = request.Item
+                    .GroupBy(x => x.ItemCode)
+                    .Select(g => new
+                    {
+                        g.Key,
+                    }).ToList();
+
+                foreach (var itemCode in  itemGroup.OrderBy(x => x.Key))
+                {
+                    var itemBbd = _context.TransactionItemBbd
+                        .Where(r => r.RemainingQuantity > 0 &&
+                            r.ClientsId == request.ClientId &&
+                            r.ItemCode == itemCode.Key);
+
+                    foreach (var item in itemBbd)
+                    {
+                        item.RemainingQuantity = 0;
+                    }
+                }
+
                 foreach (var item in request.Item)
                 {
                     var items = await _context.TransactionItems
@@ -94,11 +115,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     }
 
                     bool flagNoBbdId = false;
-                    foreach (var bbd in item.Bbds.OrderBy(b => b.BbdId is null))
+                    foreach (var bbd in item.Bbds/*.OrderBy(b => b.BbdId is null)*/)
                     {
                         
-                        if (bbd.BbdId is null) 
-                        {
+                        //if (bbd.BbdId is null) 
+                        //{
                             var newItemBbd = new TransactionItemBbd
                             {
                                 ClientsId = request.ClientId,
@@ -130,67 +151,67 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                     break;
                                 }
 
-                                //test
-                                else if (bbd.Quantity >= tranItem.RemainingQuantity && flagNoBbdId == false)
-                                {
-                                    quantityHolder = bbd.Quantity - tranItem.RemainingQuantity;
-                                    tranItem.RemainingQuantity = 0;
-                                    continue;
-                                }
+                                ////test
+                                //else if (bbd.Quantity >= tranItem.RemainingQuantity && flagNoBbdId == false)
+                                //{
+                                //    quantityHolder = bbd.Quantity - tranItem.RemainingQuantity;
+                                //    tranItem.RemainingQuantity = 0;
+                                //    continue;
+                                //}
 
-                                else if (quantityHolder is not 0)
-                                {
-                                    tranItem.RemainingQuantity = tranItem.Quantity - quantityHolder;
-                                    quantityHolder = 0;
-                                }
+                                //else if (quantityHolder is not 0)
+                                //{
+                                //    tranItem.RemainingQuantity = tranItem.Quantity - quantityHolder;
+                                //    quantityHolder = 0;
+                                //}
 
-                                else
-                                {
-                                    tranItem.RemainingQuantity += bbd.Quantity;
-                                }
+                                //else
+                                //{
+                                //    tranItem.RemainingQuantity += bbd.Quantity;
+                                //}
                             }
 
 
-                        }
+                        //}
 
-                        else
-                        {
-                            var bbdId = await _context.TransactionItemBbd
-                                .FirstOrDefaultAsync(tib => tib.Id == bbd.BbdId, cancellationToken);
+                        //else
+                        //{
+                        //    var bbdId = await _context.TransactionItemBbd
+                        //        .FirstOrDefaultAsync(tib => tib.Id == bbd.BbdId, cancellationToken);
 
-                            if (bbdId is null)
-                            {
-                                return InventoryErrors.CannotFoundBbd(bbd.BbdId);
-                            }
+                        //    if (bbdId is null)
+                        //    {
+                        //        return InventoryErrors.CannotFoundBbd(bbd.BbdId);
+                        //    }
 
 
-                            var deductToTranItem = bbdId.RemainingQuantity - bbd.Quantity;
-                            bbdId.RemainingQuantity = bbd.Quantity;
+                        //    var deductToTranItem = bbdId.RemainingQuantity - bbd.Quantity;
+                        //    bbdId.RemainingQuantity = bbd.Quantity;
 
-                            var transactionItems = await _context.TransactionItems
-                                .Where(ti => ti.Item.ItemCode == item.ItemCode &&
-                                ti.RemainingQuantity > 0 &&
-                                ti.IsActive)
-                                .OrderBy(ti => ti.CreatedAt)
-                                .ToListAsync(cancellationToken);
+                        //    var transactionItems = await _context.TransactionItems
+                        //        .Where(ti => ti.Item.ItemCode == item.ItemCode &&
+                        //        ti.RemainingQuantity > 0 &&
+                        //        ti.IsActive)
+                        //        .OrderBy(ti => ti.CreatedAt)
+                        //        .ToListAsync(cancellationToken);
 
-                            foreach (var tranItem in transactionItems)
-                            {
-                                if (deductToTranItem == 0) break;
+                        //    foreach (var tranItem in transactionItems)
+                        //    {
+                        //        if (deductToTranItem == 0) break;
 
-                                if (tranItem.RemainingQuantity >= deductToTranItem)
-                                {
-                                    tranItem.RemainingQuantity -= deductToTranItem;
-                                    deductToTranItem = 0;
-                                }
-                                else
-                                {
-                                    deductToTranItem -= tranItem.RemainingQuantity;
-                                    tranItem.RemainingQuantity = 0;
-                                }
-                            }
-                            await _context.SaveChangesAsync(cancellationToken);
-                        }
+                        //        if (tranItem.RemainingQuantity >= deductToTranItem)
+                        //        {
+                        //            tranItem.RemainingQuantity -= deductToTranItem;
+                        //            deductToTranItem = 0;
+                        //        }
+                        //        else
+                        //        {
+                        //            deductToTranItem -= tranItem.RemainingQuantity;
+                        //            tranItem.RemainingQuantity = 0;
+                        //        }
+                        //    }
+                        //    await _context.SaveChangesAsync(cancellationToken);
+                        //}
 
                         await _context.SaveChangesAsync(cancellationToken);
 
