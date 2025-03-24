@@ -150,7 +150,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                     flagNoBbdId = true;
                                     break;
                                 }
-
+                                 
                                 ////test
                                 //else if (bbd.Quantity >= tranItem.RemainingQuantity && flagNoBbdId == false)
                                 //{
