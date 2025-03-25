@@ -205,8 +205,21 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                             var endingInv = bbdDtos.Sum(x => x.RemainingQuantity);
                             var salesOut = salesIn - remainingInv;
-                            var suggestedPo = 0m;
-                            var averageSales = 0m;
+                            var suggestedPo = salesOut - remainingInv;
+
+                            if (suggestedPo < 0)
+                            {
+                                suggestedPo = 0;
+                            }
+
+                            var today = DateTime.Today;
+                            bool isEndOfMonth = today.Day == DateTime.DaysInMonth(today.Year, today.Month);
+
+                            var averageSales = salesOut;
+                            if (isEndOfMonth)
+                            {
+                                averageSales = salesOut / today.Month;
+                            }
 
                             return new GetCallSheetV2Result.TransactionItemDto
                             {
