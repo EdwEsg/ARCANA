@@ -78,6 +78,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
             public decimal UnitPrice { get; set; }
             public decimal Amount { get; set; }
             public string Outlet { get; set; }
+            public string Status { get; set; }
         }
 
         public class Handler : IRequestHandler<GetCDOReportsQuery, PagedList<GetCDOReportsResult>>
@@ -100,7 +101,8 @@ namespace RDF.Arcana.API.Features.Get_Reports
                     .Include(i => i.Item)
                     .Where(ti =>
                         ti.CreatedAt >= request.DateFrom &&
-                        ti.CreatedAt < adjustedDateTo
+                        ti.CreatedAt < adjustedDateTo &&
+                        ti.Transaction.Status != Status.Voided
                     )
                     .AsSplitQuery()
                     .AsNoTracking();
@@ -139,7 +141,8 @@ namespace RDF.Arcana.API.Features.Get_Reports
                     Quantity = t.Quantity,
                     UnitPrice = t.UnitPrice,
                     Amount = t.Amount,
-                    Outlet = t.Transaction.Client.BusinessName
+                    Outlet = t.Transaction.Client.BusinessName,
+                    Status = t.Transaction.Status,
                 })
                 .OrderBy(d => d.Date);
 

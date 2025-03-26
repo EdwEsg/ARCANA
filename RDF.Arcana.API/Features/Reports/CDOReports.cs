@@ -1,6 +1,7 @@
 ﻿using ClosedXML.Excel;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Common.Helpers;
 using RDF.Arcana.API.Data;
 using RDF.Arcana.API.Domain;
@@ -82,7 +83,7 @@ public class CDOReports : ControllerBase
                 .AsSplitQuery()
                 .AsNoTracking();
 
-            query = query.Where(ti => ti.CreatedAt >= request.DateFrom && ti.CreatedAt < adjustedDateTo);
+            query = query.Where(ti => ti.CreatedAt >= request.DateFrom && ti.CreatedAt < adjustedDateTo && ti.Transaction.Status != Status.Voided);
 
             if (request.ClusterId is not null)
             {
@@ -140,7 +141,8 @@ public class CDOReports : ControllerBase
                     "Customer Type",
                     "Channel",
                     "Status",
-                    "Region"
+                    "Region",
+                    "Status"
                 };
 
                 var headerRange = worksheet.Range(worksheet.Cell(1, 1), worksheet.Cell(1, headers.Count));
@@ -205,6 +207,8 @@ public class CDOReports : ControllerBase
                     row.Cell(23).Value = userDictionary.ContainsKey(consolidate[index].AddedBy)
                         ? userDictionary[consolidate[index].AddedBy]
                         : "Unknown";
+
+                    row.Cell(24).Value = consolidate[index].Transaction.Status;
 
                     //for centering the numeric value for better readability
                     for (int col = 1; col <= 23; col++)  
