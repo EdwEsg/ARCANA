@@ -78,6 +78,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
             public decimal GrossSales { get; set; }
             public decimal NetSales { get; set; }
             public string Cluster { get; set; }
+            public string Status { get; set; }
         }
 
         public class Handler : IRequestHandler<GetASReportsQuery, PagedList<GetAsReportsResult>>
@@ -129,7 +130,8 @@ namespace RDF.Arcana.API.Features.Get_Reports
                     InvoiceNo = t.InvoiceNo,
                     GrossSales = t.TransactionSales.SubTotal,
                     NetSales = t.TransactionSales.TotalAmountDue,
-                    Cluster = t.Client.Cluster.ClusterType
+                    Cluster = t.Client.Cluster.ClusterType,
+                    Status = t.Status,
 
                 }).OrderBy(d => d.Date);
 

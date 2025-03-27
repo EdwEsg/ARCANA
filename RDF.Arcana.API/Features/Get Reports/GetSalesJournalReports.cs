@@ -70,6 +70,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
             public decimal Debit { get; set; }
             public decimal Credit { get; set; }
             public string Cluster { get; set; }
+            public string Status { get; set; }
         }
 
         public class Handler : IRequestHandler<GetSalesJournalReportsQuery, PagedList<GetSalesJournalReportsResult>>
@@ -111,7 +112,8 @@ namespace RDF.Arcana.API.Features.Get_Reports
                     Amount = t.TransactionSales.TotalAmountDue,
                     Debit = t.TransactionSales.TotalAmountDue - t.TransactionSales.RemainingBalance,
                     Credit = t.TransactionSales.RemainingBalance,
-                    Cluster = t.Client.Cluster.ClusterType
+                    Cluster = t.Client.Cluster.ClusterType,
+                    Status = t.Status,
                 }).OrderBy(d => d.Date);
 
                 return PagedList<GetSalesJournalReportsResult>.CreateAsync(result, request.PageNumber, request.PageSize);

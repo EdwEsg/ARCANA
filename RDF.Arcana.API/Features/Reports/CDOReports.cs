@@ -170,7 +170,7 @@ public class CDOReports : ControllerBase
 
                     row.Cell(1).Value = "";
                     row.Cell(2).Value = consolidate[index].CreatedAt.ToString("MMM");
-                    row.Cell(3).Value = consolidate[index].CreatedAt.ToString("dd/MM/yyyy");
+                    row.Cell(3).Value = consolidate[index].CreatedAt.ToString("MM/dd/yyyy");
                     row.Cell(4).Value = "N/A";
                     row.Cell(5).Value = consolidate[index].Transaction.InvoiceType == "Charge" ? consolidate[index].Transaction.InvoiceNo : "";
                     row.Cell(6).Value = consolidate[index].Transaction.InvoiceType == "Sales" ? consolidate[index].Transaction.InvoiceNo : "";

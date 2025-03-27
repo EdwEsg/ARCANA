@@ -164,6 +164,7 @@ namespace RDF.Arcana.API.Features.Reports
                         "RSH",
                         "Category",
                         "Previous Sales Rep",
+                        "Status"
                     };
 
                     var headerRange = worksheet.Range(worksheet.Cell(1, 1), worksheet.Cell(1, headers.Count));
@@ -278,6 +279,7 @@ namespace RDF.Arcana.API.Features.Reports
                         row.Cell(43).Value = ""; //RSH
                         row.Cell(44).Value = "Gen Trade"; //Category
                         row.Cell(45).Value = ""; //Previous Sales Rep
+                        row.Cell(46).Value = consolidate[index].Status;
 
                         //for centering the numeric value for better readability
                         for (int col = 1; col <= 45; col++)

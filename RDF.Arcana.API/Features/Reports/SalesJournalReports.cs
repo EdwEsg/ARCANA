@@ -85,7 +85,8 @@ namespace RDF.Arcana.API.Features.Reports
                         "Debit",
                         "Credit",
                         "Aging",
-                        "Cluster"
+                        "Cluster",
+                        "Status"
                     };
 
                     var headerRange = worksheet.Range(worksheet.Cell(1, 1), worksheet.Cell(1, headers.Count));
@@ -123,6 +124,7 @@ namespace RDF.Arcana.API.Features.Reports
                         row.Cell(8).Value = consolidate[index].TransactionSales.RemainingBalance;
                         row.Cell(9).Value = "";
                         row.Cell(10).Value = consolidate[index].Client.Cluster.ClusterType;
+                        row.Cell(11).Value = consolidate[index].Status;
 
                         //for centering the numeric value for better readability
                         for (int col = 1; col <= 45; col++)
