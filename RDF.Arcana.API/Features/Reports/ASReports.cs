@@ -157,7 +157,7 @@ namespace RDF.Arcana.API.Features.Reports
                         "Store",
                         "Sales Rep",
                         "Manager",
-                        "Status",
+                        //"Status",
                         "Area",
                         "SAS",
                         "Terms",
@@ -269,17 +269,17 @@ namespace RDF.Arcana.API.Features.Reports
                         row.Cell(36).Value = ""; //Store
                         row.Cell(37).Value = ""; //Sales Rep
                         row.Cell(38).Value = ""; //Manager
-                        row.Cell(39).Value = consolidate[index].Client.IsActive == true ? "Active" : ""; //Status
-                        row.Cell(40).Value = consolidate[index].Client.Cluster.ClusterType; //Area
+                        //row.Cell(39).Value = consolidate[index].Client.IsActive == true ? "Active" : ""; //Status
+                        row.Cell(39).Value = consolidate[index].Client.Cluster.ClusterType; //Area
 
 
-                        row.Cell(41).Value = consolidate[index].AddedByUser.Fullname; //SAS
+                        row.Cell(40).Value = consolidate[index].AddedByUser.Fullname; //SAS
 
-                        row.Cell(42).Value = consolidate[index]?.Client?.Term?.TermDays?.Days ?? 0; //Terms
-                        row.Cell(43).Value = ""; //RSH
-                        row.Cell(44).Value = "Gen Trade"; //Category
-                        row.Cell(45).Value = ""; //Previous Sales Rep
-                        row.Cell(46).Value = consolidate[index].Status;
+                        row.Cell(41).Value = consolidate[index]?.Client?.Term?.TermDays?.Days ?? 0; //Terms
+                        row.Cell(42).Value = ""; //RSH
+                        row.Cell(43).Value = "Gen Trade"; //Category
+                        row.Cell(44).Value = ""; //Previous Sales Rep
+                        row.Cell(45).Value = consolidate[index].Status;
 
                         //for centering the numeric value for better readability
                         for (int col = 1; col <= 45; col++)

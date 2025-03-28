@@ -140,7 +140,7 @@ public class CDOReports : ControllerBase
                     "New Cluster",
                     "Customer Type",
                     "Channel",
-                    "Status",
+                    //"Status",
                     "Region",
                     "Status"
                 };
@@ -202,13 +202,13 @@ public class CDOReports : ControllerBase
                     row.Cell(21).Value = consolidate[index].Transaction.Client.StoreType.StoreTypeName;
 
                     bool status = consolidate[index].IsActive;
-                    row.Cell(22).Value = status is true ? "Active" : "Delisted";
+                    //row.Cell(22).Value = status is true ? "Active" : "Delisted";
 
-                    row.Cell(23).Value = userDictionary.ContainsKey(consolidate[index].AddedBy)
+                    row.Cell(22).Value = userDictionary.ContainsKey(consolidate[index].AddedBy)
                         ? userDictionary[consolidate[index].AddedBy]
                         : "Unknown";
 
-                    row.Cell(24).Value = consolidate[index].Transaction.Status;
+                    row.Cell(23).Value = consolidate[index].Transaction.Status;
 
                     //for centering the numeric value for better readability
                     for (int col = 1; col <= 23; col++)  

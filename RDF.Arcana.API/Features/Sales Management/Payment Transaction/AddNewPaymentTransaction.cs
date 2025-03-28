@@ -58,6 +58,7 @@ public class AddNewPaymentTransaction : BaseApiController
             public string WithholdingNo { get; set; }
             public IFormFile WithholdingAttachment { get; set; }
             public int? OthersPayment { get; set; }
+            public string Reason { get; set; }
 
         }
     
@@ -964,7 +965,84 @@ public class AddNewPaymentTransaction : BaseApiController
 
 
 
+                    if (payment.PaymentMethod == PaymentMethods.OthersWithRemarks)
+                    {
+                        decimal remainingToPay = amountToPay;
+                        Payment currentPayment = null;
 
+                        foreach (var paymentItem in orderedPayments)
+                        {
+                            if (paymentItem.PaymentAmount == 0)
+                            {
+                                continue;
+                            }
+
+                            if (paymentItem.PaymentMethod != PaymentMethods.OthersWithRemarks)
+                            {
+                                break;
+                            }
+
+                            if (paymentItem.PaymentAmount <= 0 || remainingToPay <= 0)
+                            {
+                                continue;
+                            }
+
+
+                            currentPayment = paymentItem;
+                            decimal currentPaymentAmount = currentPayment.PaymentAmount;
+
+                            // Calculate the remaining amount to pay for this transaction
+                            decimal paymentToApply = currentPaymentAmount <= remainingToPay ? currentPaymentAmount : remainingToPay;
+                            remainingToPay -= paymentToApply;
+
+
+                            var paymentTransaction = new PaymentTransaction
+                            {
+                                TransactionId = transaction.Id,
+                                AddedBy = request.AddedBy,
+                                PaymentRecordId = paymentRecord.Id,
+                                PaymentMethod = currentPayment.PaymentMethod,
+                                PaymentAmount = origPaymentAmount,
+                                TotalAmountReceived = paymentToApply,
+                                Payee = currentPayment.Payee,
+                                ChequeDate = currentPayment.ChequeDate,
+                                BankName = currentPayment.BankName,
+                                ChequeNo = currentPayment.ChequeNo,
+                                DateReceived = DateTime.Now,
+                                ChequeAmount = currentPayment.ChequeAmount,
+                                AccountName = currentPayment.AccountName,
+                                AccountNo = currentPayment.AccountNo,
+                                Status = Status.ForClearing,
+                                OnlinePlatform = currentPayment.OnlinePlatform,
+                                ReferenceNo = transaction.InvoiceNo,
+                                Reason = currentPayment.Reason,
+                            };
+
+                            await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
+
+                            // Update the remaining balance of the transaction
+                            transaction.TransactionSales.RemainingBalance = remainingToPay;
+                            transaction.Status = remainingToPay <= 0 ? Status.Paid : Status.Pending;
+
+                            // Adjust the payment amount for any remaining balance
+                            currentPayment.PaymentAmount -= paymentToApply;
+                            excessAmount = currentPayment.PaymentAmount;
+
+                            await _context.SaveChangesAsync(cancellationToken);
+
+                            if (remainingToPay <= 0)
+                            {
+                                break;
+                            }
+                        }
+
+                        if (currentPayment != null && currentPayment.PaymentMethod == payment.PaymentMethod)
+                        {
+                            payment.PaymentAmount = excessAmount;
+                        }
+
+                        await _context.SaveChangesAsync(cancellationToken);
+                    }
 
 
                 }
