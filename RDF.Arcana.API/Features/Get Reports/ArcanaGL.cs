@@ -145,6 +145,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
                     .Include(t => t.TransactionItems)
                         .ThenInclude(i => i.Item)
                             .ThenInclude(it => it.Uom)
+                    .Include(t => t.PaymentTransactions)
                     .Where(t => t.CreatedAt >= startDate && t.CreatedAt < endDate)
                     .ToListAsync(cancellationToken);
 
@@ -233,6 +234,8 @@ namespace RDF.Arcana.API.Features.Get_Reports
                         Books = "Sales Journal"
                     },
 
+
+
                     //debit
                     new ArcanaGLResult
                     {
@@ -248,7 +251,9 @@ namespace RDF.Arcana.API.Features.Get_Reports
                         TransactionDate = t?.CreatedAt.ToString("yyyy-MM-dd") ?? string.Empty,
                         ClientSupplier = t?.Client?.BusinessName ?? string.Empty,
                         AccountTitleCode = "411200",
-                        AccountTitle = "Sales Commercial",
+                        AccountTitle = t.Status == "Pending"
+                            ? "Sales Commercial"
+                            : "Cash on Hand",
                         CompanyCode = "0001",
                         Company = "RDFFLFI",
                         DivisionCode = "31",
