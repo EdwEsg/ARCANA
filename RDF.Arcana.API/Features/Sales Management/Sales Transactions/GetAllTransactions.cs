@@ -122,7 +122,7 @@ namespace RDF.Arcana.API.Features.Sales_Management.Sales_Transactions
                     .Include(pt => pt.PaymentTransactions);
 
                 //filter for CDO's clusters
-                var userClusters = _context.CdoClusters.FirstOrDefault(x => x.UserId == request.AccessBy);
+                var userClusters = _context.CdoClusters.FirstOrDefault(x => x.UserId == request.AccessBy && x.IsActive);
 
                 if (userClusters != null)
                 {
