@@ -56,6 +56,7 @@ public static class Status
     public const string ForReceiving = "For Receiving";
     public const string Freebie = "Freebie";
     public const string Sampling = "Sampling";
+    public const string Outright = "Outright";
 }
 
 //public static class Terms

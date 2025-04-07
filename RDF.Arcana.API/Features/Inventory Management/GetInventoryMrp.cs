@@ -83,6 +83,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public decimal? Reserve { get; set; }
             public decimal? ForReleasing { get; set; }
             public decimal? TemporaryReturn { get; set; }
+            public decimal? Outright { get; set; }
         }
 
         public class FreebieGroup

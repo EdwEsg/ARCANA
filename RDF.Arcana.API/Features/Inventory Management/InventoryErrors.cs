@@ -10,7 +10,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         public static Error ToNotFound() => new("NotFound", "Transfer Order Not Found");
         public static Error MoAlreadyExist() => new("AlreadyExist", "Move Order Already Exist in Database");
         public static Error CannotSync(string missingCodes) => new("Missing.Items",$"The following ItemCodes do not exist in the Arcana: {missingCodes}");
-        public static Error NotYetTransacted() => new("Not.Transacted", "Move Order is not transacted yet");
+        public static Error NotYetTransacted() => new("Not.Transacted", "Move Order is not transacted yet OR it is not from GT or MT");
         public static Error WrongDeliver() => new("Wrong.Deliver", "The sum of Wrong Delivers should not exceed the Quantity or Actual Quantity");
         public static Error NotCdo() => new("Not.Cdo", "Reciver/To is not CDO");
         public static Error ItemNotFound(string itemCode) => new("Item.Not.Found", $"ItemCode '{itemCode}' not found in MoveOrderItems.");

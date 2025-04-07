@@ -73,6 +73,13 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     .Where(u => u.Id == request.To)
                     .FirstOrDefaultAsync(cancellationToken);
 
+                bool isDepot = false;
+
+                if (userTo.UserRoles.UserRoleName == Roles.Depot)
+                {
+                    isDepot = true;
+                }
+
                 if (user.UserRoles.UserRoleName != Roles.Cdo) //CDO 
                 {
                     return InventoryErrors.NotUserCdo();
@@ -232,7 +239,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     TransactionType = Status.Transfer,
                     TotalQuantity = request.TransferItems.Sum(i => i.Quantity ?? 0),
                     TransactionDate = DateTime.Now,
-                    TransferType = Status.TransferOut,
+                    TransferType = isDepot ? Status.Outright : Status.TransferOut,
                     CreatedById = request.AccessBy,
                     Status = Status.ForReceiving,
                     TotalAmount = request.TransferItems.Sum(i => (i.Amount * i.Quantity) ?? 0)

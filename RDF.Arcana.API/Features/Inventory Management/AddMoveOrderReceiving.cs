@@ -85,7 +85,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                                from cust in custGroup.DefaultIfEmpty()
                                                join area in _external.Areas on cust.AreaId equals area.Id into areaGroup
                                                from area in areaGroup.DefaultIfEmpty()
-                                               where mo.Id == request.MoveOrderId && mo.TransactStatus == true
+                                               where mo.Id == request.MoveOrderId && mo.TransactStatus == true && (cust.Org == "GT" || cust.Org == "MT")
                                                select new
                                                {
                                                    mo.Id,

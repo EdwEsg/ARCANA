@@ -1021,7 +1021,7 @@ public class AddNewPaymentTransaction : BaseApiController
                             await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
 
                             // Update the remaining balance of the transaction
-                            transaction.TransactionSales.RemainingBalance = remainingToPay;
+                            transaction.TransactionSales.RemainingBalance = remainingToPay <= 0 ? 0 : remainingToPay;
                             transaction.Status = remainingToPay <= 0 ? Status.Paid : Status.Pending;
 
                             // Adjust the payment amount for any remaining balance
