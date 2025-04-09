@@ -241,7 +241,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     TransactionDate = DateTime.Now,
                     TransferType = isDepot ? Status.Outright : Status.TransferOut,
                     CreatedById = request.AccessBy,
-                    Status = Status.ForReceiving,
+                    Status = isDepot ? Status.Received : Status.ForReceiving,
                     TotalAmount = request.TransferItems.Sum(i => (i.Amount * i.Quantity) ?? 0)
                 };
 

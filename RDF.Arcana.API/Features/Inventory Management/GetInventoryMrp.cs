@@ -119,7 +119,17 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         });
 
                     var groupTransferIn = _context.TransferOrders
-                        .Where(to => to.Status == Status.Received && to.TransferToId == request.AccessBy)
+                        .Where(to => to.Status == Status.Received && to.TransferToId == request.AccessBy && to.TransferType != Status.Outright)
+                        .SelectMany(to => to.TransferOrderItems)
+                        .GroupBy(toi => toi.ItemCode)
+                        .Select(g => new
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(x => x.Quantity)
+                        });
+
+                    var groupOutright = _context.TransferOrders
+                        .Where(to => to.Status == Status.Received && to.TransferToId == request.AccessBy && to.TransferType == Status.Outright)
                         .SelectMany(to => to.TransferOrderItems)
                         .GroupBy(toi => toi.ItemCode)
                         .Select(g => new
@@ -141,6 +151,10 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 .Select(mo => mo.Quantity)
                                 .FirstOrDefault(),
                             TransferIn = groupTransferIn
+                                .Where(ti => ti.ItemCode == i.ItemCode)
+                                .Select(ti => ti.Quantity)
+                                .FirstOrDefault() ?? 0,
+                            Outright = groupOutright
                                 .Where(ti => ti.ItemCode == i.ItemCode)
                                 .Select(ti => ti.Quantity)
                                 .FirstOrDefault() ?? 0,
@@ -258,7 +272,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         });
 
                     var groupSales = _context.TransactionItems
-                        .Where(t => t.CreatedAt > DateTime.Parse("2025-01-22") && t.AddedBy == cdo)
+                        .Where(t => t.CreatedAt > DateTime.Parse("2025-04-01") && t.AddedBy == cdo)
                         .GroupBy(t => t.Item.ItemCode)
                         .Select(g => new
                         {
@@ -277,8 +291,19 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         });
 
                     var groupTransferOut = _context.TransferOrders
-                        .Where(to => (to.Status == Status.Received && to.CreatedById == cdo) ||
-                                     (to.Status == Status.ForReceiving && to.CreatedById == cdo))
+                        .Where(to => ((to.Status == Status.Received && to.CreatedById == cdo) ||
+                                     (to.Status == Status.ForReceiving && to.CreatedById == cdo)) && to.TransferType != Status.Outright)
+                        .SelectMany(to => to.TransferOrderItems)
+                        .GroupBy(toi => toi.ItemCode)
+                        .Select(g => new
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(x => x.Quantity)
+                        });
+
+                    var groupOutright = _context.TransferOrders
+                        .Where(to => ((to.Status == Status.Received && to.CreatedById == cdo) ||
+                                     (to.Status == Status.ForReceiving && to.CreatedById == cdo)) && to.TransferType == Status.Outright)
                         .SelectMany(to => to.TransferOrderItems)
                         .GroupBy(toi => toi.ItemCode)
                         .Select(g => new
@@ -358,6 +383,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 .FirstOrDefault() ?? 0,
 
                             TransferOut = groupTransferOut
+                                .Where(to => to.ItemCode == i.ItemCode)
+                                .Select(to => to.Quantity)
+                                .FirstOrDefault() ?? 0,
+
+                            Outright = groupOutright
                                 .Where(to => to.ItemCode == i.ItemCode)
                                 .Select(to => to.Quantity)
                                 .FirstOrDefault() ?? 0,
@@ -547,7 +577,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         });
 
                     var groupSales = _context.TransactionItems
-                        .Where(t => t.CreatedAt > DateTime.Parse("2025-01-22") && t.AddedBy == request.AccessBy)
+                        .Where(t => t.CreatedAt > DateTime.Parse("2025-04-01") && t.AddedBy == request.AccessBy)
                         .GroupBy(t => t.Item.ItemCode)
                         .Select(g => new
                         {
@@ -566,8 +596,19 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         });
 
                     var groupTransferOut = _context.TransferOrders
-                        .Where(to => (to.Status == Status.Received && to.CreatedById == request.AccessBy) ||
-                                     (to.Status == Status.ForReceiving && to.CreatedById == request.AccessBy))
+                        .Where(to => ((to.Status == Status.Received && to.CreatedById == request.AccessBy) ||
+                                     (to.Status == Status.ForReceiving && to.CreatedById == request.AccessBy)) && to.TransferType != Status.Outright)
+                        .SelectMany(to => to.TransferOrderItems)
+                        .GroupBy(toi => toi.ItemCode)
+                        .Select(g => new
+                        {
+                            ItemCode = g.Key,
+                            Quantity = g.Sum(x => x.Quantity)
+                        });
+
+                    var groupOutright = _context.TransferOrders
+                        .Where(to => ((to.Status == Status.Received && to.CreatedById == request.AccessBy) ||
+                                     (to.Status == Status.ForReceiving && to.CreatedById == request.AccessBy)) && to.TransferType == Status.Outright)
                         .SelectMany(to => to.TransferOrderItems)
                         .GroupBy(toi => toi.ItemCode)
                         .Select(g => new
@@ -649,6 +690,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 .FirstOrDefault() ?? 0,
 
                             TransferOut = groupTransferOut
+                                .Where(to => to.ItemCode == i.ItemCode)
+                                .Select(to => to.Quantity)
+                                .FirstOrDefault() ?? 0,
+
+                            Outright = groupOutright
                                 .Where(to => to.ItemCode == i.ItemCode)
                                 .Select(to => to.Quantity)
                                 .FirstOrDefault() ?? 0,

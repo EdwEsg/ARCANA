@@ -69,7 +69,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
         public class GetMoveOrderFromArcanaResult
         {
-            public int MoveOrderId { get; set; }
+            public int? MoveOrderId { get; set; }
             public string CustomerName { get; set; }
             public string Cluster { get; set; }
             public DateTime? TransactionDate { get; set; }
