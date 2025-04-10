@@ -126,11 +126,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         if (!string.IsNullOrEmpty(request.Status))
                         {
                             if (request.Status == Status.ForReceiving)
-                                transferOrders = transferOrders.Where(to => to.Status == Status.ForReceiving);
+                                transferOrders = transferOrders.Where(to => to.Status == Status.ForReceiving && to.TransferType != Status.Outright);
                             else if (request.Status == Status.Received)
-                                transferOrders = transferOrders.Where(to => to.Status == Status.Received);
+                                transferOrders = transferOrders.Where(to => to.Status == Status.Received && to.TransferType != Status.Outright);
                             else if (request.Status == Status.Rejected)
-                                transferOrders = transferOrders.Where(to => to.Status == Status.Rejected);
+                                transferOrders = transferOrders.Where(to => to.Status == Status.Rejected && to.TransferType != Status.Outright);
                         }
                     }
                     //Transfer In 

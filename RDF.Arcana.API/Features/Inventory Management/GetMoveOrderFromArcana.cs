@@ -65,10 +65,13 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public DateTime DateTo { get; set; }
             public int? MoveOrderId { get; set; }
             public int AccessBy { get; set; }
+            public bool? IsMiscellaneousIn { get; set; }
+            public int? MiscInId { get; set; }
         }
 
         public class GetMoveOrderFromArcanaResult
         {
+            public int? MisInId { get; set; }
             public int? MoveOrderId { get; set; }
             public string CustomerName { get; set; }
             public string Cluster { get; set; }
@@ -112,16 +115,29 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     moveOrders = moveOrders.Where(mo => mo.CreatedById == request.AccessBy);
                 }
 
-                if (request.MoveOrderId == null)
+                if (request.MoveOrderId == null && request.IsMiscellaneousIn is not true)
                 {
-                    moveOrders = moveOrders.Where(t => t.CreatedDate >= request.DateFrom && t.CreatedDate < adjustedDateTo);
+                    moveOrders = moveOrders.Where(t => (t.CreatedDate >= request.DateFrom && t.CreatedDate < adjustedDateTo) && t.Type == null);
                 }
 
 
-                if (request.MoveOrderId != null)
+                if (request.MoveOrderId != null && request.IsMiscellaneousIn is not true)
                 {
-                    moveOrders = moveOrders.Where(x => x.MoveOrderIdExternal == request.MoveOrderId);
+                    moveOrders = moveOrders.Where(x => x.MoveOrderIdExternal == request.MoveOrderId && x.Type == null);
                 }
+
+                //is Miscellaneous
+                if (request.MoveOrderId == null && request.MiscInId == null && request.IsMiscellaneousIn is true)
+                {
+                    moveOrders = moveOrders.Where(t => (t.CreatedDate >= request.DateFrom && t.CreatedDate < adjustedDateTo) && t.Type == Status.MiscIn);
+                }
+
+                if (request.MiscInId != null && request.IsMiscellaneousIn is true)
+                {
+                    moveOrders = moveOrders.Where(x => x.Id == request.MiscInId && x.Type == Status.MiscIn);
+                }
+
+
 
                 if (!string.IsNullOrEmpty(request.Search))
                 {
@@ -133,6 +149,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 var result = moveOrders
                     .Select(mo => new GetMoveOrderFromArcanaResult
                     {
+                        MisInId = mo.Id,
                         MoveOrderId = mo.MoveOrderIdExternal,
                         CustomerName = mo.CustomerName,
                         Cluster = mo.CreatedBy.CdoCluster.Cluster.ClusterType,

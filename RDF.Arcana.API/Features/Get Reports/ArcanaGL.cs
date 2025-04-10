@@ -201,7 +201,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
                         Asset = string.Empty,
                         ServiceProviderCode = string.Empty,
                         ServiceProvider = string.Empty,
-                        BOA = "Sales Journal",
+                        BOA = "Inventoriable",
                         Allocation = "0",
                         AccountGroup = string.Empty,
                         AccountSubGroup = string.Empty,
@@ -229,9 +229,9 @@ namespace RDF.Arcana.API.Features.Get_Reports
                         BankName = string.Empty,
                         ChequeNumber = string.Empty,
                         ChequeVoucherNumber = string.Empty,
-                        BOA2 = "Sales Journal - Meats",
+                        BOA2 = "Inventoriable",
                         System = "Arcana",
-                        Books = "Sales Journal"
+                        Books = "Journal Book"
                     },
 
 
@@ -286,7 +286,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
                         Asset = string.Empty,
                         ServiceProviderCode = string.Empty,
                         ServiceProvider = string.Empty,
-                        BOA = "Sales Journal",
+                        BOA = "Inventoriable",
                         Allocation = "0",
                         AccountGroup = string.Empty,
                         AccountSubGroup = string.Empty,
@@ -314,9 +314,9 @@ namespace RDF.Arcana.API.Features.Get_Reports
                         BankName = string.Empty,
                         ChequeNumber = string.Empty,
                         ChequeVoucherNumber = string.Empty,
-                        BOA2 = "Sales Journal - Meats",
+                        BOA2 = "Inventoriable",
                         System = "Arcana",
-                        Books = "Sales Journal"
+                        Books = "Journal Book"
                     }
                     })
                      ).ToList();

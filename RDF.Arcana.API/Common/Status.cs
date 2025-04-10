@@ -57,6 +57,8 @@ public static class Status
     public const string Freebie = "Freebie";
     public const string Sampling = "Sampling";
     public const string Outright = "Outright";
+
+    public const string MiscIn = "Miscellaneous In";
 }
 
 //public static class Terms
