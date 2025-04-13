@@ -80,6 +80,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public string Route { get; set; }
             public string Details { get; set; }
             public string Area { get; set; }
+            public string Type { get; set; }
+            public int? ExternalMoveOrderId { get; set; }
             public IEnumerable<GetMoveItemsDto> MoveItems { get; set; }
             public class GetMoveItemsDto
             {
@@ -158,6 +160,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         Route = mo.Route,
                         Details = mo.Details,
                         Area = mo.Area,
+                        Type = mo.Type,
+                        ExternalMoveOrderId = mo.MoveOrderIdExternal,
                         MoveItems = mo.MoveOrderItems.Select(x => new GetMoveOrderFromArcanaResult.GetMoveItemsDto
                         {
                             ItemCode = x.ItemCode,

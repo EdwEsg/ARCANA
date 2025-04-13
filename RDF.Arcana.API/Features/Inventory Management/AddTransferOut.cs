@@ -78,6 +78,38 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 if (userTo.UserRoles.UserRoleName == Roles.Depot)
                 {
                     isDepot = true;
+
+                    var moveOrderItemsDepot = await _context.MoveOrderItems
+                    .Where(m => m.CreatedBy.Id == request.AccessBy &&
+                                m.IsActive &&
+                                m.RemainingQuantity > 0)
+                    .OrderBy(m => m.MoveOrder.CreatedDate)
+                    .ToListAsync(cancellationToken);
+
+                    foreach (var transferItem in request.TransferItems)
+                    {
+                        var neededQty = transferItem.Quantity ?? 0;
+                        if (neededQty <= 0) continue;
+
+                        var matchingMoveOrderItems = moveOrderItemsDepot
+                            .Where(x => x.ItemCode == transferItem.ItemCode && x.RemainingQuantity > 0);
+
+                        foreach (var moveOrderItem in matchingMoveOrderItems)
+                        {
+                            if (moveOrderItem.RemainingQuantity >= neededQty)
+                            {
+                                moveOrderItem.RemainingQuantity -= neededQty;
+                                neededQty = 0;
+                                break;
+                            }
+                            else
+                            {
+                                neededQty -= moveOrderItem.RemainingQuantity ?? 0;
+                                moveOrderItem.RemainingQuantity = 0;
+                            }
+                        }
+                    }
+                    await _context.SaveChangesAsync(cancellationToken);
                 }
 
                 if (user.UserRoles.UserRoleName != Roles.Cdo) //CDO 
@@ -177,60 +209,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                 var itemCodeToId = await _context.Items
                     .Where(x => requestedItems.Select(r => r.ItemCode).Contains(x.ItemCode))
-                    .ToDictionaryAsync(x => x.ItemCode, x => x.Id, cancellationToken);
-
-                //foreach (var requestedItem in requestedItems)
-                //{
-                //    if (!itemCodeToId.TryGetValue(requestedItem.ItemCode, out var requestedItemId))
-                //    {
-                //        return InventoryErrors.ItemNotFound(requestedItem.ItemCode);
-                //    }
-
-                //    if (!availableStockByItemId.TryGetValue(requestedItemId, out var totalAvailable)
-                //        || totalAvailable < requestedItem.RequestedQuantity)
-                //    {
-                //        return InventoryErrors.InsufficientQuantity(
-                //            requestedItem.ItemCode,
-                //            requestedItem.RequestedQuantity,
-                //            totalAvailable
-                //        );
-                //    }
-
-                //    var remainingToDeduct = requestedItem.RequestedQuantity;
-
-                //    foreach (var stock in transferOrderItems.Where(t => t.ItemCode == requestedItem.ItemCode))
-                //    {
-                //        if (remainingToDeduct <= 0) break;
-                //        var deduction = Math.Min(stock.RemainingQuantity ?? 0, remainingToDeduct);
-                //        stock.RemainingQuantity -= deduction;
-                //        remainingToDeduct -= deduction;
-                //    }
-
-                //    foreach (var stock in returnOrderItems.Where(r => r.ItemId == _context.Items.Where(i => i.ItemCode == requestedItem.ItemCode).Select(i => i.Id).FirstOrDefault()))
-                //    {
-                //        if (remainingToDeduct <= 0) break;
-                //        var deduction = Math.Min(stock.RemainingQuantity, remainingToDeduct);
-                //        stock.RemainingQuantity -= deduction;
-                //        remainingToDeduct -= deduction;
-                //    }
-
-                //    foreach (var stock in moveOrderItems.Where(m => m.ItemCode == requestedItem.ItemCode))
-                //    {
-                //        if (remainingToDeduct <= 0) break;
-                //        var deduction = Math.Min(stock.RemainingQuantity ?? 0, remainingToDeduct);
-                //        stock.RemainingQuantity -= deduction;
-                //        remainingToDeduct -= deduction;
-                //    }
-
-                //    if (remainingToDeduct > 0)
-                //    {
-                //        throw new InvalidOperationException($"Unable to fully deduct quantity for ItemCode '{requestedItem.ItemCode}'. Remaining: {remainingToDeduct}");
-                //    }
-                //}
-
-                
-
-                
+                    .ToDictionaryAsync(x => x.ItemCode, x => x.Id, cancellationToken); 
                 await _context.SaveChangesAsync(cancellationToken);
 
                 var transferOrder = new TransferOrder

@@ -121,7 +121,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     //Transfer Out
                     if (request.TransferType == Status.TransferOut)
                     {
-                        transferOrders = transferOrders.Where(to => to.CreatedById == request.AccessBy);
+                        transferOrders = transferOrders.Where(to => to.CreatedById == request.AccessBy && to.TransferType != Status.Outright);
 
                         if (!string.IsNullOrEmpty(request.Status))
                         {
@@ -133,6 +133,23 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 transferOrders = transferOrders.Where(to => to.Status == Status.Rejected && to.TransferType != Status.Outright);
                         }
                     }
+
+                    //Outright 
+                    else if (request.TransferType == Status.Outright)
+                    {
+                        transferOrders = transferOrders.Where(to => to.CreatedById == request.AccessBy && to.TransferType == Status.Outright);
+
+                        if (!string.IsNullOrEmpty(request.Status))
+                        {
+                            if (request.Status == Status.ForReceiving)
+                                transferOrders = transferOrders.Where(to => to.Status == Status.ForReceiving && to.TransferType == Status.Outright);
+                            else if (request.Status == Status.Received)
+                                transferOrders = transferOrders.Where(to => to.Status == Status.Received && to.TransferType == Status.Outright);
+                            else if (request.Status == Status.Rejected)
+                                transferOrders = transferOrders.Where(to => to.Status == Status.Rejected && to.TransferType == Status.Outright);
+                        }
+                    }
+
                     //Transfer In 
                     else if (request.TransferType == Status.TransferIn)
                     {
