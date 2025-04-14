@@ -37,6 +37,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         public class AddMiscInCommand : IRequest<Result>
         {
             public int CreatedBy { get; set; }
+            public int ToCdo { get; set; }
             public int? ExternalMoveOrderId { get; set; }
             public List<MoveOrderItemDtoForMiscIn> Items { get; set; }
             public class MoveOrderItemDtoForMiscIn
@@ -69,7 +70,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     CreatedDate = DateTime.Now,
                     IsActive = true,
                     Type = Status.MiscIn,
-                    MoveOrderIdExternal = request.ExternalMoveOrderId
+                    MoveOrderIdExternal = request.ExternalMoveOrderId,
+                    ToCdo = request.ToCdo,
                 };
 
                 await _context.MoveOrders.AddAsync(miscMoveOrder, cancellationToken);
@@ -90,7 +92,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         ItemId = itemCode.Id,
                         UomId = itemCode.UomId,
                         IsActive = true,
-                        CreatedBy = _context.Users.FirstOrDefault(u => u.Id == request.CreatedBy),
+                        CreatedBy = _context.Users.FirstOrDefault(u => u.Id == request.ToCdo),
                         Reason = item.Reason,
                         RemainingQuantity = item.ActualQuantity ?? 0
                     };

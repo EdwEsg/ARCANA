@@ -14,4 +14,5 @@ public static class PaymentMethods
     public const string GCash = "GCash";
     public const string PayMaya = "PayMaya";
     public const string OthersWithRemarks = "Others With Remarks";
+    public const string SalesReturn = "Sales Return";
 }

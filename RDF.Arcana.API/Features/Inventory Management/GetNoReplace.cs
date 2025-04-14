@@ -45,11 +45,13 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
         public class GetNoReplaceResult
         {
+            public int? ReturnOrderId { get; set; }
             public string BusinessName { get; set; }
             public decimal TotalRemaining { get; set; }
             public IEnumerable<SalesReturnDto> SalesReturn { get; set; }
             public class SalesReturnDto
             {
+                public int? ReturnOrderId { get; set; }
                 public DateTime CreatedAt { get; set; }
                 public decimal Remaining { get; set; }
             }
@@ -72,6 +74,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                 var salesReturnResult = salesReturn.Select(sr => new GetNoReplaceResult.SalesReturnDto
                 {
+                    ReturnOrderId = sr.ReturnedOrderId,
                     CreatedAt = sr.CreatedDate,
                     Remaining = sr.RemainingBalance
                 }).ToList();

@@ -872,6 +872,121 @@ public class AddNewPaymentTransaction : BaseApiController
 
 
 
+                    if (payment.PaymentMethod == PaymentMethods.SalesReturn)
+                    {
+                        var transactionClientIds = await _context.Transactions
+                            .Where(t => request.TransactionId.Contains(t.Id))
+                            .Select(t => t.ClientId)
+                            .Distinct()
+                            .ToListAsync(cancellationToken);
+
+                        var salesReturns = await _context.SalesReturns
+                            .Where(x =>
+                                transactionClientIds.Contains(x.ClientId) &&
+                                x.IsActive &&
+                                x.RemainingBalance > 0)
+                            .OrderBy(x => x.CreatedDate) 
+                            .ToListAsync(cancellationToken);
+
+                        // Sum the payment amount for AdvancePayment
+                        var amountToPaySalesReturn = request.Payments
+                            .Where(pm => pm.PaymentMethod == PaymentMethods.AdvancePayment)
+                            .Sum(pa => pa.PaymentAmount);
+
+                        foreach (var currentTransactionId in orderedTransactions)
+                        {
+                            var currentTransaction = await _context.Transactions
+                                .Include(t => t.TransactionSales)
+                                .FirstOrDefaultAsync(t => t.Id == currentTransactionId, cancellationToken);
+
+                            if (currentTransaction == null)
+                            {
+                                continue;
+                            }
+
+                            while (currentTransaction.TransactionSales.RemainingBalance > 0 && amountToPaySalesReturn > 0)
+                            {
+                                var salesReturn = salesReturns
+                                    .FirstOrDefault(x =>
+                                        x.ClientId == currentTransaction.ClientId
+                                        && x.RemainingBalance > 0);
+
+                                if (salesReturn == null)
+                                {
+                                    break;
+                                }
+
+                                decimal paymentAmountForTransaction =
+                                    Math.Min(currentTransaction.TransactionSales.RemainingBalance, amountToPaySalesReturn);
+
+                                paymentAmountForTransaction =
+                                    Math.Min(paymentAmountForTransaction, salesReturn.RemainingBalance);
+
+                                var paymentTransaction = new PaymentTransaction
+                                {
+                                    TransactionId = currentTransaction.Id,
+                                    AddedBy = request.AddedBy,
+                                    PaymentRecordId = paymentRecord.Id,
+                                    PaymentMethod = payment.PaymentMethod,
+                                    PaymentAmount = origPaymentAmount,            
+                                    TotalAmountReceived = paymentAmountForTransaction,
+                                    Payee = payment.Payee,
+                                    ChequeDate = payment.ChequeDate,
+                                    BankName = payment.BankName,
+                                    ChequeNo = payment.ChequeNo,
+                                    DateReceived = DateTime.Now,
+                                    ChequeAmount = payment.ChequeAmount,
+                                    AccountName = payment.AccountName,
+                                    AccountNo = payment.AccountNo,
+                                    Status = Status.ForClearing,
+                                    OnlinePlatform = payment.OnlinePlatform,
+                                    ReferenceNo = payment.ReferenceNo
+                                };
+
+                                await _context.PaymentTransactions.AddAsync(paymentTransaction, cancellationToken);
+
+                                currentTransaction.TransactionSales.RemainingBalance -= paymentAmountForTransaction;
+                                currentTransaction.Status = currentTransaction.TransactionSales.RemainingBalance <= 0
+                                    ? Status.Paid
+                                    : Status.Pending;
+
+                                salesReturn.RemainingBalance -= paymentAmountForTransaction;
+                                if (salesReturn.RemainingBalance <= 0)
+                                {
+                                    salesReturn.RemainingBalance = 0;
+                                    salesReturns.Remove(salesReturn);
+                                }
+
+                                amountToPaySalesReturn -= paymentAmountForTransaction;
+
+                                await _context.SaveChangesAsync(cancellationToken);
+
+                                if (currentTransaction.TransactionSales.RemainingBalance <= 0)
+                                {
+                                    break;
+                                }
+                            }
+
+                            if (amountToPaySalesReturn <= 0)
+                            {
+                                break;
+                            }
+                        }
+
+                        payment.PaymentAmount = amountToPaySalesReturn;
+                        await _context.SaveChangesAsync(cancellationToken);
+                    }
+
+
+
+
+
+
+
+
+
+
+
 
 
                     if (payment.PaymentMethod == PaymentMethods.Cash)
