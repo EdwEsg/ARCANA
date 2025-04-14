@@ -1,4 +1,5 @@
-﻿
+﻿//Inventoriables
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RDF.Arcana.API.Common;
@@ -192,7 +193,7 @@ namespace RDF.Arcana.API.Features.Get_Reports
                         ItemDescription = ti?.Item?.ItemDescription ?? string.Empty,
                         Quantity = ti?.Quantity ?? 0,
                         UOM = ti?.Item?.Uom?.UomDescription ?? string.Empty,
-                        UnitPrice = -(ti?.UnitPrice ?? 0),
+                        UnitPrice = ti?.UnitPrice ?? 0,
                         LineAmount = -(ti?.Amount ?? 0),
                         VoucherJournal = string.Empty,
                         AccountType = "INCOME",

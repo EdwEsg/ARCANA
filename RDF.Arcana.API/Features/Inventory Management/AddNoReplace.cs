@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using RDF.Arcana.API.Common;
 using RDF.Arcana.API.Data;
+using RDF.Arcana.API.Domain.Inventory;
 using System.Security.Claims;
 
 namespace RDF.Arcana.API.Features.Inventory_Management
@@ -36,6 +37,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         public class AddNoReplaceCommand : IRequest<Result>
         {
             public int ReturnOrderId { get; set; }
+            public decimal Amount { get; set; }
             public int AccessBy { get; set; }
         }
 
@@ -67,6 +69,18 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 }
 
                 isReturnOrderExist.Status = Status.Received;
+
+                var salesReturn = new SalesReturn
+                {
+                    ReturnedOrderId = request.ReturnOrderId,
+                    ClientId = isReturnOrderExist.ClientId,
+                    Amount = request.Amount,
+                    RemainingBalance = request.Amount,
+                    CreatedById = request.AccessBy,
+                };
+
+                await _context.AddAsync(salesReturn);
+                    
 
                 await _context.SaveChangesAsync();
 
