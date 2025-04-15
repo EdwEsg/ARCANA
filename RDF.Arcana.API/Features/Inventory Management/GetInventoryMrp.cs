@@ -84,6 +84,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public decimal? ForReleasing { get; set; }
             public decimal? TemporaryReturn { get; set; }
             public decimal? Outright { get; set; }
+            public decimal? MiscIn { get; set; }
+            public decimal? MiscOut { get; set; }
         }
 
         public class FreebieGroup
@@ -182,7 +184,9 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     var cdo = cdoCluster.UserId;
 
                     var groupReceiving = _context.MoveOrderItems
-                        .Where(mo => mo.CreatedBy.Id == cdo && (mo.ActualQuantity != null && mo.RemainingQuantity != null))
+                        .Include(x => x.MoveOrder)
+                        .Where(mo => mo.CreatedBy.Id == cdo && (mo.ActualQuantity != null && mo.RemainingQuantity != null)
+                            && mo.MoveOrder.ToCdo == null)
                         .GroupBy(x => new { x.ItemCode })
                         .Select(x => new
                         {
@@ -191,6 +195,31 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             RemainingQuantity = x.Sum(x => x.RemainingQuantity),
                             ActualQuantity = x.Sum(x => x.ActualQuantity)
                         });
+
+                    var groupMiscIn = _context.MoveOrderItems
+                        .Include(x => x.MoveOrder)
+                        .Where(mo => mo.CreatedBy.Id == cdo && (mo.ActualQuantity != null && mo.RemainingQuantity != null)
+                            && mo.MoveOrder.ToCdo == cdo)
+                        .GroupBy(x => new { x.ItemCode })
+                        .Select(x => new
+                        {
+                            ItemCode = x.Key.ItemCode,
+                            Quantity = x.Sum(x => x.Quantity),
+                            RemainingQuantity = x.Sum(x => x.RemainingQuantity),
+                            ActualQuantity = x.Sum(x => x.ActualQuantity)
+                        });
+
+                    var groupMiscOut = _context.MiscellaneousOutItems
+                        .Include(i => i.Item)
+                        .Include(m => m.MiscellaneousOut)
+                        .Where(x => x.MiscellaneousOut.ToCdo == cdo)
+                        .GroupBy(x => new { x.Item.ItemCode })
+                        .Select(x => new
+                        {
+                            ItemCode = x.Key.ItemCode,
+                            Quantity = x.Sum(x => x.Quantity)
+                        });
+
 
                     //Freebies-----------------------------------------------------------------
 
@@ -262,14 +291,14 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                     //---------------------------------------------------------------------
 
-                    var groupReturnCdo = _context.MoveOrderItems
-                        .Where(mo => mo.CreatedBy.Id == cdo && (mo.ActualQuantity == null && mo.RemainingQuantity == null))
-                        .GroupBy(x => new { x.ItemCode })
-                        .Select(x => new
-                        {
-                            ItemCode = x.Key.ItemCode,
-                            Quantity = x.Sum(x => x.Quantity)
-                        });
+                    //var groupReturnCdo = _context.MoveOrderItems
+                    //    .Where(mo => mo.CreatedBy.Id == cdo && (mo.ActualQuantity == null && mo.RemainingQuantity == null))
+                    //    .GroupBy(x => new { x.ItemCode })
+                    //    .Select(x => new
+                    //    {
+                    //        ItemCode = x.Key.ItemCode,
+                    //        Quantity = x.Sum(x => x.Quantity)
+                    //    });
 
                     var groupSales = _context.TransactionItems
                         .Where(t => t.CreatedAt > DateTime.Parse("2025-04-01") && t.AddedBy == cdo)
@@ -377,6 +406,16 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 .Select(r => r.ActualQuantity)
                                 .FirstOrDefault() ?? 0,
 
+                            MiscIn = groupMiscIn
+                                .Where(r => r.ItemCode == i.ItemCode)
+                                .Select(r => r.ActualQuantity)
+                                .FirstOrDefault() ?? 0,
+
+                            MiscOut = groupMiscOut
+                                .Where(r => r.ItemCode == i.ItemCode)
+                                .Select(r => r.Quantity)
+                                .FirstOrDefault(),
+
                             TransferIn = groupTransferIn
                                 .Where(ti => ti.ItemCode == i.ItemCode)
                                 .Select(ti => ti.Quantity)
@@ -407,10 +446,10 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 .Select(ti => ti.Quantity)
                                 .FirstOrDefault(),
 
-                            ReturnCdo = groupReturnCdo
-                                .Where(r => r.ItemCode == i.ItemCode)
-                                .Select(r => r.Quantity)
-                                .FirstOrDefault(),
+                            //ReturnCdo = groupReturnCdo
+                            //    .Where(r => r.ItemCode == i.ItemCode)
+                            //    .Select(r => r.Quantity)
+                            //    .FirstOrDefault(),
 
                             Replace = groupReplace
                                 .Where(ti => ti.ItemCode == i.ItemCode)
@@ -429,6 +468,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                             Reserve = Math.Max(
                                 (((groupReceiving
+                                    .Where(r => r.ItemCode == i.ItemCode)
+                                    .Select(r => r.RemainingQuantity)
+                                    .FirstOrDefault() ?? 0)
+                                 +
+                                 (groupMiscIn
                                     .Where(r => r.ItemCode == i.ItemCode)
                                     .Select(r => r.RemainingQuantity)
                                     .FirstOrDefault() ?? 0)
@@ -455,10 +499,20 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                     .Where(f => f.ItemCode == i.ItemCode)
                                     .Select(f => f.Quantity)
                                     .FirstOrDefault()
+                                -
+                                 (groupMiscOut
+                                    .Where(r => r.ItemCode == i.ItemCode)
+                                    .Select(r => r.Quantity)
+                                    .FirstOrDefault())
                                 , 0),
 
                             Soh = Math.Max(
                                 (((groupReceiving
+                                    .Where(r => r.ItemCode == i.ItemCode)
+                                    .Select(r => r.RemainingQuantity)
+                                    .FirstOrDefault() ?? 0)
+                                 +
+                                 (groupMiscIn
                                     .Where(r => r.ItemCode == i.ItemCode)
                                     .Select(r => r.RemainingQuantity)
                                     .FirstOrDefault() ?? 0)
@@ -487,7 +541,9 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                 {
 
                     var groupReceiving = _context.MoveOrderItems
-                        .Where(mo => mo.CreatedBy.Id == request.AccessBy && (mo.ActualQuantity != null && mo.RemainingQuantity != null))
+                        .Include(x => x.MoveOrder)
+                        .Where(mo => mo.CreatedBy.Id == request.AccessBy && (mo.ActualQuantity != null && mo.RemainingQuantity != null)
+                            && mo.MoveOrder.ToCdo == null)
                         .GroupBy(x => new { x.ItemCode })
                         .Select(x => new
                         {
@@ -495,6 +551,30 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             Quantity = x.Sum(x => x.Quantity),
                             RemainingQuantity = x.Sum(x => x.RemainingQuantity),
                             ActualQuantity = x.Sum(x => x.ActualQuantity)
+                        });
+
+                    var groupMiscIn = _context.MoveOrderItems
+                        .Include(x => x.MoveOrder)
+                        .Where(mo => mo.CreatedBy.Id == request.AccessBy && (mo.ActualQuantity != null && mo.RemainingQuantity != null)
+                            && mo.MoveOrder.ToCdo == request.AccessBy)
+                        .GroupBy(x => new { x.ItemCode })
+                        .Select(x => new
+                        {
+                            ItemCode = x.Key.ItemCode,
+                            Quantity = x.Sum(x => x.Quantity),
+                            RemainingQuantity = x.Sum(x => x.RemainingQuantity),
+                            ActualQuantity = x.Sum(x => x.ActualQuantity)
+                        });
+
+                    var groupMiscOut = _context.MiscellaneousOutItems
+                        .Include(i => i.Item)
+                        .Include(m => m.MiscellaneousOut)
+                        .Where(x => x.MiscellaneousOut.ToCdo == request.AccessBy)
+                        .GroupBy(x => new { x.Item.ItemCode })
+                        .Select(x => new
+                        {
+                            ItemCode = x.Key.ItemCode,
+                            Quantity = x.Sum(x => x.Quantity)
                         });
 
                     //Freebies-----------------------------------------------------------------
@@ -567,14 +647,14 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                     //--------------------------------------------------------------------
 
-                    var groupReturnCdo = _context.MoveOrderItems
-                        .Where(mo => mo.CreatedBy.Id == request.AccessBy && (mo.ActualQuantity == null && mo.RemainingQuantity == null))
-                        .GroupBy(x => new { x.ItemCode })
-                        .Select(x => new
-                        {
-                            ItemCode = x.Key.ItemCode,
-                            Quantity = x.Sum(x => x.Quantity)
-                        });
+                    //var groupReturnCdo = _context.MoveOrderItems
+                    //    .Where(mo => mo.CreatedBy.Id == request.AccessBy && (mo.ActualQuantity == null && mo.RemainingQuantity == null))
+                    //    .GroupBy(x => new { x.ItemCode })
+                    //    .Select(x => new
+                    //    {
+                    //        ItemCode = x.Key.ItemCode,
+                    //        Quantity = x.Sum(x => x.Quantity)
+                    //    });
 
                     var groupSales = _context.TransactionItems
                         .Where(t => t.CreatedAt > DateTime.Parse("2025-04-01") && t.AddedBy == request.AccessBy)
@@ -684,6 +764,16 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 .Select(r => r.ActualQuantity)
                                 .FirstOrDefault() ?? 0,
 
+                            MiscIn = groupMiscIn
+                                .Where(r => r.ItemCode == i.ItemCode)
+                                .Select(r => r.ActualQuantity)
+                                .FirstOrDefault() ?? 0,
+
+                            MiscOut = groupMiscOut
+                                .Where(r => r.ItemCode == i.ItemCode)
+                                .Select(r => r.Quantity)
+                                .FirstOrDefault(),
+
                             TransferIn = groupTransferIn
                                 .Where(ti => ti.ItemCode == i.ItemCode)
                                 .Select(ti => ti.Quantity)
@@ -714,10 +804,10 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                                 .Select(ti => ti.Quantity)
                                 .FirstOrDefault(),
 
-                            ReturnCdo = groupReturnCdo
-                                .Where(r => r.ItemCode == i.ItemCode)
-                                .Select(r => r.Quantity)
-                                .FirstOrDefault(),
+                            //ReturnCdo = groupReturnCdo
+                            //    .Where(r => r.ItemCode == i.ItemCode)
+                            //    .Select(r => r.Quantity)
+                            //    .FirstOrDefault(),
 
                             Replace = groupReplace
                                 .Where(ti => ti.ItemCode == i.ItemCode)
@@ -736,6 +826,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                             Reserve = Math.Max(
                                 (((groupReceiving
+                                    .Where(r => r.ItemCode == i.ItemCode)
+                                    .Select(r => r.RemainingQuantity)
+                                    .FirstOrDefault() ?? 0)
+                                 +
+                                 (groupMiscIn
                                     .Where(r => r.ItemCode == i.ItemCode)
                                     .Select(r => r.RemainingQuantity)
                                     .FirstOrDefault() ?? 0)
@@ -766,6 +861,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                             Soh = Math.Max(
                                 (((groupReceiving
+                                    .Where(r => r.ItemCode == i.ItemCode)
+                                    .Select(r => r.RemainingQuantity)
+                                    .FirstOrDefault() ?? 0)
+                                 +
+                                 (groupMiscIn
                                     .Where(r => r.ItemCode == i.ItemCode)
                                     .Select(r => r.RemainingQuantity)
                                     .FirstOrDefault() ?? 0)

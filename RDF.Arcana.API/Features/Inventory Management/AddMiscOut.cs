@@ -38,6 +38,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
         {
             public int AccessBy { get; set; }
             public int? ExternalMoveOrderId { get; set; }
+            public int ToCdo { get; set; }
             public List<MiscOutItemsDto> MiscOutItems { get; set; }
             public class MiscOutItemsDto
             {
@@ -58,19 +59,11 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
             public async Task<Result> Handle(AddMiscOutCommand request, CancellationToken cancellationToken)
             {
-                var user = await _context.Users
-                    .Include(u => u.UserRoles)
-                    .Where(u => u.Id == request.AccessBy)
-                    .FirstOrDefaultAsync(cancellationToken);
-
-                if (user.UserRoles.UserRoleName != Roles.Cdo) //CDO 
-                {
-                    return InventoryErrors.NotUserCdo();
-                }
 
                 var miscOut = new MiscellaneousOut
                 {
                     CreatedById = request.AccessBy,
+                    ToCdo = request.ToCdo,
                     ExternalMoveOrderId = request.ExternalMoveOrderId,
                 };
 
@@ -79,7 +72,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
                 var moveOrderItems = await _context.MoveOrderItems
                     .Include(m => m.MoveOrder)
-                    .Where(m => m.CreatedBy.Id == request.AccessBy &&
+                    .Where(m => m.CreatedBy.Id == request.ToCdo &&
                         m.IsActive &&
                         m.RemainingQuantity > 0)
                     .OrderBy(m => m.MoveOrder.CreatedDate)

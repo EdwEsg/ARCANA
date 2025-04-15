@@ -133,7 +133,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         .Select(x => x.CustomerName)
                         .FirstOrDefault(),
 
-                        //Ongoing Test for multiclusters
+                        //Ongoing Test for multiclusters conflict
                         Cluster = "Cluster 1",
 
                         TransactionDate = _context.MoveOrders
