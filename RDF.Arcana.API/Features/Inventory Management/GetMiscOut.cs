@@ -74,6 +74,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             public string Cluster { get; set; }
             public DateTime? TransactionDate { get; set; }
             public DateTime? DateReceived { get; set; }
+            public string CdoName { get; set; }
             public List<MisceOutItemsDto> MisceOutItems { get; set; }
             public class MisceOutItemsDto
             {
@@ -105,6 +106,9 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                             .ThenInclude(i => i.Uom)
                     .AsQueryable();
 
+                var userCdo = _context.Users
+                    .Where(u => u.Id == miscOut.FirstOrDefault().ToCdo);
+
                 var moveOrder = _context.MoveOrders.AsQueryable();
 
                 if (request.AccessBy != 1)
@@ -127,6 +131,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     {
                         Id = mo.Id,
                         ExternalMoveOrderId = mo.ExternalMoveOrderId,
+
+                        CdoName = userCdo.FirstOrDefault().Fullname,
 
                         CustomerName = _context.MoveOrders
                         .Where(x => x.MoveOrderIdExternal == mo.ExternalMoveOrderId)

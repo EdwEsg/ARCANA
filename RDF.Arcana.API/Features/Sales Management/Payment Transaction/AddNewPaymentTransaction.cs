@@ -890,7 +890,7 @@ public class AddNewPaymentTransaction : BaseApiController
 
                         // Sum the payment amount for AdvancePayment
                         var amountToPaySalesReturn = request.Payments
-                            .Where(pm => pm.PaymentMethod == PaymentMethods.AdvancePayment)
+                            .Where(pm => pm.PaymentMethod == PaymentMethods.SalesReturn)
                             .Sum(pa => pa.PaymentAmount);
 
                         foreach (var currentTransactionId in orderedTransactions)
