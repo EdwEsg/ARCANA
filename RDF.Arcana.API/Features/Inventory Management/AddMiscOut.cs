@@ -78,6 +78,18 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     .OrderBy(m => m.MoveOrder.CreatedDate)
                     .ToListAsync(cancellationToken);
 
+                foreach (var reqItem in request.MiscOutItems)
+                {
+                    var totalAvailable = moveOrderItems
+                        .Where(x => x.ItemId == reqItem.ItemId && x.RemainingQuantity > 0)
+                        .Sum(x => x.RemainingQuantity ?? 0);
+
+                    if (reqItem.Quantity > totalAvailable)
+                    {
+                        return InventoryErrors.MiscOutError(reqItem.ItemId, reqItem.Quantity, totalAvailable);
+                    }
+                }
+
                 var miscOutItemsList = new List<MiscellaneousOutItems>();
 
                 foreach (var reqItem in request.MiscOutItems)

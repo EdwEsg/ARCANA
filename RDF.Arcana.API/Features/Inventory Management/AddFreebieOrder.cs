@@ -61,13 +61,12 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
             public async Task<Result> Handle(AddFreebieOrderCommand request, CancellationToken cancellationToken)
             {
-                var isUserCdo = await _context.Users
+                var user = await _context.Users
                     .Include(u => u.UserRoles)
                     .Where(u => u.Id == request.AccessBy)
-                    .Select(u => u.UserRoles.UserRoleName)
-                    .FirstOrDefaultAsync(cancellationToken) == Roles.Cdo;
+                    .FirstOrDefaultAsync(cancellationToken);
 
-                if (!isUserCdo)
+                if (user.UserRoles.UserRoleName != Roles.Cdo && user.UserRoles.UserRoleName != Roles.Marketing) //CDO 
                 {
                     return InventoryErrors.NotUserCdo();
                 }

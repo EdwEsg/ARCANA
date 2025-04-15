@@ -37,5 +37,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
             => new("BbdDateBull", $"Bbd date should not be null because it has Quantity:{quantity}");
 
         public static Error ReturnOrderIdNotFound(string code) => new("404", $"Not Found Return Order Id: {code}");
+
+        public static Error MiscOutError(int itemId, decimal quantity, decimal total)
+            => new("CannotDeduct", $"Cannot MiscOut item {itemId}. Requested quantity {quantity} exceeds available quantity {total}");
     }
 }

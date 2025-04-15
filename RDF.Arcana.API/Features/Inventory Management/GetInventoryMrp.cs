@@ -176,7 +176,8 @@ namespace RDF.Arcana.API.Features.Inventory_Management
 
 
                 //for non-CDO
-                else if(user.UserRoles.UserRoleName != Roles.Depot && user.UserRoles.UserRoleName != Roles.Cdo && request.ClusterId != null)
+                else if(user.UserRoles.UserRoleName != Roles.Depot && user.UserRoles.UserRoleName != Roles.Cdo
+                    && user.UserRoles.UserRoleName != Roles.Marketing && request.ClusterId != null)
                 {
                     var cdoCluster = await _context.CdoClusters
                         .FirstOrDefaultAsync(x => x.ClusterId == request.ClusterId, cancellationToken);
@@ -536,7 +537,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                         request.PageSize);
                 }
 
-                //for CDO
+                //for CDO and marketing
                 else
                 {
 

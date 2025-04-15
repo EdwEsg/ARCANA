@@ -112,7 +112,7 @@ namespace RDF.Arcana.API.Features.Inventory_Management
                     await _context.SaveChangesAsync(cancellationToken);
                 }
 
-                if (user.UserRoles.UserRoleName != Roles.Cdo) //CDO 
+                if (user.UserRoles.UserRoleName != Roles.Cdo && user.UserRoles.UserRoleName != Roles.Marketing) //CDO 
                 {
                     return InventoryErrors.NotUserCdo();
                 }
